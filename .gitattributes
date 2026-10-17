@@ -1,0 +1,32 @@
+# 文本统一 LF 存储，检出时按平台转换
+* text=auto
+
+# Unity YAML：按文本存储，不做 diff 合并猜测
+*.unity     text eol=lf merge=unityyamlmerge
+*.prefab    text eol=lf merge=unityyamlmerge
+*.asset     text eol=lf merge=unityyamlmerge
+*.mat       text eol=lf merge=unityyamlmerge
+*.meta      text eol=lf
+*.controller text eol=lf merge=unityyamlmerge
+*.anim      text eol=lf merge=unityyamlmerge
+
+# 二进制资源
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.tga   binary
+*.psd   binary
+*.exr   binary
+*.hdr   binary
+*.fbx   binary
+*.glb   binary
+*.gltf  binary
+*.obj   binary
+*.dae   binary
+*.stl   binary
+*.ttf   binary
+*.otf   binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.zip   binary

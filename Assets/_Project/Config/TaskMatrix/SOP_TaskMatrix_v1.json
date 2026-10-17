@@ -1,0 +1,680 @@
+{
+  "schema": "RivetSim.TaskMatrix/1",
+  "id": "SOP_RivetInspection_v1",
+  "title": "AGV 飞机铆钉超声检测 SOP 任务矩阵",
+  "notation": "SOP = (P, A, T)",
+  "source": "Docs/Reference/SOP_TaskMatrix_v1.png",
+  "actors": [
+    {
+      "id": "a1",
+      "code": "S1",
+      "name": "导航",
+      "device": "AGV 底盘与导航"
+    },
+    {
+      "id": "a2",
+      "code": "S2",
+      "name": "视觉",
+      "device": "视觉定位单元"
+    },
+    {
+      "id": "a3",
+      "code": "S3",
+      "name": "机械臂",
+      "device": "六轴机械臂"
+    },
+    {
+      "id": "a4",
+      "code": "S4",
+      "name": "贴合采集",
+      "device": "探头贴合采集末端"
+    },
+    {
+      "id": "a5",
+      "code": "S5",
+      "name": "超声接口",
+      "device": "超声检测仪接口"
+    },
+    {
+      "id": "a6",
+      "code": "S6",
+      "name": "安全",
+      "device": "安全监控单元"
+    },
+    {
+      "id": "a7",
+      "code": "S7",
+      "name": "调度",
+      "device": "任务调度单元"
+    },
+    {
+      "id": "a8",
+      "code": "S8",
+      "name": "数据",
+      "device": "数据记录单元"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "code": "T1",
+      "name": "全局导航"
+    },
+    {
+      "id": "p2",
+      "code": "T2",
+      "name": "精确停靠"
+    },
+    {
+      "id": "p3",
+      "code": "T3",
+      "name": "注册"
+    },
+    {
+      "id": "p4",
+      "code": "T4",
+      "name": "对中"
+    },
+    {
+      "id": "p5",
+      "code": "T5",
+      "name": "贴合采集"
+    },
+    {
+      "id": "p6",
+      "code": "T6",
+      "name": "释放退出"
+    }
+  ],
+  "cells": [
+    {
+      "id": "t(1,1)",
+      "row": 1,
+      "col": 1,
+      "kind": "active",
+      "label": "整机识别\n全局导航",
+      "executor": "nav.globalNavigate",
+      "explain": "识别飞机整机位置，在全局地图上规划路径并导航至目标检测区域附近。"
+    },
+    {
+      "id": "t(1,2)",
+      "row": 1,
+      "col": 2,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(1,3)",
+      "row": 1,
+      "col": 3,
+      "kind": "active",
+      "label": "运输姿态",
+      "executor": "arm.stow",
+      "explain": "机械臂收拢至运输姿态，降低重心并避免移动中与机身干涉。"
+    },
+    {
+      "id": "t(1,4)",
+      "row": 1,
+      "col": 4,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(1,5)",
+      "row": 1,
+      "col": 5,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(1,6)",
+      "row": 1,
+      "col": 6,
+      "kind": "active",
+      "label": "底盘\n运动许可",
+      "executor": "safety.grantChassisMotion",
+      "explain": "确认机械臂处于运输姿态、急停未触发、路径区域无人，授予底盘运动许可。"
+    },
+    {
+      "id": "t(1,7)",
+      "row": 1,
+      "col": 7,
+      "kind": "active",
+      "label": "检查条件\n下发任务",
+      "executor": "sched.checkAndDispatch",
+      "explain": "检查电量、通讯与设备就绪状态，向各子系统下发本区域检测任务。"
+    },
+    {
+      "id": "t(1,8)",
+      "row": 1,
+      "col": 8,
+      "kind": "conditional",
+      "label": "点选初值\n识别失败",
+      "executor": "data.manualInitialPose",
+      "trigger": "fault.aircraftRecognitionFailed",
+      "explain": "整机识别失败时，由操作员在上位机地图上点选飞机初始位姿作为初值。"
+    },
+    {
+      "id": "t(2,1)",
+      "row": 2,
+      "col": 1,
+      "kind": "active",
+      "label": "标记确认\n对接停车",
+      "executor": "nav.dock",
+      "explain": "根据区域标记确认停靠位，低速闭环对接后停车。"
+    },
+    {
+      "id": "t(2,2)",
+      "row": 2,
+      "col": 2,
+      "kind": "active",
+      "label": "区域标记\n识别",
+      "executor": "vision.detectRegionMarker",
+      "explain": "识别区域标记，解算 AGV 相对检测区域的位姿，供停靠闭环使用。"
+    },
+    {
+      "id": "t(2,3)",
+      "row": 2,
+      "col": 3,
+      "kind": "active",
+      "label": "运输姿态",
+      "executor": "arm.holdStow",
+      "explain": "停靠过程中机械臂保持运输姿态。"
+    },
+    {
+      "id": "t(2,4)",
+      "row": 2,
+      "col": 4,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(2,5)",
+      "row": 2,
+      "col": 5,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(2,6)",
+      "row": 2,
+      "col": 6,
+      "kind": "active",
+      "label": "底盘\n运动许可",
+      "executor": "safety.grantChassisMotion",
+      "explain": "停靠过程中持续监视安全条件，维持底盘运动许可。"
+    },
+    {
+      "id": "t(2,7)",
+      "row": 2,
+      "col": 7,
+      "kind": "active",
+      "label": "切换阶段",
+      "executor": "sched.switchPhase",
+      "explain": "停靠完成后，由移动阶段切换至作业阶段。"
+    },
+    {
+      "id": "t(2,8)",
+      "row": 2,
+      "col": 8,
+      "kind": "active",
+      "label": "记录轨迹",
+      "executor": "data.recordTrajectory",
+      "explain": "记录导航与停靠轨迹及停靠误差。"
+    },
+    {
+      "id": "t(3,1)",
+      "row": 3,
+      "col": 1,
+      "kind": "active",
+      "label": "零速锁定",
+      "executor": "chassis.zeroSpeedLock",
+      "explain": "底盘零速锁定，保证作业期间基座稳定。"
+    },
+    {
+      "id": "t(3,2)",
+      "row": 3,
+      "col": 2,
+      "kind": "active",
+      "label": "基准注册",
+      "executor": "vision.registerDatum",
+      "explain": "识别检测区基准，将铆钉设计坐标注册到机器人坐标系。"
+    },
+    {
+      "id": "t(3,3)",
+      "row": 3,
+      "col": 3,
+      "kind": "active",
+      "label": "观察位姿",
+      "executor": "arm.toObservePose",
+      "explain": "机械臂移动到观察位姿，为相机提供检测区视野。"
+    },
+    {
+      "id": "t(3,4)",
+      "row": 3,
+      "col": 4,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(3,5)",
+      "row": 3,
+      "col": 5,
+      "kind": "active",
+      "label": "载入配方",
+      "executor": "ut.loadRecipe",
+      "explain": "载入本区域超声检测配方（频率、增益、闸门等）。"
+    },
+    {
+      "id": "t(3,6)",
+      "row": 3,
+      "col": 6,
+      "kind": "active",
+      "label": "机械臂\n运动许可",
+      "executor": "safety.grantArmMotion",
+      "explain": "确认底盘已锁定，授予机械臂运动许可。"
+    },
+    {
+      "id": "t(3,7)",
+      "row": 3,
+      "col": 7,
+      "kind": "active",
+      "label": "分解任务\n生成单元",
+      "executor": "sched.decomposeRivets",
+      "explain": "将本工位检测任务分解为逐颗铆钉的任务单元序列。"
+    },
+    {
+      "id": "t(3,8)",
+      "row": 3,
+      "col": 8,
+      "kind": "active",
+      "label": "保存注册",
+      "executor": "data.saveRegistration",
+      "explain": "保存基准注册结果。"
+    },
+    {
+      "id": "t(4,1)",
+      "row": 4,
+      "col": 1,
+      "kind": "active",
+      "label": "零速锁定",
+      "executor": "chassis.holdZeroSpeed",
+      "explain": "底盘保持零速锁定。"
+    },
+    {
+      "id": "t(4,2)",
+      "row": 4,
+      "col": 2,
+      "kind": "active",
+      "label": "钉心复测",
+      "executor": "vision.remeasureRivetCenter",
+      "explain": "近距离复测当前铆钉的钉心位置与表面法向。"
+    },
+    {
+      "id": "t(4,3)",
+      "row": 4,
+      "col": 3,
+      "kind": "active",
+      "label": "规划\n视觉修正",
+      "executor": "arm.alignWithVisionCorrection",
+      "explain": "依据复测结果修正目标位姿，规划探头对中轨迹并执行。"
+    },
+    {
+      "id": "t(4,4)",
+      "row": 4,
+      "col": 4,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(4,5)",
+      "row": 4,
+      "col": 5,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(4,6)",
+      "row": 4,
+      "col": 6,
+      "kind": "active",
+      "label": "近距离\n限速",
+      "executor": "safety.nearFieldSpeedLimit",
+      "explain": "探头接近机身时启用近距离限速。"
+    },
+    {
+      "id": "t(4,7)",
+      "row": 4,
+      "col": 7,
+      "kind": "active",
+      "label": "分配\n资源锁",
+      "executor": "sched.allocateResourceLock",
+      "explain": "为当前铆钉分配机械臂与超声通道资源锁（条件 C1），避免并发冲突。",
+      "conditionRefs": [
+        "C1"
+      ]
+    },
+    {
+      "id": "t(4,8)",
+      "row": 4,
+      "col": 8,
+      "kind": "active",
+      "label": "保存图像\n与位姿",
+      "executor": "data.saveImageAndPose",
+      "explain": "保存钉心图像与对中位姿。"
+    },
+    {
+      "id": "t(5,1)",
+      "row": 5,
+      "col": 1,
+      "kind": "active",
+      "label": "零速锁定",
+      "executor": "chassis.holdZeroSpeed",
+      "explain": "底盘保持零速锁定。"
+    },
+    {
+      "id": "t(5,2)",
+      "row": 5,
+      "col": 2,
+      "kind": "standby",
+      "label": "待命",
+      "executor": null,
+      "explain": "该阶段待命。"
+    },
+    {
+      "id": "t(5,3)",
+      "row": 5,
+      "col": 3,
+      "kind": "active",
+      "label": "力控接触",
+      "executor": "arm.forceControlledContact",
+      "explain": "沿表面法向逼近，以设定接触力使探头贴合蒙皮。"
+    },
+    {
+      "id": "t(5,4)",
+      "row": 5,
+      "col": 4,
+      "kind": "active",
+      "label": "接触采集\nC2～C8",
+      "executor": "acq.contactAcquire",
+      "explain": "逐项确认贴合条件 C2～C8 全部满足后，激发探头并采集 A 扫波形。",
+      "exampleCell": true,
+      "conditionRefs": [
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C6",
+        "C7",
+        "C8"
+      ]
+    },
+    {
+      "id": "t(5,5)",
+      "row": 5,
+      "col": 5,
+      "kind": "active",
+      "label": "接收\n有效性",
+      "executor": "ut.receiveValidity",
+      "explain": "接收 A 扫数据并判断信号有效性（耦合、幅值）。"
+    },
+    {
+      "id": "t(5,6)",
+      "row": 5,
+      "col": 6,
+      "kind": "conditional",
+      "label": "受控退出\n力超限",
+      "executor": "safety.controlledRetreat",
+      "trigger": "fault.contactForceExceeded",
+      "explain": "接触力超限时，机械臂沿法向受控退出。",
+      "onComplete": "retryPhase",
+      "maxRetries": 1
+    },
+    {
+      "id": "t(5,7)",
+      "row": 5,
+      "col": 7,
+      "kind": "conditional",
+      "label": "重贴调度\n采集无效",
+      "executor": "sched.reattach",
+      "trigger": "event.acquisitionInvalid",
+      "explain": "采集无效时调度重新贴合采集。",
+      "onComplete": "retryPhase",
+      "maxRetries": 2
+    },
+    {
+      "id": "t(5,8)",
+      "row": 5,
+      "col": 8,
+      "kind": "active",
+      "label": "保存\n超声结果",
+      "executor": "data.saveUtResult",
+      "explain": "保存本颗铆钉的 A 扫数据与判读结果。"
+    },
+    {
+      "id": "t(6,1)",
+      "row": 6,
+      "col": 1,
+      "kind": "active",
+      "label": "倒车退出\n换站",
+      "executor": "nav.reverseExitAndChangeStation",
+      "explain": "本工位最后一颗铆钉完成后，底盘倒车退出并转入换站。",
+      "runWhen": "lastRivetInStation",
+      "note": "已确认：仅在本工位最后一颗铆钉完成时执行；其余逐钉循环中显示为“跳过”。v1 不为该单元设计故障处理分支。"
+    },
+    {
+      "id": "t(6,2)",
+      "row": 6,
+      "col": 2,
+      "kind": "conditional",
+      "label": "基准复测\n每10颗",
+      "executor": "vision.remeasureDatum",
+      "trigger": "counter.every10Rivets",
+      "explain": "每完成 10 颗铆钉，复测一次检测区基准，抑制累积误差。"
+    },
+    {
+      "id": "t(6,3)",
+      "row": 6,
+      "col": 3,
+      "kind": "active",
+      "label": "保持回退\n收臂",
+      "executor": "arm.retractHold",
+      "explain": "探头沿法向回退并保持；工位结束时收臂。"
+    },
+    {
+      "id": "t(6,4)",
+      "row": 6,
+      "col": 4,
+      "kind": "active",
+      "label": "释放确认\nC9～C12",
+      "executor": "acq.releaseConfirm",
+      "explain": "逐项确认释放条件 C9～C12 全部满足后，判定探头已安全释放。",
+      "conditionRefs": [
+        "C9",
+        "C10",
+        "C11",
+        "C12"
+      ]
+    },
+    {
+      "id": "t(6,5)",
+      "row": 6,
+      "col": 5,
+      "kind": "active",
+      "label": "接收结论",
+      "executor": "ut.receiveConclusion",
+      "explain": "接收本颗铆钉的检测结论。"
+    },
+    {
+      "id": "t(6,6)",
+      "row": 6,
+      "col": 6,
+      "kind": "active",
+      "label": "退出与\n释放许可",
+      "executor": "safety.grantExitRelease",
+      "explain": "授予探头释放与底盘退出许可。"
+    },
+    {
+      "id": "t(6,7)",
+      "row": 6,
+      "col": 7,
+      "kind": "active",
+      "label": "逐层核验\n提交",
+      "executor": "sched.verifyAndSubmit",
+      "explain": "逐层核验任务完成状态并提交。"
+    },
+    {
+      "id": "t(6,8)",
+      "row": 6,
+      "col": 8,
+      "kind": "active",
+      "label": "提交记录",
+      "executor": "data.submitRecord",
+      "explain": "提交本颗铆钉检测记录。"
+    }
+  ],
+  "loops": [
+    {
+      "id": "nextRivet",
+      "style": "solid",
+      "label": "下一颗",
+      "from": "p6",
+      "to": "p4",
+      "when": "station.hasNextRivet",
+      "explain": "工位内逐钉循环 T4～T6。"
+    },
+    {
+      "id": "nextStationSameRegion",
+      "style": "dashed",
+      "label": "换站",
+      "from": "p6",
+      "to": "p2",
+      "when": "region.hasNextStation",
+      "explain": "同一区域换站，转 T2。"
+    },
+    {
+      "id": "nextRegion",
+      "style": "dashed",
+      "label": "换站",
+      "from": "p6",
+      "to": "p1",
+      "when": "mission.hasNextRegion",
+      "explain": "其他区域，转 T1。"
+    }
+  ],
+  "legend": [
+    {
+      "style": "exampleBold",
+      "text": "示例单元 t(5,4)"
+    },
+    {
+      "style": "dashed",
+      "text": "条件触发的任务单元"
+    },
+    {
+      "style": "grayText",
+      "text": "灰字：该阶段待命"
+    }
+  ],
+  "loopNote": "实线回路：工位内逐钉循环 T4～T6；虚线回路：同一区域换站转 T2，其他区域转 T1",
+  "rules": {
+    "phaseParallel": "同一阶段内所有 active 单元并行启动；全部完成后进入下一阶段。",
+    "standby": "standby 单元不执行，显示灰字。",
+    "conditional": "conditional 单元进入阶段时处于“已布防”状态，trigger 发生时激活；激活后该阶段须等待其完成。",
+    "runWhen": "active 单元的 runWhen 不满足时显示为跳过（保持），不执行。",
+    "conditionChecks": "conditionRefs 中的条件由执行器逐项判定，演示屏“当前执行情况说明”逐条显示 ✓ / ✗。v1 中这些条件由仿真状态直接给出，正常流程全部满足；不满足的情况只通过故障注入产生，并交给对应的条件触发单元（t(5,6)、t(5,7)）处理。"
+  },
+  "conditions": {
+    "version": "v1 固定文字（教学示例阈值），后续版本细化",
+    "items": [
+      {
+        "id": "C1",
+        "stage": "T4 对中",
+        "text": "本颗铆钉的机械臂与超声通道资源锁已分配",
+        "check": "sched.resourceLockHeld"
+      },
+      {
+        "id": "C2",
+        "stage": "T5 贴合采集",
+        "text": "底盘零速锁定有效，机械臂运动许可有效",
+        "check": "safety.chassisLocked && safety.armPermit"
+      },
+      {
+        "id": "C3",
+        "stage": "T5 贴合采集",
+        "text": "探头轴线与表面法向夹角 ≤ 2°",
+        "check": "probe.normalErrorDeg <= 2"
+      },
+      {
+        "id": "C4",
+        "stage": "T5 贴合采集",
+        "text": "探头中心与钉心对中偏差 ≤ 0.5 mm",
+        "check": "probe.centerErrorMm <= 0.5"
+      },
+      {
+        "id": "C5",
+        "stage": "T5 贴合采集",
+        "text": "接触力稳定在 8～12 N 且持续 ≥ 0.3 s",
+        "check": "contact.forceN in [8,12] for 0.3 s"
+      },
+      {
+        "id": "C6",
+        "stage": "T5 贴合采集",
+        "text": "耦合剂已注入，界面回波幅值 ≥ 60% 满屏高度",
+        "check": "ut.interfaceEchoFsh >= 0.6"
+      },
+      {
+        "id": "C7",
+        "stage": "T5 贴合采集",
+        "text": "检测配方已载入（10 MHz、增益、声速 6320 m/s、闸门 A/B）",
+        "check": "ut.recipeLoaded"
+      },
+      {
+        "id": "C8",
+        "stage": "T5 贴合采集",
+        "text": "首次底面回波声时与 2 mm 蒙皮厚度相符（误差 ≤ 0.1 mm）",
+        "check": "ut.backwallThicknessErrorMm <= 0.1"
+      },
+      {
+        "id": "C9",
+        "stage": "T6 释放退出",
+        "text": "A 扫数据已完整保存（波形、位姿、时间戳）",
+        "check": "data.utRecordSaved"
+      },
+      {
+        "id": "C10",
+        "stage": "T6 释放退出",
+        "text": "闸门判读完成，检测结论已生成",
+        "check": "ut.conclusionReady"
+      },
+      {
+        "id": "C11",
+        "stage": "T6 释放退出",
+        "text": "接触力降至 0 N，探头沿法向回退 ≥ 5 mm",
+        "check": "contact.forceN == 0 && probe.retreatMm >= 5"
+      },
+      {
+        "id": "C12",
+        "stage": "T6 释放退出",
+        "text": "探头离开近距离限速区（距表面 ≥ 100 mm）",
+        "check": "probe.surfaceDistanceMm >= 100"
+      }
+    ]
+  }
+}
