@@ -13,7 +13,7 @@ using UnityEngine.InputSystem;
 namespace RivetSim.Presentation.App
 {
     /// <summary>
-    /// Sandbox_Robot 的导航开发入口（M3）：两堆货箱夹出 1.8 m 窄通道、一块模拟机身虚拟禁行区与一个测试工位。
+    /// Sandbox_Robot 的导航开发入口（M3；M4 起默认停用，机身段的虚拟禁行区仍可用）：两堆货箱夹出 1.8 m 窄通道、机身段虚拟禁行区与测试工位。
     /// 进入 Play 模式后自动执行 建图 → 导航到预停靠位姿 → 对接 → 倒车退出；之后可用 WASD 遥控、空格急停，
     /// M 重新建图、N 导航到预停靠位姿、K 对接、R 倒车退出。引用由 SandboxSceneBuilder 写入。
     /// </summary>
@@ -23,6 +23,8 @@ namespace RivetSim.Presentation.App
         [SerializeField] private SimSettings simSettings;
         [SerializeField] private AgvConfig agvConfig;
         [SerializeField] private NavigationConfig navigationConfig;
+        [SerializeField] private ArmConfig armConfig;
+        [SerializeField] private InspectionConfig inspectionConfig;
 
         [Header("场景")]
         [SerializeField] private AgvController chassis;
@@ -44,17 +46,19 @@ namespace RivetSim.Presentation.App
         [SerializeField, Tooltip("进入 Play 模式后自动执行一遍")] private bool autoRun = true;
         [SerializeField, Tooltip("演示倍速（须在 CFG_SimSettings 的倍速列表内）")] private float demoSpeedMultiplier = 4f;
 
-        private NavigationRuntime _runtime;
+        private RobotRuntime _runtime;
         private CancellationTokenSource _cancellation;
         private bool _running;
 
         /// <summary>编辑器生成器写入配置与场景引用。</summary>
-        public void Configure(SimSettings settings, AgvConfig agv, NavigationConfig nav, AgvController agvController, InspectionStation testStation,
-            VirtualKeepOutZone keepOut, Vector2 centerM, Vector2 sizeM, Vector2[] route)
+        public void Configure(SimSettings settings, AgvConfig agv, NavigationConfig nav, ArmConfig arm, InspectionConfig inspection,
+            AgvController agvController, InspectionStation testStation, VirtualKeepOutZone keepOut, Vector2 centerM, Vector2 sizeM, Vector2[] route)
         {
             simSettings = settings;
             agvConfig = agv;
             navigationConfig = nav;
+            armConfig = arm;
+            inspectionConfig = inspection;
             chassis = agvController;
             station = testStation;
             keepOutZone = keepOut;
@@ -80,8 +84,9 @@ namespace RivetSim.Presentation.App
             Lidar2D lidar = chassis.GetComponentInChildren<Lidar2D>();
             KeepOutMask keepOut = keepOutZone != null ? keepOutZone.ToMask() : null;
             GridGeometry geometry = GridGeometry.Covering(mapCenterM, mapSizeM, navigationConfig.gridResolutionM);
-            _runtime = new NavigationRuntime(simSettings, agvConfig, navigationConfig, chassis, chassis.GetComponent<LiftColumnController>(),
-                lidar, geometry, keepOut, demoSpeedMultiplier, Time.fixedDeltaTime);
+            _runtime = new RobotRuntime(simSettings, agvConfig, navigationConfig, armConfig, inspectionConfig, chassis,
+                chassis.GetComponent<LiftColumnController>(), chassis.GetComponentInChildren<ArmController>(), lidar, geometry, keepOut,
+                demoSpeedMultiplier, Time.fixedDeltaTime);
 
             if (mapOverlay != null) mapOverlay.Initialize(_runtime.Map);
             if (keepOut != null && keepOutOverlay != null) keepOutOverlay.Initialize(keepOut, _runtime.Map.Geometry);

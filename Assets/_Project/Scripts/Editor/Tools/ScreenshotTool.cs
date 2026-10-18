@@ -395,6 +395,128 @@ namespace RivetSim.Editor.Tools
             return t;
         }
 
+        // M4：运输姿态 Stow 外廓截图（侧视 + 俯视，正交相机），叠加车体投影框（1.20 × 0.80 m）与移动时高度上限框（1.35 m）。
+        private const string M4OutputFolder = ProjectPaths.ScreenshotsFolder + "/M4";
+        private const float EnvelopeLineWidthM = 0.008f;
+        private const float EnvelopeTextHeightM = 0.045f;
+        private const float EnvelopeCameraDistanceM = 4f;
+        private const float EnvelopeSideOrthoSizeM = 0.85f;
+        private const float EnvelopeTopOrthoSizeM = 0.8f;
+        private static readonly Color EnvelopeBoxColor = new Color(0.18f, 0.77f, 0.90f);
+        private static readonly Color EnvelopeTopColor = new Color(1f, 0.62f, 0.11f);
+
+        /// <summary>运输姿态外廓截图（22a 侧视、22b 俯视，输出到 Docs/Screenshots/M4）；AGV 临时放在起始位，截完删除。</summary>
+        [MenuItem("RivetSim/Debug/Capture Stow Envelope Screenshots")]
+        public static void CaptureStowEnvelope()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            var layout = GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset);
+            var agvConfig = GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset);
+            GameObject prefab = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
+            Font font = AssetDatabase.LoadAssetAtPath<Font>(ProjectPaths.NotoSansScBold);
+            if (layout == null || agvConfig == null || prefab == null || font == null) return;
+            bool wasDirty = scene.isDirty;
+            Directory.CreateDirectory(M4OutputFolder);
+            var temp = new List<Object>();
+            try
+            {
+                Transform agv = TempInstance(prefab, temp).transform;
+                agv.SetPositionAndRotation(layout.startPose.WorldPosition, layout.startPose.WorldRotation);
+                agv.GetComponent<LiftColumnController>().SetExtensionImmediate(0f);
+                ArmController arm = agv.GetComponentInChildren<ArmController>();
+                arm.SetJointsImmediate(arm.NamedPose(ArmConfig.StowPoseName));
+                AgvEnvelope envelope = AgvFootprint.Measure(agv, arm.transform, true);
+
+                float hw = 0.5f * agvConfig.bodySizeM.y, hl = 0.5f * agvConfig.bodySizeM.x, h = agvConfig.transportHeightMaxM;
+                var boxMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { color = EnvelopeBoxColor };
+                var topMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { color = EnvelopeTopColor };
+                temp.Add(boxMaterial);
+                temp.Add(topMaterial);
+                var root = new GameObject("__EnvelopeAnnotations") { hideFlags = HideFlags.DontSave };
+                temp.Add(root);
+                foreach (float y in new[] { 0.002f, h })
+                {
+                    Line(root.transform, boxMaterial, agv, new Vector3(-hw, y, -hl), new Vector3(hw, y, -hl));
+                    Line(root.transform, boxMaterial, agv, new Vector3(hw, y, -hl), new Vector3(hw, y, hl));
+                    Line(root.transform, boxMaterial, agv, new Vector3(hw, y, hl), new Vector3(-hw, y, hl));
+                    Line(root.transform, boxMaterial, agv, new Vector3(-hw, y, hl), new Vector3(-hw, y, -hl));
+                }
+                foreach (Vector2 c in new[] { new Vector2(-hw, -hl), new Vector2(hw, -hl), new Vector2(hw, hl), new Vector2(-hw, hl) })
+                    Line(root.transform, boxMaterial, agv, new Vector3(c.x, 0f, c.y), new Vector3(c.x, h, c.y));
+                Line(root.transform, topMaterial, agv, new Vector3(-hw, envelope.TopM, -hl), new Vector3(-hw, envelope.TopM, hl));
+                Line(root.transform, topMaterial, agv, new Vector3(envelope.ArmMin.x, h, envelope.ArmMin.z), new Vector3(envelope.ArmMax.x, h, envelope.ArmMin.z));
+                Line(root.transform, topMaterial, agv, new Vector3(envelope.ArmMax.x, h, envelope.ArmMin.z), new Vector3(envelope.ArmMax.x, h, envelope.ArmMax.z));
+                Line(root.transform, topMaterial, agv, new Vector3(envelope.ArmMax.x, h, envelope.ArmMax.z), new Vector3(envelope.ArmMin.x, h, envelope.ArmMax.z));
+                Line(root.transform, topMaterial, agv, new Vector3(envelope.ArmMin.x, h, envelope.ArmMax.z), new Vector3(envelope.ArmMin.x, h, envelope.ArmMin.z));
+
+                // 侧视：从车体左侧（本地 −X）看。
+                Vector3 sideCenter = agv.TransformPoint(new Vector3(0f, 0.7f, 0f));
+                Vector3 sideEye = sideCenter - agv.right * EnvelopeCameraDistanceM;
+                Camera side = CreateTempCamera(temp, sideEye, Quaternion.LookRotation(agv.right, Vector3.up), LiftViewFovDeg);
+                side.orthographic = true;
+                side.orthographicSize = EnvelopeSideOrthoSizeM;
+                var sideText = new GameObject("__SideText") { hideFlags = HideFlags.DontSave };
+                temp.Add(sideText);
+                FacingText(sideText.transform, font, $"移动时高度上限 {h:0.00} m", agv.TransformPoint(new Vector3(-hw, h + 0.06f, 0f)), side.transform.rotation, EnvelopeBoxColor);
+                FacingText(sideText.transform, font, $"Stow 整机最高点 {envelope.TopM:0.000} m", agv.TransformPoint(new Vector3(-hw, envelope.TopM - 0.06f, -hl + 0.32f)), side.transform.rotation, EnvelopeTopColor);
+                FacingText(sideText.transform, font, $"车长 {agvConfig.bodySizeM.x:0.00} m", agv.TransformPoint(new Vector3(-hw, -0.06f, 0f)), side.transform.rotation, EnvelopeBoxColor);
+                Render(side, CloseUpSizePx, "../M4/22a_Stow_Side.png");
+                Object.DestroyImmediate(sideText);
+
+                // 俯视：车头朝画面上方。
+                Vector3 topEye = agv.TransformPoint(new Vector3(0f, EnvelopeCameraDistanceM, 0f));
+                Camera top = CreateTempCamera(temp, topEye, Quaternion.LookRotation(Vector3.down, agv.forward), LiftViewFovDeg);
+                top.orthographic = true;
+                top.orthographicSize = EnvelopeTopOrthoSizeM;
+                var topText = new GameObject("__TopText") { hideFlags = HideFlags.DontSave };
+                temp.Add(topText);
+                FacingText(topText.transform, font, $"车体投影 {agvConfig.bodySizeM.x:0.00} × {agvConfig.bodySizeM.y:0.00} m", agv.TransformPoint(new Vector3(0f, h + 0.1f, -hl - 0.08f)), top.transform.rotation, EnvelopeBoxColor);
+                FacingText(topText.transform, font, $"Stow 机械臂投影 横向 {envelope.ArmMin.x:+0.00;-0.00}～{envelope.ArmMax.x:+0.00;-0.00} m，纵向 {envelope.ArmMin.z:+0.00;-0.00}～{envelope.ArmMax.z:+0.00;-0.00} m",
+                    agv.TransformPoint(new Vector3(0f, h + 0.1f, hl + 0.08f)), top.transform.rotation, EnvelopeTopColor);
+                Render(top, CloseUpSizePx, "../M4/22b_Stow_Top.png");
+                SimLog.Info(LogCategory.System, $"运输姿态外廓截图已输出到 {M4OutputFolder}/（{envelope}）");
+            }
+            finally
+            {
+                foreach (Object o in temp)
+                {
+                    if (o != null) Object.DestroyImmediate(o);
+                }
+                if (!wasDirty && scene.isDirty) EditorSceneManager.SaveScene(scene);
+            }
+        }
+
+        // 一条线段（AGV 本地坐标 → 世界坐标）。
+        private static void Line(Transform parent, Material material, Transform agv, Vector3 aLocal, Vector3 bLocal)
+        {
+            var go = new GameObject("__EnvelopeLine") { hideFlags = HideFlags.DontSave };
+            go.transform.SetParent(parent, false);
+            var line = go.AddComponent<LineRenderer>();
+            line.sharedMaterial = material;
+            line.useWorldSpace = true;
+            line.widthMultiplier = EnvelopeLineWidthM;
+            line.alignment = LineAlignment.View;
+            line.positionCount = 2;
+            line.SetPosition(0, agv.TransformPoint(aLocal));
+            line.SetPosition(1, agv.TransformPoint(bLocal));
+        }
+
+        private static void FacingText(Transform parent, Font font, string text, Vector3 position, Quaternion rotation, Color color)
+        {
+            var go = new GameObject($"Text_{text}") { hideFlags = HideFlags.DontSave };
+            go.transform.SetParent(parent, false);
+            go.transform.SetPositionAndRotation(position, rotation);
+            var mesh = go.AddComponent<TextMesh>();
+            mesh.font = font;
+            mesh.fontSize = TextFontSize;
+            mesh.characterSize = EnvelopeTextHeightM * 10f / TextFontSize;
+            mesh.anchor = TextAnchor.MiddleCenter;
+            mesh.alignment = TextAlignment.Center;
+            mesh.color = color;
+            mesh.text = text;
+            go.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+        }
+
         private static void Text(Transform parent, Font font, string text, Vector3 position, float heightM)
         {
             var go = new GameObject($"Text_{text}") { hideFlags = HideFlags.DontSave };

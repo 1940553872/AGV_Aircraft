@@ -1,6 +1,7 @@
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Tools;
+using RivetSim.Simulation.Robot;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace RivetSim.Editor.Generators
     /// <summary>
     /// 探头末端生成器：快换法兰、浮动夹持、超声探头（含延迟块）、耦合剂管、腕部相机。
     /// 根节点在法兰端面中心，工具轴为本地 +Z；法兰到探头端面总长取 CFG_Arm.toolLengthM，端面处放 TCP 节点。
+    /// 根节点挂 <see cref="ProbeEndEffector"/>（M4）：探头与延迟块随接触压缩沿工具轴后退（外观）。
     /// </summary>
     public static class EndEffectorGenerator
     {
@@ -56,17 +58,18 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.CreateBox("Housing", floating, new Vector3(0f, 0f, holder * 0.5f), new Vector3(HolderSizeM, HolderSizeM, holder), body);
             GeneratorUtility.CreateBox("TravelBand", floating, new Vector3(0f, 0f, holder * 0.75f),
                 new Vector3(HolderSizeM + 0.002f, HolderSizeM + 0.002f, Mathf.Max(arm.toolFloatTravelM * 2f, 0.004f)), accent);
-            GeneratorUtility.CreateCylinder("Probe", t, new Vector3(0f, 0f, qc + holder + probe * 0.5f), Vector3.forward, ProbeDiameterM, probe, dark);
-            GeneratorUtility.CreateCylinder("DelayLine", t, new Vector3(0f, 0f, length - delay * 0.5f), Vector3.forward, ProbeDiameterM * 0.9f, delay, metal);
+            GameObject probeBody = GeneratorUtility.CreateCylinder("Probe", t, new Vector3(0f, 0f, qc + holder + probe * 0.5f), Vector3.forward, ProbeDiameterM, probe, dark);
+            GameObject delayLine = GeneratorUtility.CreateCylinder("DelayLine", t, new Vector3(0f, 0f, length - delay * 0.5f), Vector3.forward, ProbeDiameterM * 0.9f, delay, metal);
             GeneratorUtility.CreateCylinder("CouplantTube", t, new Vector3(-HolderSizeM * 0.6f, 0f, qc + (holder + probe) * 0.5f),
                 Vector3.forward, 0.004f, holder + probe, tube);
-            GeneratorUtility.CreateNode(TcpName, t, new Vector3(0f, 0f, length));
+            Transform tcp = GeneratorUtility.CreateNode(TcpName, t, new Vector3(0f, 0f, length));
 
             // 腕部相机装在法兰侧面，光轴与工具轴平行。
             Transform camera = GeneratorUtility.CreateNode(WristCameraName, t, new Vector3(0f, FlangeDiameterM * 0.5f + 0.02f, qc * 0.5f));
             GeneratorUtility.CreateBox("Body", camera, new Vector3(0f, 0f, 0.01f), new Vector3(0.04f, 0.03f, 0.04f), dark);
             GeneratorUtility.CreateCylinder("Lens", camera, new Vector3(0f, 0f, 0.035f), Vector3.forward, 0.018f, 0.012f, lens);
 
+            root.AddComponent<ProbeEndEffector>().Configure(tcp, camera, new[] { probeBody.transform, delayLine.transform }, arm.toolFloatTravelM);
             GeneratorUtility.SetLayerRecursive(root, SimLayers.RobotIndex);
             GeneratorUtility.SavePrefab(root, PrefabPath);
             SimLog.Info(LogCategory.System, $"探头末端已生成：{PrefabPath}（法兰到端面 {length:0.000} m）");

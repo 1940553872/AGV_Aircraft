@@ -198,7 +198,8 @@ namespace RivetSim.Editor.Generators
 
             // 升降柱与占位臂（挂在最上一节的法兰上）。
             Transform[] stages = BuildLiftColumn(t, agv, body, dark, accent, out Transform armMount);
-            GeneratorUtility.InstantiatePrefab(arm, armMount, Vector3.zero, Quaternion.identity, "Arm");
+            GameObject armInstance = GeneratorUtility.InstantiatePrefab(arm, armMount, Vector3.zero, Quaternion.identity, "Arm");
+            SetTransportPose(armInstance);
 
             BuildDevices(t, agv, length, width, height + DeckThicknessM, dark);
 
@@ -212,6 +213,15 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.SetLayerRecursive(root, SimLayers.RobotIndex);
             GeneratorUtility.SavePrefab(root, AgvPrefabPath);
             SimLog.Info(LogCategory.System, $"AGV 已生成：{AgvPrefabPath}（{length:0.00} × {width:0.00} × {height:0.00} m）");
+        }
+
+        // M4：预制体中的 UR5e 置于运输姿态 Stow（CFG_Arm.namedPoses），布局截图与运行时初始外观一致。
+        private static void SetTransportPose(GameObject armInstance)
+        {
+            var controller = armInstance.GetComponent<ArmController>();
+            float[] stow = controller != null ? controller.NamedPose(ArmConfig.StowPoseName) : null;
+            if (stow == null) return;
+            controller.SetJointsImmediate(stow);
         }
 
         // 车载设备盒沿车尾一排摆放：S5 超声仪、S7 工控机、S6 安全控制盒；每个盒子顶部有指示灯节点。

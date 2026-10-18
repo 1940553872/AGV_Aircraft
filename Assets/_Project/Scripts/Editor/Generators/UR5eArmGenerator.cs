@@ -13,7 +13,8 @@ namespace RivetSim.Editor.Generators
     /// UR5e 机械臂生成器：读取 default_kinematics / joint_limits / visual_parameters 三个 yaml，按 URDF（ur_macro.xacro）的
     /// 连杆链 base_link → base_link_inertia → 6 个转动关节 → flange → tool0 生成 PF_Arm_UR5e，挂 <see cref="ArmRig"/>（不使用 ArticulationBody）。
     /// ROS → Unity 换算见 <see cref="RosFrame"/>；外观网格按 visual_parameters 的 mesh_offset 摆放，原材质（Standard）换成项目的 URP 材质；
-    /// 探头末端挂在 tool0 下（工具轴为 tool0 的 ROS z，即 Unity 本地 +Y）。
+    /// 探头末端挂在 tool0 下（工具轴为 tool0 的 ROS z，即 Unity 本地 +Y）。M4：根节点挂 <see cref="ArmController"/>，
+    /// 并按外观网格顶点抽稀生成各连杆的表面采样点（连杆间隙检查用，<see cref="ArmLinkSamples"/>）。
     /// </summary>
     public static class UR5eArmGenerator
     {
@@ -61,6 +62,9 @@ namespace RivetSim.Editor.Generators
         private static readonly Vector3 UrdfJointAxis = new Vector3(0f, 0f, 1f);
 
         private const float MaterialSmoothness = 0.45f;
+        // 表面采样点抽稀网格边长，单位 m（UR5e 连杆 / 探头末端）。
+        private const float LinkSampleCellM = 0.02f;
+        private const float EndEffectorSampleCellM = 0.01f;
         private const float UrSemicircleRad = Mathf.PI;
         private const float UrQuarterRad = Mathf.PI * 0.5f;
 
@@ -110,13 +114,65 @@ namespace RivetSim.Editor.Generators
             Transform tool0 = GeneratorUtility.CreateNode(ToolFlangeName, flange, Vector3.zero,
                 RosFrame.ToUnityRotation(UrQuarterRad, 0f, UrQuarterRad));
             Transform mount = GeneratorUtility.CreateNode("EndEffectorMount", tool0, Vector3.zero, EndEffectorMount);
-            GeneratorUtility.InstantiatePrefab(endEffector, mount, Vector3.zero, Quaternion.identity, "EndEffector");
+            GameObject ee = GeneratorUtility.InstantiatePrefab(endEffector, mount, Vector3.zero, Quaternion.identity, "EndEffector");
 
-            root.AddComponent<ArmRig>().Configure(joints, tool0);
+            ArmRig rig = root.AddComponent<ArmRig>();
+            rig.Configure(joints, tool0);
+            var probe = ee.GetComponent<ProbeEndEffector>();
+            var samples = new List<ArmLinkSamples> { Sample(inertia, "base", false, LinkSampleCellM) };
+            for (int i = 0; i < joints.Length; i++) samples.Add(Sample(joints[i].transform, Links[i].VisualKey, false, LinkSampleCellM));
+            samples.Add(Sample(ee.transform, "end_effector", true, EndEffectorSampleCellM));
+            rig.ConfigureEndEffector(probe != null ? probe.Tcp : null, probe != null ? probe.WristCamera : null, probe, samples.ToArray());
+            var armConfig = GeneratorUtility.LoadConfig<ArmConfig>(ProjectPaths.ArmAsset);
+            root.AddComponent<ArmController>().Configure(armConfig, rig);
             GeneratorUtility.SetLayerRecursive(root, SimLayers.RobotIndex);
             GeneratorUtility.SavePrefab(root, PrefabPath);
             LinkKinematicsYaml();
             SimLog.Info(LogCategory.System, $"UR5e 机械臂已生成：{PrefabPath}\n{DescribeJoints(kinematics, limits)}");
+        }
+
+        // 连杆表面采样：只取该连杆自身外观（Visual_* 子节点；探头末端取全部网格）的顶点，换到连杆本地坐标后按网格抽稀（每格保留一个顶点）。
+        private static ArmLinkSamples Sample(Transform link, string name, bool endEffector, float cellM)
+        {
+            var cells = new Dictionary<Vector3Int, Vector3>();
+            var vertices = new List<Vector3>();
+            Matrix4x4 toLink = link.worldToLocalMatrix;
+            foreach (MeshFilter mf in link.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (mf.sharedMesh == null || !BelongsTo(mf.transform, link, endEffector)) continue;
+                Matrix4x4 m = toLink * mf.transform.localToWorldMatrix;
+                mf.sharedMesh.GetVertices(vertices);
+                foreach (Vector3 v in vertices)
+                {
+                    Vector3 p = m.MultiplyPoint3x4(v);
+                    var key = Vector3Int.FloorToInt(p / cellM);
+                    if (!cells.ContainsKey(key)) cells[key] = p;
+                }
+            }
+            var points = new Vector3[cells.Count];
+            cells.Values.CopyTo(points, 0);
+            Vector3 min = Vector3.one * float.MaxValue, max = Vector3.one * float.MinValue;
+            foreach (Vector3 p in points)
+            {
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+            }
+            Vector3 center = points.Length > 0 ? 0.5f * (min + max) : Vector3.zero;
+            float radius = 0f;
+            foreach (Vector3 p in points) radius = Mathf.Max(radius, (p - center).magnitude);
+            return new ArmLinkSamples
+            {
+                link = link, linkName = name, isEndEffector = endEffector, pointsLocal = points, boundsCenterLocal = center, boundsRadiusM = radius,
+            };
+        }
+
+        // 网格是否属于该连杆自身：探头末端取全部；UR 连杆只取路径上第一个子节点名以 Visual_ 开头的网格（不含下游关节）。
+        private static bool BelongsTo(Transform t, Transform link, bool endEffector)
+        {
+            if (endEffector) return true;
+            Transform child = t;
+            while (child != null && child.parent != link) child = child.parent;
+            return child != null && child.name.StartsWith("Visual_");
         }
 
         /// <summary>逐关节列出原点（ROS 坐标）与限位，供与 yaml 核对。</summary>

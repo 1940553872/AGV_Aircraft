@@ -20,6 +20,9 @@ namespace RivetSim.Core.Config
         [Tooltip("整机质量（含升降柱、机械臂与上装设备），单位 kg")]
         public float massKg = 180f;
 
+        [Tooltip("移动时整机高度上限（升降柱最低位、机械臂运输姿态），单位 m（Architecture §6.1，M4 校核 Stow 外廓用）")]
+        public float transportHeightMaxM = 1.35f;
+
         /// <summary>车体外接圆半径（绕车体中心 = 驱动轮轴中点），单位 m；路径规划的膨胀半径。</summary>
         public float BodyCircumscribedRadiusM => 0.5f * Mathf.Sqrt(bodySizeM.x * bodySizeM.x + bodySizeM.y * bodySizeM.y);
 

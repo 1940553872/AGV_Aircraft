@@ -7,6 +7,7 @@ namespace RivetSim.Simulation.Robot
     /// 安全监视（主体 S6）：升降柱与底盘的联锁规则（ADR-010）。
     /// 规则 1：升降柱只在底盘零速锁定后运动。
     /// 规则 2：底盘只在升降柱降到最低位且机械臂处于运输姿态时运动（解除零速锁定同此条件）。
+    /// 规则 3（M4，用户确认）：机械臂离开运输姿态只在底盘零速锁定后允许。
     /// <c>Check*</c> 只判定不记录；<c>TryAuthorize*</c> 判定失败时通过 SimLog 记录拒绝原因。
     /// </summary>
     public sealed class SafetyMonitor
@@ -56,6 +57,21 @@ namespace RivetSim.Simulation.Robot
             reason = "";
             return true;
         }
+
+        /// <summary>规则 3：机械臂是否允许离开运输姿态。</summary>
+        public bool CheckArmLeaveTransport(out string reason)
+        {
+            if (!_chassis.IsZeroSpeedLocked)
+            {
+                reason = "底盘未零速锁定";
+                return false;
+            }
+            reason = "";
+            return true;
+        }
+
+        /// <summary>判定规则 3；拒绝时记录 command 与原因。</summary>
+        public bool TryAuthorizeArmLeaveTransport(string command) => Authorize(CheckArmLeaveTransport(out string reason), command, reason);
 
         /// <summary>判定规则 1；拒绝时记录 command 与原因。</summary>
         public bool TryAuthorizeLiftMotion(string command) => Authorize(CheckLiftMotion(out string reason), command, reason);

@@ -108,7 +108,7 @@ namespace RivetSim.Editor.Generators
             return new GridGeometry(o + new Vector2(x0, y0) * res, res, x1 - x0, y1 - y0);
         }
 
-        /// <summary>轴对齐矩形（中心、尺寸，单位 m）的掩膜，供沙盒模拟机身使用。</summary>
+        /// <summary>轴对齐矩形（中心、尺寸，单位 m）的掩膜。</summary>
         public static bool[] RasterizeRectangle(GridGeometry g, Vector2 centerM, Vector2 sizeM)
         {
             var mask = new bool[g.CellCount];
@@ -119,7 +119,8 @@ namespace RivetSim.Editor.Generators
             return mask;
         }
 
-        private static Rect RendererBoundsXz(GameObject root)
+        /// <summary>root 下全部启用渲染器包围盒的地面投影（x = 世界 X，y = 世界 Z）。</summary>
+        public static Rect RendererBoundsXz(GameObject root)
         {
             Bounds? total = null;
             foreach (Renderer r in root.GetComponentsInChildren<Renderer>())
@@ -137,8 +138,8 @@ namespace RivetSim.Editor.Generators
             return Rect.MinMaxRect(t.min.x, t.min.z, t.max.x, t.max.z);
         }
 
-        // 保守栅格化：每个三角形只检查其包围盒内的格，用分离轴判定格子与三角形是否相交。
-        private static bool[] RasterizeMeshes(GameObject root, GridGeometry g, out int triangleCount)
+        /// <summary>保守栅格化 root 下全部可见网格的三角形地面投影：每个三角形只检查其包围盒内的格，用分离轴判定格子与三角形是否相交。</summary>
+        public static bool[] RasterizeMeshes(GameObject root, GridGeometry g, out int triangleCount)
         {
             var mask = new bool[g.CellCount];
             triangleCount = 0;

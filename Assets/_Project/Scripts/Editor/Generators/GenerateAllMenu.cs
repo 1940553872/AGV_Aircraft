@@ -10,7 +10,7 @@ namespace RivetSim.Editor.Generators
     /// </summary>
     public static class GenerateAllMenu
     {
-        /// <summary>依次执行：材质库 → Poly Haven 材质 → 地面文字 → 道具 → 模型机占位 → A320 → 探头末端 → UR5e → 占位臂与 AGV → 演示台 → 沙盒场景 → UI 字体 → 主场景。</summary>
+        /// <summary>依次执行：材质库 → Poly Haven 材质 → 地面文字 → 道具 → 模型机占位 → A320 → 机身段 → 探头末端 → UR5e → 占位臂与 AGV → 演示台 → 沙盒场景 → UI 字体 → 主场景。</summary>
         [MenuItem("RivetSim/Generate/All", priority = 0)]
         public static void GenerateAll()
         {
@@ -23,6 +23,7 @@ namespace RivetSim.Editor.Generators
             PropsGenerator.Build();
             AircraftPlaceholderGenerator.Build();
             AircraftA320Builder.Build();
+            FuselageSectionBuilder.Build();
             EndEffectorGenerator.Build();
             UR5eArmGenerator.Build();
             AgvGenerator.Build();

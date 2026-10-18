@@ -88,9 +88,9 @@ namespace RivetSim.Editor.Tools
 
             var simSettings = EnsureConfig<SimSettings>("CFG_SimSettings");
             EnsureConfig<SceneLayoutConfig>("CFG_SceneLayout");
-            EnsureConfig<AgvConfig>("CFG_Agv");
-            EnsureConfig<ArmConfig>("CFG_Arm");
-            EnsureConfig<InspectionConfig>("CFG_Inspection");
+            var agv = EnsureConfig<AgvConfig>("CFG_Agv");
+            var arm = EnsureConfig<ArmConfig>("CFG_Arm");
+            var inspection = EnsureConfig<InspectionConfig>("CFG_Inspection");
             EnsureConfig<UiThemeConfig>("CFG_UiTheme");
             EnsureConfig<NavigationConfig>("CFG_Navigation");
 
@@ -102,8 +102,44 @@ namespace RivetSim.Editor.Tools
                 EditorUtility.SetDirty(simSettings);
             }
 
+            FillMissingM4Values(agv, arm, inspection);
             AssetDatabase.SaveAssets();
             SimLog.Info(LogCategory.System, "默认配置资产检查完成。");
+        }
+
+        // M4（ADR-016）：已有资产中“待 M4 确定”的值（空的命名姿态、为 0 的闸门阈值）按配置类默认值补上，并更新 notes；
+        // 新增字段在资产加载时已取默认值，这里写回磁盘。人工调过的值不覆盖（ADR-007）。
+        private static void FillMissingM4Values(AgvConfig agv, ArmConfig arm, InspectionConfig inspection)
+        {
+            var armDefaults = ScriptableObject.CreateInstance<ArmConfig>();
+            var inspectionDefaults = ScriptableObject.CreateInstance<InspectionConfig>();
+            try
+            {
+                var poses = new System.Collections.Generic.List<NamedJointPose>(arm.namedPoses ?? new NamedJointPose[0]);
+                foreach (NamedJointPose pose in armDefaults.namedPoses)
+                {
+                    if (poses.Exists(p => p.poseName == pose.poseName)) continue;
+                    poses.Add(pose);
+                    SimLog.Info(LogCategory.System, $"CFG_Arm：补写 M4 命名姿态 {pose.poseName}");
+                }
+                arm.namedPoses = poses.ToArray();
+                if (arm.notes.Contains("命名姿态在 M4 确定")) arm.notes = armDefaults.notes;
+                if (inspection.gateAThresholdRatio <= 0f && inspection.gateBThresholdRatio <= 0f)
+                {
+                    inspection.gateAThresholdRatio = inspectionDefaults.gateAThresholdRatio;
+                    inspection.gateBThresholdRatio = inspectionDefaults.gateBThresholdRatio;
+                    SimLog.Info(LogCategory.System, "CFG_Inspection：写入 M4 闸门阈值");
+                }
+                if (inspection.notes.Contains("闸门阈值在 M4 确定")) inspection.notes = inspectionDefaults.notes;
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(armDefaults);
+                UnityEngine.Object.DestroyImmediate(inspectionDefaults);
+            }
+            EditorUtility.SetDirty(agv);
+            EditorUtility.SetDirty(arm);
+            EditorUtility.SetDirty(inspection);
         }
 
         private static T EnsureConfig<T>(string assetName) where T : ScriptableObject

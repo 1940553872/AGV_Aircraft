@@ -52,14 +52,9 @@ namespace RivetSim.Simulation.Navigation
         /// <summary>是否有运动任务在执行。</summary>
         public bool IsBusy => _active != null;
 
-        /// <summary>含机械臂的扫掠半径，单位 m。</summary>
-        public float SweptRadiusM { get; }
-
-        /// <summary>创建导航服务。</summary>
-        /// <param name="sweptRadiusM">含机械臂的扫掠半径（原地转向检查用）。</param>
-        /// <param name="frontReachM">车头最前端（含机械臂）到车体中心的距离（对接车道检查用）。</param>
+        /// <summary>创建导航服务（M4 起机械臂收在运输姿态的车体投影内，不再按含机械臂的扫掠半径做原地转向 / 对接车道检查，ADR-016）。</summary>
         public NavigationService(AgvController chassis, SafetyMonitor safety, OccupancyGridMap map, KeepOutMask keepOut,
-            AgvConfig agv, NavigationConfig nav, EventBus bus, Func<double> timeS, float sweptRadiusM, float frontReachM, int seed)
+            AgvConfig agv, NavigationConfig nav, EventBus bus, Func<double> timeS, int seed)
         {
             _chassis = chassis ?? throw new ArgumentNullException(nameof(chassis));
             _safety = safety ?? throw new ArgumentNullException(nameof(safety));
@@ -69,10 +64,9 @@ namespace RivetSim.Simulation.Navigation
             _nav = nav;
             _bus = bus;
             _timeS = timeS;
-            SweptRadiusM = sweptRadiusM;
             CostMap = new CostMap(map.Geometry);
-            _follower = new PathFollower(chassis, agv, nav, map, sweptRadiusM);
-            _docking = new DockingController(chassis, agv, nav, map, frontReachM, new System.Random(seed));
+            _follower = new PathFollower(chassis, agv, nav);
+            _docking = new DockingController(chassis, agv, nav, new System.Random(seed));
             _straight = new StraightDrive(chassis, agv);
         }
 

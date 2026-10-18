@@ -35,6 +35,12 @@ namespace RivetSim.Editor.Tools
         /// <summary>M3 导航叠加信息 UXML。</summary>
         public const string NavOverlayUxml = ProjectRoot + "/UI/UI_NavOverlay.uxml";
 
+        /// <summary>M4 检测叠加信息 UXML。</summary>
+        public const string InspectionOverlayUxml = ProjectRoot + "/UI/UI_InspectionOverlay.uxml";
+
+        /// <summary>生成网格目录。</summary>
+        public const string GeneratedModelsFolder = ProjectRoot + "/Art/Models/Generated";
+
         /// <summary>生成材质目录。</summary>
         public const string MaterialsFolder = ProjectRoot + "/Art/Materials";
 

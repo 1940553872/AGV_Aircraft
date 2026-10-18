@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
@@ -45,15 +46,29 @@ namespace RivetSim.Editor.Generators
         /// <summary>在已打开的主场景中生成检测区（由 MainSceneBuilder 调用）。</summary>
         public static void Build(Scene scene)
         {
+            Transform work = GeneratorUtility.FindRoot(scene, "Zone_Work");
+            Transform aircraft = work != null ? work.Find("Aircraft") : null;
+            if (aircraft == null)
+            {
+                SimLog.Error(LogCategory.System, "检测区生成失败：主场景中没有 Zone_Work/Aircraft。");
+                return;
+            }
+            Build(work, aircraft, null);
+        }
+
+        /// <summary>
+        /// 在 work 下生成检测区；aircraft 为模型机（或机身段，M4 沙盒）根节点。includeStation(区域, 工位) 为空时生成全部工位，
+        /// 否则只生成返回 true 的工位——铆钉计数与基准标记序号仍按全部工位推进，真值缺陷与主场景一致。
+        /// </summary>
+        public static RivetRegistry Build(Transform work, Transform aircraft, System.Func<int, int, bool> includeStation)
+        {
             var inspection = GeneratorUtility.LoadConfig<InspectionConfig>(ProjectPaths.InspectionAsset);
             var agv = GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset);
             var sim = GeneratorUtility.LoadConfig<SimSettings>(ProjectPaths.SimSettingsAsset);
-            Transform work = GeneratorUtility.FindRoot(scene, "Zone_Work");
-            Transform aircraft = work != null ? work.Find("Aircraft") : null;
-            if (inspection == null || agv == null || sim == null || aircraft == null)
+            if (inspection == null || agv == null || sim == null)
             {
-                SimLog.Error(LogCategory.System, "检测区生成失败：缺少 CFG 或主场景中的 Zone_Work/Aircraft。");
-                return;
+                SimLog.Error(LogCategory.System, "检测区生成失败：缺少 CFG。");
+                return null;
             }
 
             Transform old = work.Find(RootName);
@@ -80,6 +95,11 @@ namespace RivetSim.Editor.Generators
                 var stations = new List<InspectionStation>();
                 for (int s = 0; s < inspection.stationsPerRegion; s++, stationCounter++)
                 {
+                    if (includeStation != null && !includeStation(r, s))
+                    {
+                        rivetCounter += rivetOffsets.Length;
+                        continue;
+                    }
                     float stationZ = -inspection.regionCenterAftOfMainGearM + stationOffsets[s];
                     string stationId = RivetLayout.StationId(r, s);
                     // 停靠位姿：车头朝模型机机头方向，机械臂基座轴线到蒙皮的水平距离为 dockingStandoffM。工位节点放在停靠位姿上。
@@ -141,7 +161,8 @@ namespace RivetSim.Editor.Generators
                 if (rivet.Defect != DefectType.None) report.Append($"真值缺陷：{rivet.RivetId} {rivet.Defect}\n");
             }
             if (missed > 0) SimLog.Error(LogCategory.System, $"有 {missed} 颗铆钉未投到机身外壳，请检查 regionCenterAftOfMainGearM / rivetRowHeightM。");
-            SimLog.Info(LogCategory.System, $"检测区已生成：{regions.Count} 个区域、{stationCounter} 个工位、{registry.GetAllRivets().Count} 颗铆钉（种子 {sim.randomSeed}）\n{report}");
+            SimLog.Info(LogCategory.System, $"检测区已生成：{regions.Count} 个区域、{regions.Sum(x => x.Stations.Count)} 个工位、{registry.GetAllRivets().Count} 颗铆钉（种子 {sim.randomSeed}）\n{report}");
+            return registry;
         }
 
         // 从机身外侧沿模型机本地 X 水平射向机身，只检测 Aircraft 层（仅机身外壳带碰撞体）。

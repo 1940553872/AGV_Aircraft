@@ -1,0 +1,125 @@
+.insp-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Regular.asset");
+    color: rgb(230, 238, 247);
+}
+
+.insp-panel {
+    position: absolute;
+    right: 24px;
+    top: 24px;
+    width: 600px;
+    padding: 16px 20px;
+    background-color: rgba(21, 34, 50, 0.88);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    border-radius: 6px;
+}
+
+.insp-title {
+    font-size: 26px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin-bottom: 6px;
+}
+
+.insp-phase {
+    font-size: 19px;
+    color: rgb(255, 159, 28);
+    margin-bottom: 6px;
+    white-space: normal;
+}
+
+.insp-row {
+    font-size: 16px;
+    margin-bottom: 4px;
+    white-space: normal;
+}
+
+.insp-small {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+}
+
+.insp-section {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    margin-top: 6px;
+}
+
+.insp-force-track {
+    height: 14px;
+    margin: 2px 0 6px 0;
+    background-color: rgb(14, 22, 33);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+}
+
+.insp-force-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(61, 214, 140, 0.25);
+}
+
+.insp-force-fill {
+    position: absolute;
+    left: 0;
+    top: 3px;
+    bottom: 3px;
+    width: 0;
+    background-color: rgb(255, 159, 28);
+}
+
+.insp-force-limit {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: rgb(255, 93, 93);
+}
+
+.insp-ascan {
+    height: 220px;
+    margin: 4px 0 6px 0;
+    background-color: rgb(14, 22, 33);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+}
+
+.insp-ascan-graph {
+    flex-grow: 1;
+}
+
+.insp-verdict {
+    font-size: 18px;
+    margin-bottom: 4px;
+    white-space: normal;
+}
+
+.insp-verdict--pass {
+    color: rgb(61, 214, 140);
+}
+
+.insp-verdict--suspect {
+    color: rgb(255, 200, 87);
+}
+
+.insp-verdict--defect {
+    color: rgb(255, 93, 93);
+}
+
+.insp-verdict--invalid {
+    color: rgb(143, 163, 184);
+}
+
+.insp-note {
+    font-size: 13px;
+    color: rgb(143, 163, 184);
+    margin-top: 6px;
+    white-space: normal;
+}

@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/UI/UI_InspectionOverlay.uss" />
+    <ui:VisualElement name="insp-root" class="insp-root" picking-mode="Ignore">
+        <ui:VisualElement name="insp-panel" class="insp-panel" picking-mode="Ignore">
+            <ui:Label name="insp-title" class="insp-title" text="机械臂与超声检测" picking-mode="Ignore" />
+            <ui:Label name="insp-phase" class="insp-phase" text="—" picking-mode="Ignore" />
+            <ui:Label name="insp-progress" class="insp-row" text="工位：—" picking-mode="Ignore" />
+            <ui:Label name="insp-step" class="insp-row" text="—" picking-mode="Ignore" />
+            <ui:Label name="insp-force" class="insp-row" text="接触力 —" picking-mode="Ignore" />
+            <ui:VisualElement name="insp-force-track" class="insp-force-track" picking-mode="Ignore">
+                <ui:VisualElement name="insp-force-band" class="insp-force-band" picking-mode="Ignore" />
+                <ui:VisualElement name="insp-force-fill" class="insp-force-fill" picking-mode="Ignore" />
+                <ui:VisualElement name="insp-force-limit" class="insp-force-limit" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:Label name="insp-ascan-title" class="insp-section" text="A 扫（0～2 µs）· 灰 = 闸门 A（界面）· 红 = 闸门 B（缺陷）· 绿 = 底面闸门" picking-mode="Ignore" />
+            <ui:VisualElement name="insp-ascan" class="insp-ascan" picking-mode="Ignore" />
+            <ui:Label name="insp-verdict" class="insp-verdict" text="判读：—" picking-mode="Ignore" />
+            <ui:Label name="insp-stats" class="insp-row insp-small" text="" picking-mode="Ignore" />
+            <ui:Label name="insp-ik" class="insp-row insp-small" text="" picking-mode="Ignore" />
+            <ui:Label name="insp-note" class="insp-note" text="教学简化模型：接触力为虚拟弹簧，A 扫为合成波形，闸门为阈值判读，钉心复测 / 基准注册为视场判定 + 噪声" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

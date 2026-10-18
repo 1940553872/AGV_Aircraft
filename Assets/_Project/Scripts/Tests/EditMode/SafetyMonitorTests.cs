@@ -4,7 +4,8 @@ using RivetSim.Simulation.Robot;
 namespace RivetSim.Tests.EditMode
 {
     /// <summary>
-    /// SafetyMonitor 联锁测试：规则 1（升降柱只在底盘零速锁定后运动）、规则 2（底盘只在升降柱最低位且机械臂运输姿态时运动）。
+    /// SafetyMonitor 联锁测试：规则 1（升降柱只在底盘零速锁定后运动）、规则 2（底盘只在升降柱最低位且机械臂运输姿态时运动）、
+    /// 规则 3（机械臂离开运输姿态只在底盘零速锁定后允许，M4）。
     /// </summary>
     public sealed class SafetyMonitorTests
     {
@@ -72,6 +73,15 @@ namespace RivetSim.Tests.EditMode
             _arm.IsInTransportPose = false;
             Assert.That(_monitor.CheckChassisMotion(out string reason), Is.False);
             Assert.That(reason, Does.Contain("运输姿态"));
+        }
+
+        [Test]
+        public void ArmLeaveTransport_RequiresZeroSpeedLock()
+        {
+            Assert.That(_monitor.CheckArmLeaveTransport(out string reason), Is.False);
+            Assert.That(reason, Does.Contain("零速锁定"));
+            _chassis.IsZeroSpeedLocked = true;
+            Assert.That(_monitor.CheckArmLeaveTransport(out _), Is.True);
         }
 
         [Test]

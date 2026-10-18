@@ -11,7 +11,7 @@ namespace RivetSim.Core.Config
     {
         [TextArea(2, 6)]
         [Tooltip("参数来源与修改说明")]
-        public string notes = "v1 预估值，见 Docs/Architecture.md §4、§6.1。闸门阈值在 M4 确定。M2 第三部分 3B（2026-10-18）经用户确认：工位间距 1.2 → 1.5 m，新增区域位置、铆钉排高度、停靠距离与 AprilTag 标记参数。";
+        public string notes = "v1 预估值，见 Docs/Architecture.md §4、§6.1。M4（2026-10-18）经用户确认：虚拟弹簧刚度、耦合质量、A 扫合成、缺陷回波模型与闸门参数（ADR-016）。M2 第三部分 3B（2026-10-18）经用户确认：工位间距 1.2 → 1.5 m，新增区域位置、铆钉排高度、停靠距离与 AprilTag 标记参数。";
 
         [Header("区域 / 工位 / 铆钉排布")]
         [Tooltip("检测区域数（机身左、右侧各 1 个）")]
@@ -97,6 +97,19 @@ namespace RivetSim.Core.Config
         [Tooltip("接触力超限阈值，单位 N")]
         public float contactForceLimitN = 20f;
 
+        [Tooltip("浮动夹持弹簧刚度，单位 N/m（5 N/mm：10 N 时压缩 2 mm）")]
+        public float floatingSpringStiffnessNpm = 5000f;
+
+        [Tooltip("浮动行程用尽后的硬限位刚度，单位 N/m")]
+        public float hardStopStiffnessNpm = 50000f;
+
+        [Tooltip("耦合质量降为 0 的接触力，单位 N（接触力 ≥ 允许下限时耦合质量为 1，其间线性）")]
+        public float couplingZeroForceN = 2f;
+
+        [Tooltip("耦合质量低于此值判为无效")]
+        [Range(0f, 1f)]
+        public float couplingInvalidThreshold = 0.5f;
+
         [Header("采集与 A 扫（教学简化模型）")]
         [Tooltip("单钉采集时长，单位 s")]
         public float acquisitionDurationS = 0.5f;
@@ -107,13 +120,63 @@ namespace RivetSim.Core.Config
         [Tooltip("A 扫显示时间窗，单位 µs")]
         public float aScanWindowUs = 2f;
 
-        [Tooltip("闸门 A 阈值（满屏高度比例 0～1，M4 确定）")]
-        [Range(0f, 1f)]
-        public float gateAThresholdRatio;
+        [Tooltip("界面回波（延迟块 / 蒙皮界面）在显示时间窗内的时刻，单位 µs")]
+        public float interfaceEchoTimeUs = 0.2f;
 
-        [Tooltip("闸门 B 阈值（满屏高度比例 0～1，M4 确定）")]
+        [Tooltip("脉冲相对带宽（−6 dB）")]
+        public float pulseFractionalBandwidth = 0.6f;
+
+        [Tooltip("界面回波幅值（满屏高度比例）")]
+        public float interfaceEchoAmplitude = 0.9f;
+
+        [Tooltip("一次底面回波幅值（满屏高度比例）")]
+        public float backwallEchoAmplitude = 0.8f;
+
+        [Tooltip("多次底面回波每次的幅值比例")]
+        public float multipleEchoDecay = 0.55f;
+
+        [Tooltip("噪声 σ（满屏高度比例）")]
+        public float noiseSigmaFs = 0.02f;
+
+        [Header("缺陷回波模型（教学简化模型，M4）")]
+        [Tooltip("腐蚀减薄：剩余厚度比例")]
+        public float thinningRemainingRatio = 0.7f;
+
+        [Tooltip("孔边裂纹：缺陷回波深度，单位 mm")]
+        public float crackDepthMm = 1.0f;
+
+        [Tooltip("孔边裂纹：缺陷回波幅值（满屏高度比例）")]
+        public float crackEchoAmplitude = 0.45f;
+
+        [Tooltip("孔边裂纹：底面回波幅值系数")]
+        public float crackBackwallFactor = 0.6f;
+
+        [Tooltip("铆钉松动：底面回波幅值系数")]
+        public float looseBackwallFactor = 0.45f;
+
+        [Tooltip("铆钉松动：多次底面回波每次的幅值比例")]
+        public float looseMultipleEchoDecay = 0.3f;
+
+        [Header("闸门判读（教学简化模型，M4）")]
+        [Tooltip("闸门 A（界面 / 耦合）阈值：界面回波低于此值判为无效（满屏高度比例）")]
         [Range(0f, 1f)]
-        public float gateBThresholdRatio;
+        public float gateAThresholdRatio = 0.30f;
+
+        [Tooltip("闸门 B（缺陷，界面与底面之间）阈值：出现不低于此值的回波判为缺陷（满屏高度比例）")]
+        [Range(0f, 1f)]
+        public float gateBThresholdRatio = 0.25f;
+
+        [Tooltip("闸门 B 起点：界面回波之后的盲区，单位 µs")]
+        public float flawGateDeadZoneUs = 0.15f;
+
+        [Tooltip("底面闸门半宽：名义声时的比例")]
+        public float backwallGateHalfWidthRatio = 0.10f;
+
+        [Tooltip("底面回波低于此值判为缺陷（满屏高度比例）")]
+        public float backwallDefectRatio = 0.40f;
+
+        [Tooltip("底面回波低于此值判为疑似（满屏高度比例）")]
+        public float backwallSuspectRatio = 0.55f;
 
         [Header("真值缺陷")]
         [Tooltip("真值缺陷比例（类型：孔边裂纹、腐蚀减薄、铆钉松动）")]

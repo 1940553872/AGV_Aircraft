@@ -24,6 +24,7 @@ MonoBehaviour:
     m\uFF0C\u6559\u5B66\u7B80\u5316\u6A21\u578B\uFF09\u3002"
   bodySizeM: {x: 1.2, y: 0.8, z: 0.45}
   massKg: 180
+  transportHeightMaxM: 1.35
   wheelTrackM: 0.66
   driveWheelDiameterM: 0.2
   casterCount: 2

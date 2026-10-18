@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M4 机械臂与超声检测 —— 未开始（M3 AGV 建图、规划与移动已于 2026-10-18 验收）
+M4 机械臂与超声检测 —— 已实现，待用户验收（计划与第 4 节各项 2026-10-18 经用户确认；实现 2026-10-19）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -29,43 +29,35 @@ M4 机械臂与超声检测 —— 未开始（M3 AGV 建图、规划与移动�
 | M3 AGV 建图、规划与移动 | 2026-10-18 | 用户核对截图 16～21 与数值（建图 182.75 m / 316.3 s；充电位 → R1-S1 导航 26.23 m / 56.4 s；停靠误差 纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.04°，合格；联锁拒绝正确）；82 个 EditMode 测试通过；提交 e63ee3c |
 
 ## 最近一次会话
-- 日期：2026-10-18
-- 完成：M3 AGV 建图、规划与移动（先 Sandbox_Robot，后接入 Main），已验收（提交 e63ee3c，直接提交在 main）。计划与 4 项决定经用户确认（机轮碰撞体、机械臂零位前伸的处理、AppBootstrap 在 M3 建立、新参数取值），见 ADR-015
-  - Core：新增 `NavigationConfig`（CFG_Navigation）；CFG_Agv 新增最大角加速度 120 °/s² 与车头对接相机（离地 0.40 m、90° × 60°、0.3～4.0 m）、`BodyCircumscribedRadiusM`
-  - Simulation/Robot：`AgvController` 补角加速度限幅、急停、真值位姿、驱动轮转动动画（未重写）；新增 `DiffDriveKinematics`（圆弧弦长积分）、`AgvFootprint`（含机械臂扫掠半径 1.069 m、车头前伸 1.034 m）
-  - Simulation/Navigation（新）：GridGeometry、OccupancyGridMap、OccupancyState、Lidar2D、LidarScan、MappingRoutine、VirtualKeepOutZone、KeepOutMask、KeepOutChannel、CostMap、GridAStar、PathSmoother、PlannedPath、PurePursuitTracker、PathFollower、MotionProfile、IMotionTask、MotionStatus、StraightDrive、MarkerVisibility、DockingController、DockingError、DockingResult、NavigationResult、NavigationService，以及 4 个事件
-  - Simulation/World：`RegionMarker` 记录标记中心本地位置（立杆标记板的标记在杆顶）
-  - Presentation：`AppBootstrap`（主场景入口，充电位运行时生成 AGV）、`NavigationRuntime`（固定子步 0.01 s 推进）、`NavigationDemoRoutine`、`SandboxNavDemo`；Input：`AgvTeleopInput`、`VisualizationToggleInput`；Visualization：`OccupancyGridOverlay`、`KeepOutOverlay`、`LidarPointCloudView`、`PathView`、`NavOverlayView`、`GroundOverlayMesh`；UI：`UI_NavOverlay.uxml/.uss`；asmdef 加 Unity.InputSystem
-  - Editor：新增 `KeepOutZoneGenerator`（`RivetSim/Generate/Virtual Keep-Out`，主场景生成时自动调用）、`NavigationSceneSetup`；`AircraftA320Builder` 给 4 个起落架轮胎加 MeshCollider；`AgvGenerator` 车轮转动节点 + 轮毂标记、对接相机、Lidar2D；`SandboxSceneBuilder` 重建 Sandbox_Robot（20 × 14 m、矮围墙、1.8 m 窄通道、模拟机身禁行区、测试工位 SB-S1；M2 升降柱演示保留但停用）；`MainSceneBuilder` 删除 AGV_Preview、加 AppBootstrap 与可视化；`MaterialLibraryBuilder` 新增 M_Vis_*（URP Unlit）；`GenerateAll` 先补建 CFG；`ScreenshotTool` 布局截图临时实例化 PF_AGV
-  - 虚拟禁行区：72.8 万个三角形保守栅格化到 232 × 254 格，投影内 12,499 格（125.0 m²）；4 条接近通道，开口 2.40 × 3.20 m
-  - 结果（Main，4× 倍速，种子 42）：
-    | 项目 | 路径长度 | 实际里程 | 用时（仿真） |
-    |---|---|---|---|
-    | 建图（驶离充电位 1.50 m + 巡游路线 181.25 m） | 182.75 m | 181.05 m | 316.3 s（实际约 79 s），已观测 279,549 格（99.3%） |
-    | 导航 充电位 → R1-S1 预停靠位姿（驶离 1.50 m + A* 24.73 m） | 26.23 m | 26.05 m | 56.4 s |
-    | 对接 R1-S1（识别停靠标记 ID 0） | 1.50 m | 1.499 m | 14.0 s |
-    | 倒车退出 | 0.60 m | 0.599 m | 4.3 s |
-    - 停靠误差：纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.04°（容差 ±10 mm / ±0.5°，合格）
-    - 联锁：升降柱升到安装面 1.850 m 时解锁被拒绝、倒车被拒绝；降到最低后解锁，倒车退出完成
-    - Sandbox：建图 55.00 m / 93.8 s，导航 12.40 m / 29.7 s，SB-S1 停靠误差 纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.03°
-  - Generate All 连续两次：主场景物体总数均为 977（删除 AGV_Preview 后）
-- 修改文件：
-  - 代码：Scripts/Core/Config/{NavigationConfig（新）, AgvConfig}.cs；Scripts/Simulation/Robot/{AgvController, DiffDriveKinematics（新）, AgvFootprint（新）}.cs；Scripts/Simulation/Navigation/*.cs（30 个新文件）；Scripts/Simulation/World/RegionMarker.cs；Scripts/Presentation/App/{AppBootstrap, NavigationRuntime, NavigationDemoRoutine, SandboxNavDemo}.cs（新）、Input/*.cs（新）、Visualization/*.cs（新）、RivetSim.Presentation.asmdef；Scripts/Editor/Generators/{KeepOutZoneGenerator, NavigationSceneSetup}.cs（新）、{AgvGenerator, AircraftA320Builder, MainSceneBuilder, SandboxSceneBuilder, MaterialLibraryBuilder, RivetZoneGenerator, GenerateAllMenu}.cs；Scripts/Editor/Tools/{ProjectPaths, ProjectSetupMenu, ScreenshotTool}.cs；Scripts/Tests/EditMode/{GridAStarTests, CostMapTests, DiffDriveKinematicsTests, NavigationGeometryTests}.cs（新）
-  - 资产：Config/CFG_Navigation.asset（新）、CFG_Agv.asset；UI/UI_NavOverlay.uxml/.uss（新）；Art/Materials/M_Vis_*（新）；Prefabs（PF_AGV、PF_Aircraft_A320_Model 等重新生成）；Scenes/Main_TeachingHall.unity、Scenes/Sandbox/*
-  - 文档：Docs/Architecture.md §3.2 / §3.3 / §4 / §6 / §6.1、Docs/DECISIONS.md（ADR-015）、Docs/Reference/A320_Hierarchy.md、Docs/PROGRESS.md、Docs/Screenshots/M3/16～21
-- 会话结束自检（2026-10-18，验收后复核）：unity status = ready（端口 7800）；编译 0 错误；EditMode 82/82 通过；Main_TeachingHall 已保存、无未保存改动，已退出 Play 模式；工作区干净。Console 中保留的 4 条警告来自本会话演示（3 条联锁演示预期拒绝 + 1 条中途退出 Play 时升降柱运动被取消），非编译警告
-- 实现期自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 82/82 通过（新增 23 个）；Main_TeachingHall Play 模式 0 错误，3 条警告均为联锁演示预期的拒绝；Sandbox_Robot Play 模式 0 错误 0 警告；场景无未保存改动，已退出 Play 模式
-- 截图（Docs/Screenshots/M3/）：16 沙盒全流程结束（地图、禁行区、通道、停靠误差标注）；17 主场景建图进行中（53%，北侧机身阴影区尚未扫到）；18 建图完成后俯视；18b 同一时刻临时隐藏 A320 渲染器，显示禁行区全貌与 4 条接近通道；19 充电位 → R1-S1 导航中（青色路径、橙色目标箭头）；20 R1-S1 停靠后联锁演示（升降柱升起、倒车被拒绝、停靠误差标注）；21 倒车退出后
+- 日期：2026-10-18～2026-10-19
+- 完成：M4 机械臂与超声检测（先 Sandbox_Robot，后接入 Main），待验收。计划与第 4 节 8 项按建议执行（Stow 校核方法、膨胀半径保持 0.721 m、联锁规则 3、Observe 镜像、沙盒机身段 + 停用 M3 导航演示、接入 Main、新参数取值、占位类归档），见 ADR-016。实现中三处偏离计划（均为满足已确认的校核要求，ADR-016 第 1 条）：
+  1. Stow 改为 (0, −180, −120, 45, −90, 0)°（计划值前臂离基座仅 1.8 mm，自干涉不合格）；
+  2. 新增直立过渡姿态 Ready (0, −90, 90, −90, −90, 0)°，Stow ↔ Observe 都经它过渡，镜像取基座角 −180°（左侧工位直接插值时末端离机身仅 1～2 mm）；
+  3. 间隙检查加查本车车体（同 30 mm 要求）。
+  - Core：`ArmConfig` 新增命名姿态 Stow / Ready / Observe、关节运动、逆解、检测动作、间隙、简化视觉参数；`InspectionConfig` 新增虚拟弹簧、耦合质量、A 扫合成、缺陷回波模型、闸门参数（闸门 A / B 由 0 改为 0.30 / 0.25）；`AgvConfig` 新增 `transportHeightMaxM`（§6.1 的 1.35 m）；`NamedJointPose` 加构造函数
+  - Simulation/Robot：`ArmKinematics`、`ArmIkSolver`、`IkSettings`、`IkResult`、`IkStatistics`、`TrapezoidProfile`、`JointTrajectory`、`ArmController`（实现 IArmPoseState）、`ArmClearance`、`ArmLinkSamples`、`ClearanceResult`、`ContactModel`、`ContactForceExceededEvent`、`ProbeEndEffector`、`ArmMotionResult`、`AgvEnvelope`（新）；`ArmRig`（TCP / 相机 / 采样点）、`ArmJoint`（零位旋转）、`SafetyMonitor`（规则 3）、`AgvFootprint`（外廓量测）修改；`PlaceholderArmPoseState` 归档到 Assets/_Archive/Scripts
+  - Simulation/Inspection（新）：`WristVision`、`StationRegistration`、`AScanSynthesizer`、`AScanWaveform`、`GateJudge`、`GateResult`、`InspectionVerdict`、`InspectionRecord`、`InspectionRecordStore`、`RivetInspectionService`、`RivetInspectedEvent`、`GaussianNoise`；`World/Rivet` 加运行时检测结果
+  - Simulation/Navigation：`NavigationService` / `PathFollower` / `DockingController` 删除含机械臂扫掠半径与车头前伸的检查
+  - Presentation：`NavigationRuntime` 改名 `RobotRuntime`（加机械臂、接触力、检测服务与运输姿态校核）；新增 `StationInspectionRoutine`、`SandboxInspectionDemo`、`InspectionSceneViews`；`AppBootstrap` / `NavigationDemoRoutine`（停靠后单工位检测 + 联锁演示 2）/ `SandboxNavDemo` / `SandboxLiftDemo` 适配；Visualization：`RivetResultRingView`、`WristCameraFrustumView`、`ProbeContactView`；UI（新目录）：`InspectionOverlayView`、`AScanGraphElement`、`UI_InspectionOverlay.uxml/.uss`
+  - Editor：新增 `FuselageSectionBuilder`（`RivetSim/Generate/Fuselage Section`）、`StowEnvelopeCheck`（`RivetSim/Debug/Check Stow Envelope`）；`ReachabilityChecker` 改用运行时逆解并检查连杆间隙；`ScreenshotTool` 新增 `Capture Stow Envelope Screenshots`；`UR5eArmGenerator`（ArmController、连杆采样点）、`EndEffectorGenerator`（ProbeEndEffector）、`AgvGenerator`（预制体默认 Stow）、`RivetZoneGenerator`（工位过滤）、`KeepOutZoneGenerator`（公开栅格化）、`SandboxSceneBuilder`（机身段沙盒）、`MainSceneBuilder` / `NavigationSceneSetup`（检测可视化）、`MaterialLibraryBuilder`（M_Vis_Result_* / M_Vis_CameraFrustum）、`ProjectSetupMenu`（补写 M4 配置值）、`GenerateAllMenu`
+  - Tests：新增 `ArmIkSolverTests`、`ArmMotionProfileTests`、`InspectionModelTests`、`StowEnvelopeTests`，`SafetyMonitorTests` 加规则 3
+- 结果：
+  - 运输姿态 Stow（网格顶点，升降柱最低位）：机械臂横向 −0.210～+0.076 m、纵向 −0.335～+0.225 m（在 1.20 × 0.80 m 车体投影内），整机最高点 1.034 m（≤ 1.35 m），非相邻连杆最小 26.9 mm；整机扫掠半径 0.729 m（零位 1.069 m）、车头前伸 0.652 m（零位 1.034 m）。报告 Docs/Reference/M4_StowEnvelope.md
+  - 可达性与连杆间隙（Main 4 个工位，伸出 1.050 m）：对中 / 接触位姿 48/48 可达、钉心 48/48 可见、基准标记 4/4 可见；逆解最大位置误差 0.198 mm、姿态误差 0.133°；连杆到机身最小 150 mm、末端最小 75 mm；全部路径合格。随机位姿逆解 500 个：498 收敛（99.6%），位置误差平均 0.133 mm / 最大 0.200 mm，最大姿态误差 0.497°。报告 Docs/Reference/M4_ArmReach.md
+  - 沙盒 R1-S1（2× 倍速，种子 42）：12 颗，平均单钉节拍 4.71 s（T4～T6；第 1 颗含进近 7.05 s，其余约 4.5 s）；工位合计 99.0 s（升柱 13.5 s、T3 注册 7.4 s、12 颗 56.5 s、收臂与降柱 21.5 s）；真值缺陷 3 颗（07 减薄、10 裂纹、12 松动）全部检出，漏检 0、误报 0、疑似 0、无效 0；接触力 10.05～10.90 N；最大对中误差 0.31 mm；基准注册误差 0.61 mm；逆解 39/39 收敛，最大 0.197 mm
+  - Main（4× 倍速）：建图、导航、对接与 M3 一致（导航 26.05 m / 56.4 s；停靠误差 纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.04°，合格）；R1-S1 检测 检出 3、误报 0，平均节拍 4.74 s，逆解 39/39；联锁 1（升降柱升起时解锁 / 倒车被拒绝）与联锁 2（机械臂不在运输姿态时解锁被拒绝）正确；倒车退出 0.60 m / 4.3 s
+  - Generate All 连续两次：主场景物体数均为 981（M3 977 + 4 个检测可视化节点）
+- 自检（2026-10-19）：unity status = ready；编译 0 错误 0 警告；EditMode 104/104 通过（新增 22 个）；Sandbox_Robot 与 Main_TeachingHall Play 模式 0 错误 0 警告（Main 的 4 条警告均为预期的联锁演示：联锁 1 的解锁拒绝、倒车拒绝及其导航未完成记录，联锁 2 的解锁拒绝）；场景无未保存改动，已退出 Play 模式
+- 截图（Docs/Screenshots/M4/）：22a / 22b Stow 外廓侧视 / 俯视（车体投影框、1.35 m 高度框、Stow 最高点线、机械臂投影框）；23 沙盒总览（升降柱升起，探头贴在第 5 颗）；24 T3 基准注册（Observe 后对准基准标记 ID 4，视场锥）；25 T5 接触近景（接触力 10.10 N、压缩 2.02 mm，A 扫为 R1-S1-02 合格波形）；26 一个工位 12 颗完成后的结果环（07 / 10 / 12 红，其余绿）；27b / 27c / 27d A 扫：减薄（闸门 B 回波深 1.42 mm）/ 孔边裂纹（深 1.01 mm）/ 松动（底面回波 34%），合格波形见 25；28 Main R1-S1 检测中（第 8 颗）；29 Main 倒车退出后（Stow、升降柱最低）
 - 遗留问题：
-  - UR5e 仍为零位（手臂伸出车头前 0.43 m），原地转向 / 对接车道按含机械臂半径检查激光层；M4 定义 Stow 后复核并去掉该检查
-  - Editor 失去焦点时 Play 模式不推进（Player 设置 Run In Background 为关）；本次用 eval 在 Play 中临时设 `Application.runInBackground = true`，未改项目设置
-  - `capture_game_view` 的 save_path 只能写在 Assets 下；截图改为取内联图片自行解码保存，避免在 Assets 里产生文件
-  - 对接噪声取自固定种子，沙盒与主场景的停靠误差序列相同（可复现，非巧合）
-  - 演示中途退出 Play 时，正在运动的升降柱会记录一条“运动被取消”警告（预期行为）
+  - 判读包络约为脉冲峰值的 90%（一次底面波 0.8 显示为 71%～74%），阈值按满屏高度比例直接比较；如需显示值与合成幅值一致，可在 M6 改用解析包络（教学展示问题，不影响判读）
+  - 接触力停止值 10.0～10.9 N：逐子步判定，个别颗受直线跟踪残余误差影响超出一步（仍在 8～12 N 内）
+  - 机身段为整圈三角形截取（只保留三个顶点都在范围内的三角形），两端截面为锯齿状；仅用于沙盒
+  - 沙盒左上角仍显示 M3 导航叠加面板（只用到阶段与时钟，建图 / 导航为“未开始”）
+  - 力超限路径只在 EditMode 测试中验证（`ContactModel.SurfaceOffsetFaultM` 故障注入），演示中由 M5 故障注入按钮触发
+  - Editor 失去焦点时 Play 不推进：Play 中经 eval 临时设 `Application.runInBackground = true`（未改项目设置）；截图通过 EditorApplication.update 钩子在指定时刻暂停后取 capture_game_view 内联图片
   - 场景整体偏暗（M7 补光）；A320 三角面约 73 万（M7 复核帧率）
-  - 在 PowerShell 里给 `unity command eval --code` 传含双引号的代码会被剥掉引号；改用 Bash 调用 CLI，或用 `eval_file`
-- 本会话流程说明：M3 计划的第一次回复漏掉了正文（只显示了确认框），已补发并经用户重新确认；用户确认 M3 实现后未单独走“截图确认 → 再提交”的步骤，代码在验收前已提交推送，验收后另行提交本交接记录
-- 下次第一步：执行 PromptTemplates.md 的 M4（机械臂与超声检测，先在 Sandbox_Robot 开发），先回复计划，确认后再实现；启动提示词见会话末尾给出的版本（含 M3 遗留的 Stow 外廓、IArmPoseState 替换、连杆干涉检查、沙盒场景方案等补充）
+- 下次第一步：用户验收 M4（截图 22～29 与上面数值）；通过后执行 PromptTemplates.md 的 M5（SOP 流程编排）
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:1.5、厂房 64 × 44 × 12 m、AGV 1.20 × 0.80 × 0.45 m 加升降柱（见 ADR-010）、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -90,6 +82,9 @@ M4 机械臂与超声检测 —— 未开始（M3 AGV 建图、规划与移动�
 - [ ] M5：启动时用 `TaskMatrixData.GetExecutorKeys()` 与 `ExecutorRegistry` 核对缺失的执行器键名（目前 JSON 中共 37 个）
 - [x] M1：确定 `CFG_SceneLayout` 中尺寸向量（长 × 宽 × 高）与世界坐标轴的对应关系（ADR-008）
 - [x] M3 / M5：AGV 改为由 AppBootstrap 运行时生成，删除主场景中的 AGV_Preview（ADR-009；M3 完成，见 ADR-015）
-- [ ] M4：定义运输姿态 Stow 后复核整机外廓，去掉导航中“含机械臂扫掠半径”的原地转向 / 对接车道检查（ADR-015）
+- [x] M4：定义运输姿态 Stow 后复核整机外廓，去掉导航中“含机械臂扫掠半径”的原地转向 / 对接车道检查（2026-10-19，ADR-016）
 - [ ] M5：返回充电位复用 M3 的“导航到充电位前方 1.5 m + 直线倒车”
+- [ ] M5：T3～T6 执行器直接包 `RivetInspectionService` 的方法；ConditionBus 订阅 `ContactForceExceededEvent`（力超限）与判读为“无效”的记录（采集无效）；`InspectionRecordStore` 导出 CSV
+- [ ] M5：“每 10 颗基准复测”复用 `RivetInspectionService.RegisterStationAsync`
+- [ ] M6：演示屏 A 扫复用 `AScanGraphElement`；沙盒去掉 M3 导航叠加面板，由 HUD 取代
 - [ ] M7：演示区补光 / 主光方向调整，提升演示台近景亮度

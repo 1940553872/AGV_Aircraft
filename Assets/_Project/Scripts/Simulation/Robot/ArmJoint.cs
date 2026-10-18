@@ -48,6 +48,9 @@ namespace RivetSim.Simulation.Robot
         /// <summary>当前关节角，单位 °。</summary>
         public float AngleDeg => angleDeg;
 
+        /// <summary>零位本地旋转（URDF 关节原点）。</summary>
+        public Quaternion ZeroLocalRotation => zeroLocalRotation;
+
         /// <summary>编辑器生成器写入关节参数（零位取当前本地旋转）。</summary>
         public void Configure(string name, Vector3 axis, float min, float max, float maxSpeed)
         {

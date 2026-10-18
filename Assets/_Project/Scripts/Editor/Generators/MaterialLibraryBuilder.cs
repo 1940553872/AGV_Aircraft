@@ -90,6 +90,21 @@ namespace RivetSim.Editor.Generators
         public const string VisLidarPoint = "M_Vis_LidarPoint";
 
         // 警示线条纹周期等于线宽，使条纹呈 45°。
+        /// <summary>铆钉结果环：合格（URP Unlit，M4）。</summary>
+        public const string VisResultPass = "M_Vis_Result_Pass";
+
+        /// <summary>铆钉结果环：疑似（URP Unlit，M4）。</summary>
+        public const string VisResultSuspect = "M_Vis_Result_Suspect";
+
+        /// <summary>铆钉结果环：缺陷（URP Unlit，M4）。</summary>
+        public const string VisResultDefect = "M_Vis_Result_Defect";
+
+        /// <summary>铆钉结果环：无效（URP Unlit，M4）。</summary>
+        public const string VisResultInvalid = "M_Vis_Result_Invalid";
+
+        /// <summary>腕部相机视场锥（URP Unlit，M4）。</summary>
+        public const string VisCameraFrustum = "M_Vis_CameraFrustum";
+
         private const string HazardTextureName = "T_HazardStripe";
         private const int HazardTexturePx = 64;
 
@@ -262,6 +277,11 @@ namespace RivetSim.Editor.Generators
             ApplyUnlit(EnsureUnlitMaterial(VisPath), Hex(0x2EC4E6), false);
             ApplyUnlit(EnsureUnlitMaterial(VisGoal), Hex(0xFF9F1C), false);
             ApplyUnlit(EnsureUnlitMaterial(VisLidarPoint), Hex(0xFF5D5D), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisResultPass), Hex(0x3DD68C), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisResultSuspect), Hex(0xFFC857), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisResultDefect), Hex(0xFF5D5D), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisResultInvalid), Hex(0x8FA3B8), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisCameraFrustum), Hex(0x2EC4E6), false);
         }
 
         /// <summary>读取或创建 URP/Unlit 材质。</summary>

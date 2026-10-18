@@ -18,8 +18,6 @@ namespace RivetSim.Simulation.Navigation
         private readonly AgvController _chassis;
         private readonly AgvConfig _agv;
         private readonly NavigationConfig _nav;
-        private readonly OccupancyGridMap _map;
-        private readonly float _frontReachM;
         private readonly System.Random _random;
 
         private Phase _phase;
@@ -39,18 +37,16 @@ namespace RivetSim.Simulation.Navigation
         /// <summary>当前的目标位姿估计。</summary>
         public PlanarPose Estimate => _estimate;
 
-        /// <summary>创建对接控制器。frontReachM 为车头最前端（含机械臂）到车体中心的距离。</summary>
-        public DockingController(AgvController chassis, AgvConfig agv, NavigationConfig nav, OccupancyGridMap map, float frontReachM, System.Random random)
+        /// <summary>创建对接控制器（M4 起不再检查含机械臂前伸的对接车道，ADR-016）。</summary>
+        public DockingController(AgvController chassis, AgvConfig agv, NavigationConfig nav, System.Random random)
         {
             _chassis = chassis;
             _agv = agv;
             _nav = nav;
-            _map = map;
-            _frontReachM = frontReachM;
             _random = random;
         }
 
-        /// <summary>开始对接；起点看不到标记或车道上有障碍物时返回 false（FailureReason 给出原因）。</summary>
+        /// <summary>开始对接；起点看不到标记时返回 false（FailureReason 给出原因）。</summary>
         public bool Start(PlanarPose dockingPose, RegionMarker marker)
         {
             _truePose = dockingPose;
@@ -68,14 +64,6 @@ namespace RivetSim.Simulation.Navigation
                 return false;
             }
 
-            PlanarPose pose = _chassis.Pose;
-            float toTarget = Vector2.Dot(_truePose.positionM - pose.positionM, DiffDriveKinematics.Heading(_truePose.yawDeg));
-            float halfWidth = 0.5f * _agv.bodySizeM.y;
-            if (_map != null && _map.AnyOccupiedInRect(pose.positionM, _truePose.yawDeg, halfWidth, 0f, toTarget + _frontReachM))
-            {
-                Fail("对接车道（含机械臂前伸）上有障碍物");
-                return false;
-            }
             _phase = Phase.Approach;
             return true;
         }

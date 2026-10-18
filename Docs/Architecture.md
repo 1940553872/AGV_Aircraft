@@ -72,12 +72,13 @@ D:\Unity_Project\AGV_Aircraft\
 **World**：`InspectionRegion`（区域：左 / 右侧与若干工位）、`InspectionStation`（工位：AGV 停靠位姿、铆钉排、停靠标记板与蒙皮基准标记）、`Rivet`（ID、位置、法向、真值缺陷 `DefectType`，检测结果在 M4 写入）、`RivetRegistry`（登记表，挂在 Zone_Work/InspectionRegions）、`RegionMarker`（AprilTag：ID、边长、用途 `MarkerRole`）、`RivetLayout` / `DefectAssigner`（排布与缺陷分配的纯计算）、`ChargingDock`。检测区由 `RivetSim/Generate/Rivet Zones` 生成（M2 第三部分 3B）。
 
 **Robot**
-- `AgvController`：差速运动学（`DiffDriveKinematics`，按圆弧弦长精确积分），运动学刚体（`MovePosition`），线速度 / 角速度及其加速度限幅；提供 `SetVelocity`、`Stop`、`EmergencyStop`、`ZeroSpeedLock`、`ReleaseZeroSpeedLock`、`IsZeroSpeedLocked`、真值位姿 `Pose`、驱动轮转动动画（M3）。`AgvFootprint` 由渲染器包围盒量得含机械臂的扫掠半径与车头前伸量。
+- `AgvController`：差速运动学（`DiffDriveKinematics`，按圆弧弦长精确积分），运动学刚体（`MovePosition`），线速度 / 角速度及其加速度限幅；提供 `SetVelocity`、`Stop`、`EmergencyStop`、`ZeroSpeedLock`、`ReleaseZeroSpeedLock`、`IsZeroSpeedLocked`、真值位姿 `Pose`、驱动轮转动动画（M3）。`AgvFootprint` 量测整机与机械臂外廓（`AgvEnvelope`：车体投影、最高点、扫掠半径），M4 起用于运输姿态校核。
 - `LiftColumnController`（升降柱，属主体 S3）：`LiftMotionProfile` 匀速 + 起停缓冲（教学简化模型），`MoveToHeightAsync(安装面高度)`、`LowerToBottomAsync`，到位发布 `LiftArrivedEvent`；`LiftHeightPlanner` 按工位铆钉平均高度 − 舒适偏移计算目标并限制在行程内。
-- `SafetyMonitor`（主体 S6）：联锁规则 1 升降柱只在底盘零速锁定后运动；规则 2 底盘行驶或解锁只在升降柱最低位且机械臂运输姿态时允许；违反时拒绝并经 `SimLog`（Safety）记录。依赖只读接口 `IChassisState` / `ILiftState` / `IArmPoseState`（M4 前由 `PlaceholderArmPoseState` 提供）。
+- `SafetyMonitor`（主体 S6）：联锁规则 1 升降柱只在底盘零速锁定后运动；规则 2 底盘行驶或解锁只在升降柱最低位且机械臂运输姿态时允许；规则 3（M4）机械臂离开运输姿态只在底盘零速锁定后允许；违反时拒绝并经 `SimLog`（Safety）记录。依赖只读接口 `IChassisState` / `ILiftState` / `IArmPoseState`（M4 起由 `ArmController` 实现，占位实现已归档）。
 - 控制器不自行读取 `Time`：启动入口持有 `SimClock`，每帧以仿真步长调用各控制器的 `Tick`。
-- `ArmRig`：由 UR5e 的 `default_kinematics.yaml` 建立 6 关节运动学链；`ArmIkSolver` 为阻尼最小二乘数值逆解；`ArmController` 提供 `MoveToNamedPoseAsync`（Stow / Observe）、`MoveToPoseAsync`（关节插值，末段走直线）、`ApproachAlongNormalAsync`、`RetreatAsync`。
-- `ProbeEndEffector`：TCP 坐标系、`ContactModel`（虚拟弹簧 F = k·δ，教学简化模型）。
+- `ArmRig`：由 UR5e 的 `default_kinematics.yaml` 建立 6 关节运动学链，并记录 TCP、腕部相机与各连杆表面采样点（`ArmLinkSamples`）。`ArmKinematics` 为不依赖 Transform 的正运动学；`ArmIkSolver` 为阻尼最小二乘数值逆解（几何雅可比、关节限位、多初值重试，M4）。
+- `ArmController`（M4，ADR-016）：命名姿态 Stow / Ready / Observe（`MoveToNamedPoseAsync`，Observe 面向右侧，左侧工位基座角转半圈）、`MoveToJointsAsync`（关节同步梯形曲线 `JointTrajectory`）、`MoveToPoseAsync`（关节插值，末段走直线）、`MoveLinearAsync`、`ApproachAlongNormalAsync`（接触力达到目标即停，超限发布 `ContactForceExceededEvent`）、`RetreatAsync`、`DwellAsync`；在 `Tick` 中按仿真子步推进。每个目标解与关节插值路径经 `ArmClearance` 检查连杆到机身外壳（Aircraft 层）与本车车体的间隙（只检查不规划）。
+- `ProbeEndEffector`：TCP、腕部相机与随压缩后退的浮动段外观；`ContactModel`：虚拟弹簧（行程内 F = k·δ，行程用尽后硬限位刚度）与耦合质量（教学简化模型）。
 - `DeviceIndicator`：挂在 S1～S8 对应的设备上，单元执行时发光高亮（设备与主体的对应关系见 §5.3）。
 
 **Navigation**（M3 已实现，见 ADR-015）
@@ -87,13 +88,15 @@ D:\Unity_Project\AGV_Aircraft\
 - `VirtualKeepOutZone` / `KeepOutMask` / `KeepOutChannel`：A320 可见网格三角形地面投影的栅格掩膜（编辑器生成）与工位接近通道。
 - `CostMap`：激光层 ∪ 虚拟层（外扩机身安全距离 0.30 m，通道内不叠加），按车体外接圆膨胀；可通行 / 膨胀区 / 致命区三级，未知格加代价。
 - `GridAStar` + `PathSmoother`：8 邻域 A*（禁止切角、起点可逃离膨胀区）+ 视线捷径平滑；终点前加沿目标朝向的引入段。
-- `PathFollower`：纯追踪（曲率限速、终点按制动曲线停住、原地转向前检查含机械臂扫掠半径）。`DockingController`：车头对接相机按视场判定停靠标记可见，低速直线对接，记录停靠误差（`DockingError`）。`StraightDrive`：直线前进 / 倒车。
+- `PathFollower`：纯追踪（曲率限速、终点按制动曲线停住）；M4 起机械臂收在运输姿态的车体投影内，不再做含机械臂扫掠半径的原地转向 / 对接车道检查（ADR-016）。`DockingController`：车头对接相机按视场判定停靠标记可见，低速直线对接，记录停靠误差（`DockingError`）。`StraightDrive`：直线前进 / 倒车。
 - `NavigationService`：`NavigateToAsync(pose)`、`FollowPathAsync(points)`、`DockAsync(station)`、`ReverseExitAsync(distanceM)`、`DriveStraightAsync`；运动控制在 `Tick` 中按仿真子步执行，每个动作开始前经 SafetyMonitor 规则 2 判定；发布 `PathPlannedEvent`、`NavigationCompletedEvent`、`DockingCompletedEvent`。
 
 **Inspection**
-- `AScanSynthesizer`：由始波、界面波、底面多次回波（声时 = 2·厚度 / 声速）、缺陷回波和噪声合成 A 扫波形；耦合质量影响幅值（教学简化模型）。
-- `GateJudge`：闸门阈值判读，输出 合格 / 疑似 / 缺陷 / 无效。
-- `InspectionRecordStore`：保存检测记录，可导出 CSV 到 `persistentDataPath`。
+- `AScanSynthesizer`：由界面波、底面多次回波（声时 = 2·厚度 / 声速）、缺陷回波（减薄 / 孔边裂纹 / 松动）和噪声合成 A 扫波形；耦合质量影响幅值（教学简化模型）。
+- `GateJudge`：包络（整流 + 一周期滑动平均）上的闸门 A（界面）/ 闸门 B（缺陷，只认局部峰）/ 底面闸门判读，输出 合格 / 疑似 / 缺陷 / 无效。
+- `WristVision`（S2）：腕部相机视场可见性判定 + 高斯噪声（钉心复测、基准注册），`StationRegistration` 把基准标记位姿估计换算为预计钉位（教学简化模型）。
+- `RivetInspectionService`（M4）：T3 注册、T4 对中、T5 贴合采集与判读、T6 回退、收臂，供 M5 执行器调用（流程顺序由 JSON 决定）；完成时写入 `Rivet` 结果并发布 `RivetInspectedEvent`。
+- `InspectionRecordStore`：保存检测记录并按工位统计检出 / 漏检 / 误报 / 疑似 / 无效与平均节拍；CSV 导出到 `persistentDataPath` 在 M5。
 
 **Mission**
 - `TaskMatrixRuntime`：记录每个单元的状态，见 §5.2。
@@ -103,8 +106,8 @@ D:\Unity_Project\AGV_Aircraft\
 
 ### 3.3 RivetSim.Presentation
 
-- `AppBootstrap`：场景唯一入口。加载配置与矩阵 → 注册服务 → 进入默认模式（自动演示）。M3 已建立：在充电位运行时生成 AGV，经 `NavigationRuntime`（与 `SandboxNavDemo` 共用）组装时钟、安全监视、地图、激光与导航服务，运行 `NavigationDemoRoutine`；M5 接入 MissionOrchestrator。
-- `AgvTeleopInput`（WASD 遥控、空格急停）、`VisualizationToggleInput`（V 键）；可视化 `OccupancyGridOverlay`、`KeepOutOverlay`、`LidarPointCloudView`、`PathView`；`NavOverlayView` 为 M3 导航叠加信息（M6 由 HUD 取代）。
+- `AppBootstrap`：场景唯一入口。加载配置与矩阵 → 注册服务 → 进入默认模式（自动演示）。M3 已建立：在充电位运行时生成 AGV，经 `RobotRuntime`（M3 名为 NavigationRuntime，M4 扩展机械臂、接触力与检测服务；与沙盒入口共用）组装时钟、安全监视、地图、激光、导航与检测服务，运行 `NavigationDemoRoutine`（M4 起在停靠后执行 `StationInspectionRoutine` 单工位检测与联锁演示）；M5 接入 MissionOrchestrator。
+- `AgvTeleopInput`（WASD 遥控、空格急停）、`VisualizationToggleInput`（V 键）；可视化 `OccupancyGridOverlay`、`KeepOutOverlay`、`LidarPointCloudView`、`PathView`；`NavOverlayView` 为 M3 导航叠加信息；M4 增加 `RivetResultRingView`（结果环）、`WristCameraFrustumView`（视场锥）、`ProbeContactView`（接触指示）与 `InspectionOverlayView`（接触力条、`AScanGraphElement` A 扫图、判读与统计）（M6 由 HUD / 演示屏取代）。
 - `DemoModeController`：自动演示 / 分步演示（每个阶段开始前暂停，点击“下一步”继续）/ 手动遥控。
 - `DemoConsoleView`（UI Toolkit）：演示电脑屏幕，见 §7。
 - `HudView`：顶部模式、倍速、时间，底部快捷键提示，右侧故障注入按钮。
@@ -201,8 +204,8 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | `CFG_SimSettings` | 随机种子、默认倍速、纯逻辑单元标称时长、默认演示模式 |
 | `CFG_SceneLayout` | 大厅尺寸、三区矩形、障碍物位置、充电位、巡游建图路线 |
 | `CFG_Agv` | 车体长 / 宽 / 高、轮距、最大速度、最大加速度、雷达安装位姿、机械臂安装位姿、电池容量（占位）、通讯方式（占位） |
-| `CFG_Arm` | 运动学参数来源（UR5e yaml）、关节限位、关节最大速度、命名姿态 |
-| `CFG_Inspection` | 区域 / 工位 / 铆钉排布、钉距、蒙皮厚度、声速、探头频率、目标接触力、力超限阈值、缺陷比例 |
+| `CFG_Arm` | 运动学参数来源（UR5e yaml）、关节限位、关节最大速度、命名姿态（Stow / Ready / Observe）、关节运动、逆解、检测动作距离与速度、连杆间隙、腕部相机与简化视觉噪声（M4） |
+| `CFG_Inspection` | 区域 / 工位 / 铆钉排布、钉距、蒙皮厚度、声速、探头频率、目标接触力、力超限阈值、虚拟弹簧刚度与耦合质量、A 扫合成与缺陷回波模型、闸门参数（M4）、缺陷比例 |
 | `CFG_UiTheme` | 配色、字号、屏幕分辨率（见 §7） |
 | `CFG_Navigation` | 栅格分辨率、未知格代价、纯追踪前视与减速距离、到点容差、预停靠距离、对接低速段、标记估计噪声、停靠合格容差、工位接近通道边距（M3，ADR-015） |
 
@@ -243,7 +246,7 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | 电池 | 48 V / 40 Ah（约 1.9 kWh），v1 按线性放电显示电量 |
 | 通讯 | 车载 Wi-Fi 6 连接演示台电脑，v1 只显示连接状态与延迟（固定约 20 ms） |
 | 安全距离 | 底盘外轮廓距机身 ≥ 0.30 m |
-| 移动时整机高度 | 升降柱降到最低、机械臂运输姿态时约 1.35 m |
+| 移动时整机高度 | 升降柱降到最低、机械臂运输姿态时 ≤ 1.35 m（CFG_Agv `transportHeightMaxM`）；M4 Stow 实测最高点 1.034 m |
 
 **机械臂与探头**
 | 参数 | 值 |
@@ -254,6 +257,13 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | 探头 | 单晶接触式，10 MHz，晶片直径 6 mm，带延迟块 |
 | 接触力 | 目标 10 N，允许 8～12 N，超限阈值 20 N |
 | 单钉采集时长 | 0.5 s（A 扫采样率 100 MHz，显示 2 µs 时间窗） |
+| 命名姿态（M4） | Stow (0, −180, −120, 45, −90, 0)°：机械臂在车体投影内（横向 −0.21～+0.08 m、纵向 −0.34～+0.23 m）；Ready (0, −90, 90, −90, −90, 0)° 直立过渡；Observe (−61, −82, 146, −82, −243, −98)° 面向右侧，左侧工位基座角 −180° |
+| 关节运动（M4） | 60 °/s、120 °/s²（yaml 180 °/s 为上限）；末端加速度 0.5 m/s²；命名姿态容差 0.5° |
+| 逆解（M4） | 阻尼最小二乘，收敛 0.2 mm / 0.5°，λ 0.05，单步 ≤ 8°，每初值 150 次，随机重试 8 次，姿态权重 0.2 m |
+| 检测动作（M4） | 对中 / 回退位置距蒙皮 0.05 m；距预计接触点 3 mm 内以 5 mm/s 逼近；浮动夹持 5 N/mm（10 N ≈ 2 mm），行程用尽后 50 N/mm |
+| 间隙（M4） | 连杆到机身外壳 / 本车车体 ≥ 30 mm；探头末端零件 ≥ 10 mm（不计探头前端 30 mm）；路径采样 12 点；搜索上限 0.2 m |
+| 简化视觉（M4） | 基准观察距离 0.30 m；入射角 ≤ 45°；钉心复测 σ 0.2 mm；基准注册 σ 0.5 mm / 0.2°；单次测量 0.2 s |
+| A 扫与闸门（M4，教学简化模型） | 脉冲相对带宽 60%；界面波 0.9、一次底面波 0.8、多次回波 ×0.55、噪声 σ 0.02（满屏高度）；减薄剩余 70%；裂纹深 1.0 mm、回波 0.45、底面 ×0.6；松动底面 ×0.45、多次 ×0.3；闸门 A 0.30、闸门 B 0.25（盲区 0.15 µs）、底面闸门 ±10%，底面 < 0.40 缺陷、< 0.55 疑似；耦合质量 < 0.5 无效（8 N 以上为 1，2 N 为 0） |
 
 **演示区**
 | 参数 | 值 |
@@ -292,7 +302,7 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 
 ## 8. 测试（EditMode）
 
-`TaskMatrixLoader` 能正确读取 JSON（48 个单元、3 条回路）；`GridAStar` 可达 / 不可达；差速运动学；`ArmIkSolver` 收敛（随机可达位姿成功率 ≥ 95%，位置误差 < 1 mm）；`AScanSynthesizer` 底面回波位置与厚度对应；`MissionOrchestrator` 用假执行器跑完 1 区域 × 1 工位 × 3 颗铆钉，且状态序列正确（含一次条件单元触发）。
+`TaskMatrixLoader` 能正确读取 JSON（48 个单元、3 条回路）；`GridAStar` 可达 / 不可达；差速运动学；`ArmIkSolver` 收敛（随机可达位姿成功率 ≥ 95%，位置误差 < 1 mm，M4 已实现）；`AScanSynthesizer` 底面回波位置与厚度对应、闸门判读四种结论、虚拟弹簧接触力、运输姿态外廓（M4 已实现）；`MissionOrchestrator` 用假执行器跑完 1 区域 × 1 工位 × 3 颗铆钉，且状态序列正确（含一次条件单元触发）。
 
 ---
 

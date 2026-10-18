@@ -7,7 +7,7 @@ namespace RivetSim.Simulation.Navigation
 {
     /// <summary>
     /// 路径跟踪：起步原地对准 → 纯追踪行驶（曲率限速、终点按制动曲线停住）→ 终点原地转到目标朝向。
-    /// 原地转向前检查含机械臂扫掠半径内没有激光障碍（M4 运输姿态前的临时措施，ADR-015）。
+    /// M4 起机械臂在运输姿态下收在车体投影内，原地转向不再做含机械臂扫掠半径的检查（ADR-016，取代 ADR-015 的临时措施）。
     /// </summary>
     public sealed class PathFollower : IMotionTask
     {
@@ -19,8 +19,6 @@ namespace RivetSim.Simulation.Navigation
         private readonly AgvController _chassis;
         private readonly AgvConfig _agv;
         private readonly NavigationConfig _nav;
-        private readonly OccupancyGridMap _map;
-        private readonly float _sweptRadiusM;
         private readonly PurePursuitTracker _tracker = new PurePursuitTracker();
 
         private Phase _phase;
@@ -41,13 +39,11 @@ namespace RivetSim.Simulation.Navigation
         public float PathLengthM => _tracker.TotalLengthM;
 
         /// <summary>创建路径跟踪器。</summary>
-        public PathFollower(AgvController chassis, AgvConfig agv, NavigationConfig nav, OccupancyGridMap map, float sweptRadiusM)
+        public PathFollower(AgvController chassis, AgvConfig agv, NavigationConfig nav)
         {
             _chassis = chassis;
             _agv = agv;
             _nav = nav;
-            _map = map;
-            _sweptRadiusM = sweptRadiusM;
         }
 
         /// <summary>开始跟踪 points（首点为当前位置）；finalYawDeg 非空时到点后转到该朝向。</summary>
@@ -155,11 +151,6 @@ namespace RivetSim.Simulation.Navigation
         private void BeginTurn(float targetYawDeg, Phase next)
         {
             PlanarPose pose = _chassis.Pose;
-            if (_map != null && _map.AnyOccupiedWithin(pose.positionM, _sweptRadiusM))
-            {
-                Fail($"原地转向扫掠半径 {_sweptRadiusM:0.00} m 内有障碍物");
-                return;
-            }
             _turnTargetDeg = targetYawDeg;
             _turnStartSign = Mathf.Sign(Mathf.DeltaAngle(pose.yawDeg, targetYawDeg));
             _afterSettle = next;

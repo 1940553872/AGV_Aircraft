@@ -72,3 +72,17 @@ Architecture §4 规定 `Robot` 根节点在运行时生成 AGV。M1 为了布�
 - 控制方式：入口每帧按仿真时间以固定子步（项目 Fixed Timestep 0.01 s）推进“导航控制 → 底盘 → 升降柱 → 激光”，控制精度与倍速无关；异步方法只等待运动任务结束。底盘行驶联锁只在由静止起步时判定一次，避免每个子步重复记录。
 - 到点与对接：规划到“终点沿目标朝向后退前视距离”的引入点再直线进入；终点段直接瞄准终点、进入容差圈后锁定转向。对接时标记可见则每个子步用“真值 + 高斯噪声”更新目标估计，标记移出视场（距停靠位约 0.4 m 内）后沿用最后估计，按制动曲线停车，停靠误差以真值位姿计算。
 - AppBootstrap 在 M3 建立（用户确认），范围限于：时钟、事件总线、在充电位运行时生成 AGV、安全监视、地图与导航服务、可视化与遥控、M3 演示流程（`NavigationDemoRoutine`）；主场景删除 AGV_Preview（ADR-009），布局截图改为临时实例化 PF_AGV。M5 在其上接入 MissionOrchestrator。
+
+## ADR-016 M4 机械臂与超声检测：命名姿态、逆解、间隙检查、教学简化模型参数、沙盒机身段（2026-10-19）
+- 计划与第 4 节各项经用户确认（2026-10-18）。实现中有三处偏离计划，均为满足已确认的校核要求：
+  1. Stow 由计划的 (0, −180, −165, −180, −90, 0)° 改为 (0, −180, −120, 45, −90, 0)°：原姿态前臂折到底，与基座外壳只隔 1.8 mm（自干涉要求 ≥ 10 mm），改为前臂上扬、腕部收在车体中后部。网格顶点实测（升降柱最低位）：机械臂横向 −0.210～+0.076 m、纵向 −0.335～+0.225 m（车体投影 ±0.40 / ±0.60 m 内），整机最高点 1.034 m（≤ 1.35 m），非相邻连杆最小 26.9 mm（基座 / 上臂），机械臂离车体设备盒 45 mm。
+  2. 新增命名姿态 Ready (0, −90, 90, −90, −90, 0)°（直立过渡）：左侧工位直接从 Stow 关节插值到镜像 Observe 时，末端离机身只有 1～2 mm；改为 Stow → Ready → Observe，收臂时反向（末颗 → Observe → Ready → Stow）。镜像规则定为基座角 −180°（从车尾一侧转过去），−61° 的镜像为 −241°。
+  3. 间隙检查除机身外壳外，加查机械臂到本车车体（底盘、升降柱、设备盒渲染器包围盒，基座与肩部连杆除外），要求与连杆相同（30 mm）：逆解曾给出肘部朝下、贴近车体的解。
+- Observe = R1-S1 基准观察位姿的逆解结果取整（−61, −82, 146, −82, −243, −98)°：肘上构型、腕部相机朝上、光轴沿基准标记法向、距标记 0.30 m。
+- 运输姿态校核：`RivetSim/Debug/Check Stow Envelope`（网格顶点，报告 Docs/Reference/M4_StowEnvelope.md）与 EditMode 测试 `StowEnvelopeTests`；运行时 `RobotRuntime` 启动时用渲染器包围盒再校核一次。整机扫掠半径 0.729 m 来自车体两端附件（防撞条 / 对接相机），比车体外接圆 0.721 m 大 8 mm，小于 0.1 m 栅格，导航膨胀半径保持 0.721 m（用户确认）。导航删除 ADR-015 的“含机械臂扫掠半径”原地转向检查与“含机械臂前伸”对接车道检查。
+- `IArmPoseState` 由 `ArmController` 实现（运输姿态 = 无动作且各关节与 Stow 相差 ≤ 0.5°）；`PlaceholderArmPoseState` 用 AssetDatabase.MoveAsset 归档到 Assets/_Archive/Scripts。SafetyMonitor 新增规则 3：机械臂离开运输姿态只在底盘零速锁定后允许（用户确认）。
+- 逆解 `ArmIkSolver`：阻尼最小二乘，误差 = [位置差; 旋转向量 × 0.2 m]，几何雅可比由 `ArmKinematics`（从 ArmRig 提取的纯计算模型）给出；初值依次为当前关节角、Observe 及其镜像、Stow、内置 8 组、随机 8 组（固定种子），取第一个收敛且通过间隙检查的解。工具姿态：工具轴沿 −法向，腕部相机优先朝上，失败时绕工具轴试 90° / −90° / 180°。直线运动每个子步以当前关节角为初值迭代 ≤ 30 次跟踪，跟踪误差超过收敛阈值 5 倍或关节角速度超过 yaml 上限（接近奇异）即停止。
+- 连杆间隙 `ArmClearance`：UR5eArmGenerator 从各连杆外观网格顶点按 20 mm（探头末端 10 mm）网格抽稀得到表面采样点；先以连杆包围球 + 搜索上限筛选，再对每点 `Physics.CheckSphere` 二分半径（8 次，0.8 mm 分辨率）求到 Aircraft 层碰撞体的距离。目标解与关节插值路径（12 点）都检查；只检查不规划（v1 不做碰撞规避）。验证工具 `RivetSim/Debug/Check Station Reachability` 改用运行时逆解，报告 Docs/Reference/M4_ArmReach.md（取代 M2_Reachability.md 的方法，旧报告保留）。
+- 教学简化模型参数（用户确认，写入 CFG_Arm / CFG_Inspection）：见 Architecture §6.1。实现说明：判读用的包络为整流后一周期滑动平均 × π/2，对 σ ≈ 0.06 µs 的窄脉冲约为峰值的 90%（如一次底面波 0.8 显示为 71%～74%），阈值按满屏高度比例直接比较；闸门 B 只认包络的局部峰，避免把底面回波前沿判为缺陷。接触力逐子步（0.01 s、5 mm/s）判定，停止时 10.0～10.9 N（直线跟踪的残余误差使个别颗超出一步）。
+- 场景：沙盒用 `FuselageSectionBuilder` 从 A320 机身外壳截取主起落架后 2.6～7.1 m 的整圈三角形（5,868 个），保存为 Art/Models/Generated/A320_FuselageSection.asset 与 PF_FuselageSection，按整机根节点位姿摆放；`RivetZoneGenerator.Build(work, aircraft, 工位过滤)` 只生成 R1-S1 / R2-S1，铆钉与真值缺陷与主场景一致。M3 导航演示保留但停用，禁行区改由机身段栅格化；默认入口 `SandboxInspectionDemo`（AGV 已在 R1-S1 停靠位）。主场景在 M3 演示的 R1-S1 停靠后执行单工位检测，并增加联锁演示 2（机械臂离开运输姿态时解锁被拒绝）。
+- 结构：M3 的 `NavigationRuntime` 改名为 `RobotRuntime`（加机械臂、接触力、检测服务，子步顺序 导航 → 底盘 → 升降柱 → 机械臂 → 激光）；新增 Simulation/Inspection 目录与 Presentation/UI 目录（命名空间 RivetSim.Simulation.Inspection / RivetSim.Presentation.UI，程序集不变）。CFG_Agv 新增 `transportHeightMaxM`（§6.1 已有的 1.35 m，用于校核）。

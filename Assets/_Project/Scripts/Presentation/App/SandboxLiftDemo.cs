@@ -56,7 +56,8 @@ namespace RivetSim.Presentation.App
             SimLog.SimTimeProvider = () => _clock.TimeS;
 
             var eventBus = new EventBus();
-            var safety = new SafetyMonitor(chassis, lift, new PlaceholderArmPoseState());
+            // M4 起机械臂姿态由 ArmController 提供（运输姿态 Stow），取代占位实现。
+            var safety = new SafetyMonitor(chassis, lift, chassis.GetComponentInChildren<ArmController>());
             chassis.Initialize(safety);
             lift.Initialize(safety, eventBus);
             _cancellation = new CancellationTokenSource();

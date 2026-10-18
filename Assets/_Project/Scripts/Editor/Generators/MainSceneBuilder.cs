@@ -15,7 +15,7 @@ namespace RivetSim.Editor.Generators
 {
     /// <summary>
     /// 主场景装配：新建并覆盖 Main_TeachingHall（Architecture §4），按 CFG_SceneLayout 布置厂房、三区、模型机占位体、
-    /// 障碍物、充电位、演示台、检测区、虚拟禁行区、灯光、后处理、相机锚点，以及启动入口 AppBootstrap 与导航可视化（M3）。
+    /// 障碍物、充电位、演示台、检测区、虚拟禁行区、灯光、后处理、相机锚点，以及启动入口 AppBootstrap 与导航可视化（M3）、检测可视化（M4）。
     /// AGV 由 AppBootstrap 在充电位运行时生成（ADR-009 / ADR-015）。场景完全由本生成器产出，重复执行结果一致。
     /// </summary>
     public static class MainSceneBuilder
@@ -225,12 +225,15 @@ namespace RivetSim.Editor.Generators
                 GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset),
                 GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset),
                 GeneratorUtility.LoadConfig<ArmConfig>(ProjectPaths.ArmAsset),
-                GeneratorUtility.LoadConfig<NavigationConfig>(ProjectPaths.NavigationAsset));
+                GeneratorUtility.LoadConfig<NavigationConfig>(ProjectPaths.NavigationAsset),
+                GeneratorUtility.LoadConfig<InspectionConfig>(ProjectPaths.InspectionAsset));
             Transform regions = roots["Zone_Work"].Find(RivetZoneGenerator.RootName);
             bootstrap.ConfigureScene(GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath), roots["Robot"], keepOut,
                 regions != null ? regions.GetComponent<RivetRegistry>() : null);
             NavigationSceneSetup.Views views = NavigationSceneSetup.Build(roots["Visualization"], roots["UI"], bootstrapObject, mainCamera);
             bootstrap.ConfigureViews(views.Map, views.KeepOut, views.Lidar, views.Path, views.Overlay, views.Teleop);
+            NavigationSceneSetup.InspectionViews inspection = NavigationSceneSetup.BuildInspectionViews(roots["Visualization"], roots["UI"]);
+            bootstrap.ConfigureInspectionViews(inspection.Overlay, inspection.Rings, inspection.Frustum, inspection.Contact);
         }
 
         private static Camera BuildCameras(Transform root, SceneLayoutConfig layout)
