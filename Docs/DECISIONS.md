@@ -14,3 +14,6 @@ Unity 6.0 没有 UI Toolkit 世界空间面板，因此用 PanelSettings.targetT
 
 ## ADR-005 场景与资产只通过 Editor 操作生成（2026-10-17）
 通过 Unity CLI + pipeline 调用编辑器脚本生成场景、预制体和材质，不手工编辑 YAML，生成器保持幂等。
+
+## ADR-006 显式依赖 Newtonsoft Json（2026-10-18）
+任务矩阵读取使用 Newtonsoft Json。此前它只是 `com.unity.pipeline`（实验版）带入的间接依赖，pipeline 升级或移除时可能随之消失，因此在 `Packages/manifest.json` 中显式加入 `com.unity.nuget.newtonsoft-json` 3.2.1（与当时锁定版本相同）。`RivetSim.Core` 与 `RivetSim.Tests.EditMode` 通过 `precompiledReferences` 引用 `Newtonsoft.Json.dll`。

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28f9a035298816e4cbfb717244526522, type: 3}
+  m_Name: CFG_Inspection
+  m_EditorClassIdentifier: 
+  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA74\u3001\xA76.1\u3002\u95F8\u95E8\u9608\u503C\u5728
+    M4 \u786E\u5B9A\u3002"
+  regionCount: 2
+  stationsPerRegion: 2
+  stationSpacingM: 1.2
+  rivetRowsPerStation: 1
+  rivetsPerStation: 12
+  rivetHeadDiameterMm: 8
+  rivetPitchMm: 25
+  skinThicknessMm: 2
+  longitudinalVelocityMps: 6320
+  probeFrequencyMHz: 10
+  crystalDiameterMm: 6
+  hasDelayLine: 1
+  targetContactForceN: 10
+  contactForceMinN: 8
+  contactForceMaxN: 12
+  contactForceLimitN: 20
+  acquisitionDurationS: 0.5
+  aScanSampleRateMHz: 100
+  aScanWindowUs: 2
+  gateAThresholdRatio: 0
+  gateBThresholdRatio: 0
+  defectRatio: 0.1

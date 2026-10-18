@@ -1,12 +1,14 @@
 # 开发进度
 
 ## 当前里程碑
-M0 工程整理与骨架 —— 未开始
+M0 工程整理与骨架 —— 已完成，待验收（2026-10-18）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
 - Unity CLI 1.0.0-beta.13 + com.unity.pipeline 0.8.0-exp.1，unity status = ready（端口 7800）
-- 工程现有测试内容：HelloWorld.unity、SampleScene.unity、HelloSphere.cs、Materials/、TutorialInfo/、Readme.asset（M0 归档到 Assets/_Archive/）
+- 原有测试内容（HelloWorld.unity、SampleScene.unity、HelloSphere.cs、Materials/、TutorialInfo/、Readme.asset）已于 M0 归档到 Assets/_Archive/；Settings/（URP 资产）与 InputSystem_Actions 被管线和输入系统引用，留在原位
+- Newtonsoft Json 3.2.1 已显式加入 manifest（ADR-006）
+- Git：远端 https://github.com/1940553872/AGV_Aircraft（main）
 
 ## 资产准备（2026-10-17）
 - 已就绪：UR5e、Airbus A320-200（.glb）、Noto Sans SC、AprilTag ID 0～11（详见 _Downloads/README.md）
@@ -18,11 +20,21 @@ M0 工程整理与骨架 —— 未开始
 |---|---|---|
 
 ## 最近一次会话
-- 日期：
-- 完成：
-- 修改文件：
+- 日期：2026-10-18
+- 完成：M0 工程整理与骨架
+  - 归档旧测试内容到 `Assets/_Archive/`（AssetDatabase.MoveAsset，GUID 保留），归档场景已移出 Build Settings
+  - 按 Architecture §2 建立 `_Project/` 目录；5 个 asmdef（Core ← Simulation ← Presentation；Editor 仅编辑器；Tests.EditMode → Core、Simulation）
+  - Core：`SimClock`、`EventBus` + `ISimEvent`、`SimLog`（含 `LogCategory` / `SimLogLevel` / `SimLogEntry`）、任务矩阵数据模型与 `TaskMatrixLoader`（§3.1 校验，外加条件引用、trigger、id 与行列一致性检查）
+  - 配置类型 6 种（SimSettings、SceneLayoutConfig、AgvConfig、ArmConfig、InspectionConfig、UiThemeConfig）及辅助结构体；`Config/` 下已生成 CFG_* 默认资产，`CFG_SimSettings.taskMatrixJson` 指向矩阵 JSON
+  - 新增 `SimLayers`（Layer 名称、编号与激光层掩码常量），Layers 8～12 = Environment / Aircraft / Obstacle / Robot / Visualization；Fixed Timestep = 0.01 s
+  - 编辑器菜单：`RivetSim/Setup/*`（建目录、Layers 与时间步、默认配置，均可重复执行；配置资产已存在时不覆盖）、`RivetSim/Debug/Print Task Matrix`
+  - EditMode 测试 24 个全部通过；打印矩阵已与 SOP_TaskMatrix_v1.png 逐格核对一致
+- 修改文件：Assets/_Project/**、Assets/_Archive/**、Packages/manifest.json、Packages/packages-lock.json、ProjectSettings/TagManager.asset、TimeManager.asset、EditorBuildSettings.asset、Docs/DECISIONS.md、Docs/PROGRESS.md
 - 遗留问题：
-- 下次第一步：执行 PromptTemplates.md 的 M0
+  - 未定参数留空（随机种子已定为 42）：三区矩形、障碍物、充电位、起始位、巡游路线 → M1；机械臂 Stow / Observe 姿态、闸门 A/B 阈值 → M4
+  - 当前打开的是归档场景 `_Archive/Scenes/HelloWorld.unity`；M1 建立 Main_TeachingHall 后切换
+  - JSON 未改动（label、explain 均未修改）
+- 下次第一步：M0 验收通过后，执行 PromptTemplates.md 的 M1
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:5、AGV 1.00 × 0.70 × 0.45 m、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -39,4 +51,5 @@ M0 工程整理与骨架 —— 未开始
 | C1～C12 的正式定义 | 固定示例文字 | SOP_TaskMatrix_v1.json |
 
 ## 待办（超出当前里程碑的想法）
-- [ ]
+- [ ] M5：启动时用 `TaskMatrixData.GetExecutorKeys()` 与 `ExecutorRegistry` 核对缺失的执行器键名（目前 JSON 中共 37 个）
+- [ ] M1：确定 `CFG_SceneLayout` 中尺寸向量（长 × 宽 × 高）与世界坐标轴的对应关系

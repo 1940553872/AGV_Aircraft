@@ -1,0 +1,17 @@
+{
+    "name": "RivetSim.Presentation",
+    "rootNamespace": "RivetSim.Presentation",
+    "references": [
+        "RivetSim.Core",
+        "RivetSim.Simulation"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

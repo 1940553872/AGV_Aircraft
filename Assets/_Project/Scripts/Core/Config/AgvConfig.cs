@@ -1,0 +1,102 @@
+using UnityEngine;
+
+namespace RivetSim.Core.Config
+{
+    /// <summary>
+    /// AGV 配置（CFG_Agv）：车体尺寸、差速驱动参数、速度限制、雷达与机械臂安装位姿、车载设备盒、电池与通讯（占位）。
+    /// 安装位姿以底盘地面投影中心为原点，x 右、y 上、z 前。
+    /// </summary>
+    [CreateAssetMenu(fileName = "CFG_Agv", menuName = "RivetSim/Config/AGV")]
+    public sealed class AgvConfig : ScriptableObject
+    {
+        [TextArea(2, 6)]
+        [Tooltip("参数来源与修改说明")]
+        public string notes = "v1 预估值，见 Docs/Architecture.md §6.1；后续按实际选型修改。";
+
+        [Header("车体")]
+        [Tooltip("车体尺寸（长 × 宽 × 高），单位 m；高度即上装平台面高")]
+        public Vector3 bodySizeM = new Vector3(1.00f, 0.70f, 0.45f);
+
+        [Tooltip("整机质量（含机械臂与上装设备），单位 kg")]
+        public float massKg = 120f;
+
+        [Header("差速驱动")]
+        [Tooltip("驱动轮轮距，单位 m")]
+        public float wheelTrackM = 0.56f;
+
+        [Tooltip("驱动轮直径，单位 m")]
+        public float driveWheelDiameterM = 0.20f;
+
+        [Tooltip("万向轮数量（前后各 1 个）")]
+        public int casterCount = 2;
+
+        [Header("速度与加速度")]
+        [Tooltip("巡航速度，单位 m/s")]
+        public float cruiseSpeedMps = 0.6f;
+
+        [Tooltip("最大线速度，单位 m/s")]
+        public float maxSpeedMps = 1.0f;
+
+        [Tooltip("接近工位速度，单位 m/s")]
+        public float approachSpeedMps = 0.15f;
+
+        [Tooltip("对接速度，单位 m/s")]
+        public float dockingSpeedMps = 0.05f;
+
+        [Tooltip("最大线加速度，单位 m/s²")]
+        public float maxAccelerationMps2 = 0.5f;
+
+        [Tooltip("最大角速度，单位 °/s")]
+        public float maxAngularSpeedDegPerS = 60f;
+
+        [Tooltip("倒车退出距离，单位 m")]
+        public float reverseExitDistanceM = 0.6f;
+
+        [Tooltip("底盘外轮廓距机身的最小安全距离，单位 m")]
+        public float fuselageSafetyClearanceM = 0.30f;
+
+        [Header("激光雷达")]
+        [Tooltip("雷达安装位姿：车头中心，离地 0.30 m")]
+        public MountPose lidarMount = new MountPose(new Vector3(0f, 0.30f, 0.50f), Vector3.zero);
+
+        [Tooltip("每圈射线数")]
+        public int lidarBeamCount = 360;
+
+        [Tooltip("扫描频率，单位 Hz")]
+        public float lidarRateHz = 10f;
+
+        [Tooltip("最大量程，单位 m")]
+        public float lidarRangeM = 20f;
+
+        [Tooltip("测距噪声幅值（±），单位 m")]
+        public float lidarRangeNoiseM = 0.02f;
+
+        [Header("机械臂安装")]
+        [Tooltip("机械臂安装位姿：平台中心前移 0.15 m，安装面高 0.45 m")]
+        public MountPose armMount = new MountPose(new Vector3(0f, 0.45f, 0.15f), Vector3.zero);
+
+        [Header("车载设备盒（长 × 宽 × 高，单位 m）")]
+        [Tooltip("超声仪（S5）")]
+        public Vector3 utInstrumentBoxSizeM = new Vector3(0.30f, 0.20f, 0.10f);
+
+        [Tooltip("安全控制盒（S6）")]
+        public Vector3 safetyBoxSizeM = new Vector3(0.20f, 0.15f, 0.10f);
+
+        [Tooltip("工控机（S7）")]
+        public Vector3 ipcBoxSizeM = new Vector3(0.25f, 0.20f, 0.08f);
+
+        [Header("电池（占位，v1 线性放电显示）")]
+        [Tooltip("电池电压，单位 V")]
+        public float batteryVoltageV = 48f;
+
+        [Tooltip("电池容量，单位 Ah")]
+        public float batteryCapacityAh = 40f;
+
+        [Header("通讯（占位，v1 只显示状态）")]
+        [Tooltip("通讯方式")]
+        public CommLinkType commLink = CommLinkType.Wifi6;
+
+        [Tooltip("显示用固定延迟，单位 s")]
+        public float commLatencyS = 0.020f;
+    }
+}

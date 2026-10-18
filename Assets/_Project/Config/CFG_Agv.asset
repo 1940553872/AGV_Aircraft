@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6380b8ad67f93f48abfdb479c224049, type: 3}
+  m_Name: CFG_Agv
+  m_EditorClassIdentifier: 
+  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA76.1\uFF1B\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002"
+  bodySizeM: {x: 1, y: 0.7, z: 0.45}
+  massKg: 120
+  wheelTrackM: 0.56
+  driveWheelDiameterM: 0.2
+  casterCount: 2
+  cruiseSpeedMps: 0.6
+  maxSpeedMps: 1
+  approachSpeedMps: 0.15
+  dockingSpeedMps: 0.05
+  maxAccelerationMps2: 0.5
+  maxAngularSpeedDegPerS: 60
+  reverseExitDistanceM: 0.6
+  fuselageSafetyClearanceM: 0.3
+  lidarMount:
+    positionM: {x: 0, y: 0.3, z: 0.5}
+    eulerDeg: {x: 0, y: 0, z: 0}
+  lidarBeamCount: 360
+  lidarRateHz: 10
+  lidarRangeM: 20
+  lidarRangeNoiseM: 0.02
+  armMount:
+    positionM: {x: 0, y: 0.45, z: 0.15}
+    eulerDeg: {x: 0, y: 0, z: 0}
+  utInstrumentBoxSizeM: {x: 0.3, y: 0.2, z: 0.1}
+  safetyBoxSizeM: {x: 0.2, y: 0.15, z: 0.1}
+  ipcBoxSizeM: {x: 0.25, y: 0.2, z: 0.08}
+  batteryVoltageV: 48
+  batteryCapacityAh: 40
+  commLink: 0
+  commLatencyS: 0.02
