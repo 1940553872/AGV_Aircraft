@@ -72,7 +72,7 @@ D:\Unity_Project\AGV_Aircraft\
 **World**：`InspectionRegion`（区域：左 / 右侧与若干工位）、`InspectionStation`（工位：AGV 停靠位姿、铆钉排、停靠标记板与蒙皮基准标记）、`Rivet`（ID、位置、法向、真值缺陷 `DefectType`，检测结果在 M4 写入）、`RivetRegistry`（登记表，挂在 Zone_Work/InspectionRegions）、`RegionMarker`（AprilTag：ID、边长、用途 `MarkerRole`）、`RivetLayout` / `DefectAssigner`（排布与缺陷分配的纯计算）、`ChargingDock`。检测区由 `RivetSim/Generate/Rivet Zones` 生成（M2 第三部分 3B）。
 
 **Robot**
-- `AgvController`：差速运动学，运动学刚体（`MovePosition`），带速度 / 加速度限幅；提供 `SetVelocity`、`Stop`、`ZeroSpeedLock`、`ReleaseZeroSpeedLock`、`IsZeroSpeedLocked`（M2 第二部分已实现此最小子集）；角加速度限幅与车轮转动动画在 M3 补充。
+- `AgvController`：差速运动学（`DiffDriveKinematics`，按圆弧弦长精确积分），运动学刚体（`MovePosition`），线速度 / 角速度及其加速度限幅；提供 `SetVelocity`、`Stop`、`EmergencyStop`、`ZeroSpeedLock`、`ReleaseZeroSpeedLock`、`IsZeroSpeedLocked`、真值位姿 `Pose`、驱动轮转动动画（M3）。`AgvFootprint` 由渲染器包围盒量得含机械臂的扫掠半径与车头前伸量。
 - `LiftColumnController`（升降柱，属主体 S3）：`LiftMotionProfile` 匀速 + 起停缓冲（教学简化模型），`MoveToHeightAsync(安装面高度)`、`LowerToBottomAsync`，到位发布 `LiftArrivedEvent`；`LiftHeightPlanner` 按工位铆钉平均高度 − 舒适偏移计算目标并限制在行程内。
 - `SafetyMonitor`（主体 S6）：联锁规则 1 升降柱只在底盘零速锁定后运动；规则 2 底盘行驶或解锁只在升降柱最低位且机械臂运输姿态时允许；违反时拒绝并经 `SimLog`（Safety）记录。依赖只读接口 `IChassisState` / `ILiftState` / `IArmPoseState`（M4 前由 `PlaceholderArmPoseState` 提供）。
 - 控制器不自行读取 `Time`：启动入口持有 `SimClock`，每帧以仿真步长调用各控制器的 `Tick`。
@@ -80,13 +80,15 @@ D:\Unity_Project\AGV_Aircraft\
 - `ProbeEndEffector`：TCP 坐标系、`ContactModel`（虚拟弹簧 F = k·δ，教学简化模型）。
 - `DeviceIndicator`：挂在 S1～S8 对应的设备上，单元执行时发光高亮（设备与主体的对应关系见 §5.3）。
 
-**Navigation**
-- `Lidar2D`：360 线射线（`Physics.RaycastNonAlloc`），10 Hz，点云可视化。
-- `OccupancyGridMap`：0.1 m 栅格；使用真值位姿，命中格标记为占据，射线经过的格标记为空闲（教学简化模型）。
-- `MappingRoutine`：沿预设巡游路线遥控行驶，完成建图演示。
-- `GridAStar` + `PathSmoother`：在膨胀栅格上做 8 邻域 A* 并平滑路径。
-- `PathFollower`：纯追踪（Pure Pursuit）。`DockingController`：识别区域标记后低速直线对接，记录停靠误差。
-- `NavigationService`：`NavigateToAsync(pose)`、`DockAsync(marker)`、`ReverseExitAsync(distanceM)`。
+**Navigation**（M3 已实现，见 ADR-015）
+- `Lidar2D`：360 线水平射线（`Physics.Raycast`，只检测 Environment / Aircraft / Obstacle 层），按仿真时间 10 Hz，测距噪声 ±2 cm（固定种子）；结果写入占据栅格并供点云显示。
+- `OccupancyGridMap`：0.1 m 栅格；使用真值位姿，命中格加分、射线经过格减分（教学简化模型），记录脏矩形供叠加层增量刷新。
+- `MappingRoutine`：沿巡游路线（CFG_SceneLayout）以巡航速度行驶完成建图，发布 `MappingProgressEvent`。
+- `VirtualKeepOutZone` / `KeepOutMask` / `KeepOutChannel`：A320 可见网格三角形地面投影的栅格掩膜（编辑器生成）与工位接近通道。
+- `CostMap`：激光层 ∪ 虚拟层（外扩机身安全距离 0.30 m，通道内不叠加），按车体外接圆膨胀；可通行 / 膨胀区 / 致命区三级，未知格加代价。
+- `GridAStar` + `PathSmoother`：8 邻域 A*（禁止切角、起点可逃离膨胀区）+ 视线捷径平滑；终点前加沿目标朝向的引入段。
+- `PathFollower`：纯追踪（曲率限速、终点按制动曲线停住、原地转向前检查含机械臂扫掠半径）。`DockingController`：车头对接相机按视场判定停靠标记可见，低速直线对接，记录停靠误差（`DockingError`）。`StraightDrive`：直线前进 / 倒车。
+- `NavigationService`：`NavigateToAsync(pose)`、`FollowPathAsync(points)`、`DockAsync(station)`、`ReverseExitAsync(distanceM)`、`DriveStraightAsync`；运动控制在 `Tick` 中按仿真子步执行，每个动作开始前经 SafetyMonitor 规则 2 判定；发布 `PathPlannedEvent`、`NavigationCompletedEvent`、`DockingCompletedEvent`。
 
 **Inspection**
 - `AScanSynthesizer`：由始波、界面波、底面多次回波（声时 = 2·厚度 / 声速）、缺陷回波和噪声合成 A 扫波形；耦合质量影响幅值（教学简化模型）。
@@ -101,7 +103,8 @@ D:\Unity_Project\AGV_Aircraft\
 
 ### 3.3 RivetSim.Presentation
 
-- `AppBootstrap`：场景唯一入口。加载配置与矩阵 → 注册服务 → 进入默认模式（自动演示）。
+- `AppBootstrap`：场景唯一入口。加载配置与矩阵 → 注册服务 → 进入默认模式（自动演示）。M3 已建立：在充电位运行时生成 AGV，经 `NavigationRuntime`（与 `SandboxNavDemo` 共用）组装时钟、安全监视、地图、激光与导航服务，运行 `NavigationDemoRoutine`；M5 接入 MissionOrchestrator。
+- `AgvTeleopInput`（WASD 遥控、空格急停）、`VisualizationToggleInput`（V 键）；可视化 `OccupancyGridOverlay`、`KeepOutOverlay`、`LidarPointCloudView`、`PathView`；`NavOverlayView` 为 M3 导航叠加信息（M6 由 HUD 取代）。
 - `DemoModeController`：自动演示 / 分步演示（每个阶段开始前暂停，点击“下一步”继续）/ 手动遥控。
 - `DemoConsoleView`（UI Toolkit）：演示电脑屏幕，见 §7。
 - `HudView`：顶部模式、倍速、时间，底部快捷键提示，右侧故障注入按钮。
@@ -131,7 +134,8 @@ D:\Unity_Project\AGV_Aircraft\
 
 - 布局校验（`SceneLayoutValidator`，AGV 车宽 0.80 m）：最窄通道 1.80 m；巡游时 AGV 外轮廓到机身最小 6.38 m、到模型机包围盒最小 6.38 m、到障碍物最小 0.50 m（窄通道内）；模型机到障碍物最近 4.68 m（O4）；模型机到作业区边界最小 4.08 m；充电位到作业区 10.40 m；演示台前观众区进深 5.10 m；停靠设计 0.30 m。
 - 层级根节点：`_System`、`Environment`、`Zone_Work`、`Zone_Mobility`、`Zone_Demo`、`Robot`（运行时生成）、`Cameras`、`UI`、`Visualization`。
-- Layers：`Environment`、`Aircraft`、`Obstacle`、`Robot`、`Visualization`。激光射线只检测前三层。
+- Layers：`Environment`、`Aircraft`、`Obstacle`、`Robot`、`Visualization`。激光射线只检测前三层。A320 的机身外壳与主 / 前起落架轮胎带 MeshCollider（M3 起轮胎可被离地 0.30 m 的激光扫到）。
+- 虚拟禁行区（M3，ADR-015）：`Zone_Work/VirtualKeepOut`，A320 可见网格三角形地面投影的 0.1 m 栅格掩膜，12,499 格（125.0 m²）；4 个工位各开一条接近通道（开口 2.40 × 3.20 m）。AGV 由 `_System/AppBootstrap` 在充电位运行时生成。
 - 检测区（CFG_Inspection，M2 第三部分 3B）：左右各 1 个区域 × 2 个工位 × 12 颗铆钉，共 48 颗；区域中心在主起落架后 4.85 m（避开右侧机身 4.30～4.33 m 处的竖缝），工位间距 1.5 m（工位中心在主起落架后 4.10 / 5.60 m），铆钉排离地 2.15 m、钉距 25 mm，位置与法向由射线投到机身外壳得到；停靠位姿车头朝 +Z、机械臂基座轴线到蒙皮 0.55 m（世界坐标 R1-S1 (6.222, −3.540)、R1-S2 (6.250, −5.040)、R2-S1 (9.778, −3.540)、R2-S2 (9.750, −5.040)）；停靠标记板在停靠位姿前方 1.0 m、向外 0.8 m（ID 0～3，0.20 m），基准标记贴在铆钉排前端蒙皮上（ID 4～7，0.10 m），充电桩正面 ID 8；真值缺陷按种子 42 取 5 颗（R1-S1-07 腐蚀减薄、R1-S1-10 孔边裂纹、R1-S1-12 铆钉松动、R2-S1-09 孔边裂纹、R2-S1-12 腐蚀减薄）。12 颗可以触发一次“每 10 颗基准复测”。
 
 ---
@@ -200,6 +204,7 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | `CFG_Arm` | 运动学参数来源（UR5e yaml）、关节限位、关节最大速度、命名姿态 |
 | `CFG_Inspection` | 区域 / 工位 / 铆钉排布、钉距、蒙皮厚度、声速、探头频率、目标接触力、力超限阈值、缺陷比例 |
 | `CFG_UiTheme` | 配色、字号、屏幕分辨率（见 §7） |
+| `CFG_Navigation` | 栅格分辨率、未知格代价、纯追踪前视与减速距离、到点容差、预停靠距离、对接低速段、标记估计噪声、停靠合格容差、工位接近通道边距（M3，ADR-015） |
 
 所有参数默认值见 §6.1；修改时只改配置资产，并在 `notes` 字段注明来源。
 
@@ -225,7 +230,9 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | 车体（长 × 宽 × 高） | 1.20 × 0.80 × 0.45 m（上装平台面高 0.45 m；因加装升降柱由 1.00 × 0.70 m 加宽加长） |
 | 驱动 | 差速，轮距 0.66 m，驱动轮直径 0.20 m，前后各 1 个万向轮 |
 | 整机质量 | 约 180 kg（含升降柱、机械臂与上装设备） |
-| 速度 | 巡航 0.6 m/s（上限 1.0 m/s），接近工位 0.15 m/s，对接 0.05 m/s；加速度 0.5 m/s²；角速度上限 60°/s |
+| 速度 | 巡航 0.6 m/s（上限 1.0 m/s），接近工位 0.15 m/s，对接 0.05 m/s；加速度 0.5 m/s²；角速度上限 60°/s；角加速度 120°/s²（M3） |
+| 车头对接相机 | 车头中心离地 0.40 m，视场 90° × 60°，识别距离 0.3～4.0 m（教学简化模型，归 S2；M3） |
+| 导航 | 栅格 0.1 m；膨胀半径 = 车体外接圆 0.721 m；虚拟禁行区外扩 0.30 m；预停靠距离 1.5 m；工位接近通道开口 2.40 × 3.20 m；停靠合格 ±10 mm / ±0.5°（CFG_Navigation，M3） |
 | 倒车退出距离 | 0.6 m |
 | 激光雷达 | 车头中心，离地 0.30 m；360 线、10 Hz、量程 20 m、测距噪声 ±2 cm |
 | 升降柱 | 装在平台中心前移 0.15 m 处；截面 0.25 × 0.25 m，固定段高 0.35 m，行程 0～1.40 m，升降速度 0.08 m/s，起停缓冲加速度 0.16 m/s²（满行程 18.0 s），到位精度 ±1 mm；外观为固定段 + 4 节嵌套伸缩段 |

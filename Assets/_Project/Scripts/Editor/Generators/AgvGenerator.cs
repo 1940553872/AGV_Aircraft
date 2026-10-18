@@ -1,6 +1,7 @@
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Tools;
+using RivetSim.Simulation.Navigation;
 using RivetSim.Simulation.Robot;
 using UnityEditor;
 using UnityEngine;
@@ -10,7 +11,7 @@ namespace RivetSim.Editor.Generators
     /// <summary>
     /// AGV 生成器：参数化底盘（车体、驱动轮、万向轮、雷达、电池仓、急停、灯带、升降柱、车载设备盒 S5 / S6 / S7）
     /// 与简易六轴占位臂（M2 第三部分由 UR5e 替换）。升降柱为固定段 + 多节嵌套伸缩段 + 顶部法兰，机械臂挂在最上一节的法兰上；
-    /// 根节点挂 AgvController（运动学刚体）与 LiftColumnController。尺寸、轮距、雷达与升降柱参数取自 CFG_Agv。
+    /// 根节点挂 AgvController（运动学刚体，驱动轮转动节点）与 LiftColumnController，雷达节点挂 Lidar2D，车头装对接相机（M3）。尺寸、轮距、雷达、对接相机与升降柱参数取自 CFG_Agv。
     /// 根节点在底盘地面投影中心，前进方向为本地 +Z。
     /// </summary>
     public static class AgvGenerator
@@ -38,6 +39,10 @@ namespace RivetSim.Editor.Generators
         private const float LidarHeightM = 0.07f;
         private const float WheelWidthM = 0.05f;
         private const float CasterDiameterM = 0.08f;
+        private const float WheelHubMarkWidthM = 0.03f;
+        private const float DockingCameraWidthM = 0.06f;
+        private const float DockingCameraHeightM = 0.04f;
+        private const float DockingCameraDepthM = 0.03f;
         private const float DeckThicknessM = 0.006f;
         private const float DeviceMarginM = 0.04f;
         private const float DeviceGapM = 0.03f;
@@ -161,11 +166,17 @@ namespace RivetSim.Editor.Generators
                 MaterialLibraryBuilder.Get(MaterialLibraryBuilder.EStopRed));
 
             // 驱动轮与万向轮。
+            // 驱动轮：转动节点在轮心（绕本地 X 轴转），轮胎外侧贴一块轮毂标记，转动时可见。
             float wheelRadius = agv.driveWheelDiameterM * 0.5f;
+            var wheels = new Transform[2];
             foreach (float side in new[] { -1f, 1f })
             {
-                GeneratorUtility.CreateCylinder(side < 0f ? "DriveWheel_L" : "DriveWheel_R", t,
-                    new Vector3(side * agv.wheelTrackM * 0.5f, wheelRadius, 0f), Vector3.right, agv.driveWheelDiameterM, WheelWidthM, rubber);
+                Transform pivot = GeneratorUtility.CreateNode(side < 0f ? "DriveWheel_L" : "DriveWheel_R", t,
+                    new Vector3(side * agv.wheelTrackM * 0.5f, wheelRadius, 0f));
+                GeneratorUtility.CreateCylinder("Tire", pivot, Vector3.zero, Vector3.right, agv.driveWheelDiameterM, WheelWidthM, rubber);
+                GeneratorUtility.CreateBox("HubMark", pivot, new Vector3(side * (WheelWidthM * 0.5f + 0.001f), wheelRadius * 0.45f, 0f),
+                    new Vector3(0.003f, wheelRadius * 0.7f, WheelHubMarkWidthM), accent);
+                wheels[side < 0f ? 0 : 1] = pivot;
             }
             for (int i = 0; i < agv.casterCount; i++)
             {
@@ -177,6 +188,13 @@ namespace RivetSim.Editor.Generators
             Transform lidar = GeneratorUtility.CreateNode("Lidar", t, agv.lidarMount.positionM, Quaternion.Euler(agv.lidarMount.eulerDeg));
             GeneratorUtility.CreateCylinder("Housing", lidar, Vector3.zero, Vector3.up, LidarDiameterM, LidarHeightM, dark);
             GeneratorUtility.CreateCylinder("Window", lidar, Vector3.zero, Vector3.up, LidarDiameterM + 0.004f, LidarHeightM * 0.4f, lidarWindow);
+            lidar.gameObject.AddComponent<Lidar2D>().Configure(agv);
+
+            // 车头对接相机（教学简化模型，归 S2 视觉）：贴在车头前面板上。
+            Transform dockCam = GeneratorUtility.CreateNode("DockingCamera", t, agv.dockingCameraMount.positionM, Quaternion.Euler(agv.dockingCameraMount.eulerDeg));
+            GeneratorUtility.CreateBox("Housing", dockCam, new Vector3(0f, 0f, -DockingCameraDepthM * 0.5f + 0.004f),
+                new Vector3(DockingCameraWidthM, DockingCameraHeightM, DockingCameraDepthM), dark);
+            GeneratorUtility.CreateCylinder("Lens", dockCam, new Vector3(0f, 0f, 0.006f), Vector3.forward, DockingCameraHeightM * 0.6f, 0.008f, lidarWindow);
 
             // 升降柱与占位臂（挂在最上一节的法兰上）。
             Transform[] stages = BuildLiftColumn(t, agv, body, dark, accent, out Transform armMount);
@@ -188,7 +206,7 @@ namespace RivetSim.Editor.Generators
             var rigidbody = root.AddComponent<Rigidbody>();
             rigidbody.isKinematic = true;
             rigidbody.useGravity = false;
-            root.AddComponent<AgvController>().Configure(agv);
+            root.AddComponent<AgvController>().Configure(agv, wheels[0], wheels[1]);
             root.AddComponent<LiftColumnController>().Configure(agv, stages);
 
             GeneratorUtility.SetLayerRecursive(root, SimLayers.RobotIndex);

@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/UI/UI_NavOverlay.uss" />
+    <ui:VisualElement name="nav-root" class="nav-root" picking-mode="Ignore">
+        <ui:VisualElement name="nav-panel" class="nav-panel" picking-mode="Ignore">
+            <ui:Label name="title" class="nav-title" text="AGV 建图 · 规划 · 移动" picking-mode="Ignore" />
+            <ui:Label name="phase" class="nav-phase" text="—" picking-mode="Ignore" />
+            <ui:Label name="clock" class="nav-row" text="" picking-mode="Ignore" />
+            <ui:Label name="mapping" class="nav-row" text="建图：未开始" picking-mode="Ignore" />
+            <ui:Label name="navigation" class="nav-row" text="导航：—" picking-mode="Ignore" />
+            <ui:Label name="docking" class="nav-row" text="停靠：—" picking-mode="Ignore" />
+            <ui:Label name="note" class="nav-note" text="地图为教学简化模型（真值位姿），标记识别按视场判定" picking-mode="Ignore" />
+            <ui:Label name="hint" class="nav-hint" text="" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:Label name="dock-label" class="dock-label" text="" picking-mode="Ignore" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb076f468eeeba5499b3f78f3f28de70, type: 3}
+  m_Name: CFG_Navigation
+  m_EditorClassIdentifier: 
+  notes: "M3\uFF082026-10-18\uFF09\u7ECF\u7528\u6237\u786E\u8BA4\u7684 v1 \u53D6\u503C\uFF1A\u6805\u683C
+    0.1 m\uFF08PromptTemplates M3\uFF09\u3001\u672A\u77E5\u683C\u9644\u52A0\u4EE3\u4EF7
+    1.0\u3001\u7EAF\u8FFD\u8E2A\u524D\u89C6 0.8 m\u3001\u51CF\u901F\u8DDD\u79BB 1.0
+    m\u3001\u5230\u70B9\u5BB9\u5DEE 0.05 m / 1.0\xB0\u3001\u9884\u505C\u9760\u8DDD\u79BB
+    1.5 m\u3001\u63A5\u8FD1\u901A\u9053\uFF08\u8F66\u5934\u524D 0.20 m\u3001\u8F66\u5C3E\u540E
+    0.30 m\u3001\u5185\u4FA7 0.60 m\u3001\u5916\u4FA7 1.80 m\uFF0C\u5F00\u53E3\u5BBD
+    2.40 m\uFF09\u3001\u5BF9\u63A5\u4F4E\u901F\u6BB5 0.30 m\u3001\u6807\u8BB0\u4F4D\u59FF\u4F30\u8BA1\u566A\u58F0
+    \u03C3 3 mm / 0.2\xB0\u3001\u505C\u9760\u5408\u683C\u5BB9\u5DEE \xB110 mm / \xB10.5\xB0\u3002"
+  gridResolutionM: 0.1
+  unknownCellExtraCost: 1
+  lookaheadM: 0.8
+  slowdownDistanceM: 1
+  goalPositionToleranceM: 0.05
+  goalYawToleranceDeg: 1
+  dockApproachDistanceM: 1.5
+  dockingSlowDistanceM: 0.3
+  markerPositionNoiseSigmaM: 0.003
+  markerYawNoiseSigmaDeg: 0.2
+  dockingPositionToleranceM: 0.01
+  dockingYawToleranceDeg: 0.5
+  channelFrontMarginM: 0.2
+  channelRearMarginM: 0.3
+  channelInnerHalfWidthM: 0.6
+  channelOuterHalfWidthM: 1.8

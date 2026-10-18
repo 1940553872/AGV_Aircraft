@@ -12,7 +12,7 @@ namespace RivetSim.Editor.Generators
 {
     /// <summary>
     /// A320 模型机预制体（M2 第三部分 3A）：
-    /// 1. PF_Aircraft_A320_Model —— glb 的 Prefab Variant：隐藏机身内部件（驾驶舱座椅等），层设为 Aircraft，只给机身外壳加 MeshCollider；原件不改。
+    /// 1. PF_Aircraft_A320_Model —— glb 的 Prefab Variant：隐藏机身内部件（驾驶舱座椅等），层设为 Aircraft，只给机身外壳（铆钉投影）与起落架轮胎（2D 激光扫描，M3）加 MeshCollider；原件不改。
     /// 2. PF_Aircraft_A320 —— 外层预制体：根节点在主起落架中点的地面投影，内嵌上述 Variant，并统一缩放、转到机头朝 +Z（ADR-008）。
     /// 缩放系数 = 机长（CFG_SceneLayout）÷ 原始机长；同时输出层级清单 Docs/Reference/A320_Hierarchy.md 与实测外形尺寸。
     /// </summary>
@@ -24,11 +24,14 @@ namespace RivetSim.Editor.Generators
         /// <summary>外层预制体路径。</summary>
         public const string PrefabPath = ProjectPaths.PrefabsAircraft + "/PF_Aircraft_A320.prefab";
 
-        /// <summary>机身外壳节点（唯一加 MeshCollider 的部件）。</summary>
+        /// <summary>机身外壳节点（铆钉投影所用的 MeshCollider）。</summary>
         public const string FuselageNode = "Cylinder.027_68";
 
         /// <summary>主起落架外侧 / 内侧机轮节点（每个网格横跨左右两侧）。</summary>
         public static readonly string[] MainGearWheelNodes = { "Cylinder.082_137", "Cylinder.091_146" };
+
+        /// <summary>前起落架左 / 右轮胎节点。</summary>
+        public static readonly string[] NoseGearWheelNodes = { "Cylinder.042_69", "Cylinder.046_75" };
 
         private const string HierarchyReportPath = "Docs/Reference/A320_Hierarchy.md";
 
@@ -80,10 +83,13 @@ namespace RivetSim.Editor.Generators
         {
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(glb);
             var hidden = new HashSet<string>(InteriorNodes);
+            // 机身外壳供铆钉投影；主 / 前起落架轮胎供离地 0.30 m 的 2D 激光扫描（M3，ADR-015）。
+            var collidable = new HashSet<string>(MainGearWheelNodes) { FuselageNode };
+            collidable.UnionWith(NoseGearWheelNodes);
             foreach (Transform t in instance.GetComponentsInChildren<Transform>(true))
             {
                 if (hidden.Contains(t.name)) t.gameObject.SetActive(false);
-                if (t.name != FuselageNode) continue;
+                if (!collidable.Contains(t.name)) continue;
                 foreach (MeshFilter mf in t.GetComponentsInChildren<MeshFilter>(true))
                 {
                     MeshCollider collider = mf.GetComponent<MeshCollider>();
@@ -194,7 +200,8 @@ namespace RivetSim.Editor.Generators
                 foreach (Renderer r in rs) b.Encapsulate(r.bounds);
                 bool active = node.gameObject.activeSelf;
                 string state = !active ? "隐藏（机身内部件）"
-                    : node.name == FuselageNode ? "机身外壳（MeshCollider）" : "";
+                    : node.name == FuselageNode ? "机身外壳（MeshCollider）"
+                    : System.Array.IndexOf(MainGearWheelNodes, node.name) >= 0 || System.Array.IndexOf(NoseGearWheelNodes, node.name) >= 0 ? "起落架轮胎（MeshCollider，供激光扫描）" : "";
                 if (active) visible += tris; else hiddenTris += tris;
                 sb.Append($"| {node.name} | {tris} | ({b.center.x:0.00}, {b.center.y:0.00}, {b.center.z:0.00}) | ({b.size.x:0.00}, {b.size.y:0.00}, {b.size.z:0.00}) | {state} |\n");
             }

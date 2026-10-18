@@ -18,7 +18,10 @@ MonoBehaviour:
     \u7B2C\u4E8C\u90E8\u5206\uFF082026-10-18\uFF09\u52A0\u5165\u5347\u964D\u67F1\uFF08\u884C\u7A0B
     1.40 m\u30010.08 m/s\u3001\xB11 mm\uFF0C\u673A\u68B0\u81C2\u5B89\u88C5\u9762
     0.80\uFF5E2.20 m\uFF09\uFF0C\u8D77\u505C\u7F13\u51B2\u52A0\u901F\u5EA6 0.16 m/s\xB2
-    \u7ECF\u7528\u6237\u786E\u8BA4\uFF1B\u539F armMount \u5B57\u6BB5\u7531\u5347\u964D\u67F1\u63A8\u7B97\u66FF\u4EE3\u3002\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002"
+    \u7ECF\u7528\u6237\u786E\u8BA4\uFF1B\u539F armMount \u5B57\u6BB5\u7531\u5347\u964D\u67F1\u63A8\u7B97\u66FF\u4EE3\u3002\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002M3\uFF082026-10-18\uFF09\u7ECF\u7528\u6237\u786E\u8BA4\u65B0\u589E\uFF1A\u6700\u5927\u89D2\u52A0\u901F\u5EA6
+    120 \xB0/s\xB2\uFF1B\u8F66\u5934\u5BF9\u63A5\u76F8\u673A\uFF08\u8F66\u5934\u4E2D\u5FC3\u79BB\u5730
+    0.40 m\uFF0C\u89C6\u573A 90\xB0 \xD7 60\xB0\uFF0C\u8BC6\u522B\u8DDD\u79BB 0.3\uFF5E4.0
+    m\uFF0C\u6559\u5B66\u7B80\u5316\u6A21\u578B\uFF09\u3002"
   bodySizeM: {x: 1.2, y: 0.8, z: 0.45}
   massKg: 180
   wheelTrackM: 0.66
@@ -30,6 +33,7 @@ MonoBehaviour:
   dockingSpeedMps: 0.05
   maxAccelerationMps2: 0.5
   maxAngularSpeedDegPerS: 60
+  maxAngularAccelerationDegPerS2: 120
   reverseExitDistanceM: 0.6
   fuselageSafetyClearanceM: 0.3
   lidarMount:
@@ -39,6 +43,12 @@ MonoBehaviour:
   lidarRateHz: 10
   lidarRangeM: 20
   lidarRangeNoiseM: 0.02
+  dockingCameraMount:
+    positionM: {x: 0, y: 0.4, z: 0.6}
+    eulerDeg: {x: 0, y: 0, z: 0}
+  dockingCameraFovDeg: {x: 90, y: 60}
+  dockingCameraMinRangeM: 0.3
+  dockingCameraMaxRangeM: 4
   liftMount:
     positionM: {x: 0, y: 0.45, z: 0.15}
     eulerDeg: {x: 0, y: 0, z: 0}

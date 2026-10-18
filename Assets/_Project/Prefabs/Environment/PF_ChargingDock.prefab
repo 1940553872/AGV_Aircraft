@@ -377,6 +377,7 @@ MonoBehaviour:
   tagId: 8
   sizeM: 0.2
   role: 2
+  tagCenterLocalM: {x: 0, y: 0, z: 0}
 --- !u!1 &2726750629371375369
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M3 AGV 建图、规划与移动 —— 未开始（M2 已于 2026-10-18 整体验收：第一部分厂房与布局、第二部分升降柱、第三部分 3A 导入外部资产 + 3B 检测区与可达性）
+M3 AGV 建图、规划与移动 —— 已实现，待用户验收（2026-10-18；M2 已于同日整体验收）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -29,27 +29,40 @@ M3 AGV 建图、规划与移动 —— 未开始（M2 已于 2026-10-18 整体�
 
 ## 最近一次会话
 - 日期：2026-10-18
-- 完成：M2 第三部分 3A 验收并合并到 main（246b3d1）；3B——检测区与可达性，已验收（提交 48a1141，分支 `m2/rivet-zones-b` 已合并到 main）；M2 整体验收
-  - 用户确认：CFG_Inspection 全部新参数；安全距离按三维间隙判定；基准标记贴在蒙皮上；停靠标记板前方 1.0 m 再向外 0.8 m；区域中心 5.0 → 4.85 m（避开右侧机身竖缝）。见 ADR-014
-  - Core：`InspectionConfig` 工位间距 1.5 m，新增区域位置、铆钉排高度、停靠距离、标记偏移与 AprilTag 参数
-  - Simulation/World：`InspectionRegion`、`InspectionStation`、`Rivet`、`RivetRegistry`、`RegionMarker`、`DefectType`、`RegionSide`、`MarkerRole`、`RivetLayout`、`DefectAssigner`
-  - Editor：`RivetZoneGenerator`（`RivetSim/Generate/Rivet Zones`，主场景生成时自动调用）、`AprilTagMaterialBuilder`（M_AprilTag_xx）；`PropsGenerator` 标记板改为深色边框 + 白底 + 标记、充电桩正面贴 ID 8；`ReachabilityChecker`（`RivetSim/Debug/Check Station Reachability`，报告 Docs/Reference/M2_Reachability.md）；`ScreenshotTool` 新增 `Capture Rivet Zone Screenshots`
-  - 结果：2 个区域、4 个工位、48 颗铆钉（每工位 12 颗）；真值缺陷 5 颗：R1-S1-07 腐蚀减薄、R1-S1-10 孔边裂纹、R1-S1-12 铆钉松动、R2-S1-09 孔边裂纹、R2-S1-12 腐蚀减薄
-  - 可达性：4 个工位在升降柱伸出 0.30～1.40 m（安装面 1.10～2.20 m）时 12 颗全部可达；LiftHeightPlanner 给出 1.05 m（安装面 1.85 m），该高度下 12/12；三维间隙：车体 0.895 m、升降柱 0.383～0.395 m（要求 ≥ 0.30 m）
-  - Generate All 连续两次：主场景物体总数均为 1078
+- 完成：M3 AGV 建图、规划与移动（先 Sandbox_Robot，后接入 Main），待用户验收。计划与 4 项决定经用户确认（机轮碰撞体、机械臂零位前伸的处理、AppBootstrap 在 M3 建立、新参数取值），见 ADR-015
+  - Core：新增 `NavigationConfig`（CFG_Navigation）；CFG_Agv 新增最大角加速度 120 °/s² 与车头对接相机（离地 0.40 m、90° × 60°、0.3～4.0 m）、`BodyCircumscribedRadiusM`
+  - Simulation/Robot：`AgvController` 补角加速度限幅、急停、真值位姿、驱动轮转动动画（未重写）；新增 `DiffDriveKinematics`（圆弧弦长积分）、`AgvFootprint`（含机械臂扫掠半径 1.069 m、车头前伸 1.034 m）
+  - Simulation/Navigation（新）：GridGeometry、OccupancyGridMap、OccupancyState、Lidar2D、LidarScan、MappingRoutine、VirtualKeepOutZone、KeepOutMask、KeepOutChannel、CostMap、GridAStar、PathSmoother、PlannedPath、PurePursuitTracker、PathFollower、MotionProfile、IMotionTask、MotionStatus、StraightDrive、MarkerVisibility、DockingController、DockingError、DockingResult、NavigationResult、NavigationService，以及 4 个事件
+  - Simulation/World：`RegionMarker` 记录标记中心本地位置（立杆标记板的标记在杆顶）
+  - Presentation：`AppBootstrap`（主场景入口，充电位运行时生成 AGV）、`NavigationRuntime`（固定子步 0.01 s 推进）、`NavigationDemoRoutine`、`SandboxNavDemo`；Input：`AgvTeleopInput`、`VisualizationToggleInput`；Visualization：`OccupancyGridOverlay`、`KeepOutOverlay`、`LidarPointCloudView`、`PathView`、`NavOverlayView`、`GroundOverlayMesh`；UI：`UI_NavOverlay.uxml/.uss`；asmdef 加 Unity.InputSystem
+  - Editor：新增 `KeepOutZoneGenerator`（`RivetSim/Generate/Virtual Keep-Out`，主场景生成时自动调用）、`NavigationSceneSetup`；`AircraftA320Builder` 给 4 个起落架轮胎加 MeshCollider；`AgvGenerator` 车轮转动节点 + 轮毂标记、对接相机、Lidar2D；`SandboxSceneBuilder` 重建 Sandbox_Robot（20 × 14 m、矮围墙、1.8 m 窄通道、模拟机身禁行区、测试工位 SB-S1；M2 升降柱演示保留但停用）；`MainSceneBuilder` 删除 AGV_Preview、加 AppBootstrap 与可视化；`MaterialLibraryBuilder` 新增 M_Vis_*（URP Unlit）；`GenerateAll` 先补建 CFG；`ScreenshotTool` 布局截图临时实例化 PF_AGV
+  - 虚拟禁行区：72.8 万个三角形保守栅格化到 232 × 254 格，投影内 12,499 格（125.0 m²）；4 条接近通道，开口 2.40 × 3.20 m
+  - 结果（Main，4× 倍速，种子 42）：
+    | 项目 | 路径长度 | 实际里程 | 用时（仿真） |
+    |---|---|---|---|
+    | 建图（驶离充电位 1.50 m + 巡游路线 181.25 m） | 182.75 m | 181.05 m | 316.3 s（实际约 79 s），已观测 279,549 格（99.3%） |
+    | 导航 充电位 → R1-S1 预停靠位姿（驶离 1.50 m + A* 24.73 m） | 26.23 m | 26.05 m | 56.4 s |
+    | 对接 R1-S1（识别停靠标记 ID 0） | 1.50 m | 1.499 m | 14.0 s |
+    | 倒车退出 | 0.60 m | 0.599 m | 4.3 s |
+    - 停靠误差：纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.04°（容差 ±10 mm / ±0.5°，合格）
+    - 联锁：升降柱升到安装面 1.850 m 时解锁被拒绝、倒车被拒绝；降到最低后解锁，倒车退出完成
+    - Sandbox：建图 55.00 m / 93.8 s，导航 12.40 m / 29.7 s，SB-S1 停靠误差 纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.03°
+  - Generate All 连续两次：主场景物体总数均为 977（删除 AGV_Preview 后）
 - 修改文件：
-  - 代码：Scripts/Core/Config/InspectionConfig.cs；Scripts/Simulation/World/*.cs（10 个新文件）；Scripts/Editor/Generators/{RivetZoneGenerator, AprilTagMaterialBuilder}.cs（新）、{PropsGenerator, MainSceneBuilder}.cs；Scripts/Editor/Tools/{ReachabilityChecker（新）, ScreenshotTool, ProjectPaths}.cs；Scripts/Tests/EditMode/{RivetLayoutTests, DefectAssignerTests}.cs（新）
-  - 资产：Config/CFG_Inspection.asset；Art/Materials/M_AprilTag_00～08；Prefabs/Environment/PF_MarkerBoard、PF_ChargingDock 等（重新生成）；Scenes/Main_TeachingHall.unity、Scenes/Sandbox/*
-  - 文档：Docs/Architecture.md §3.2 / §4 / §6.1、Docs/DECISIONS.md（ADR-014）、Docs/Reference/M2_Reachability.md、Docs/PROGRESS.md、Docs/Screenshots/M2/13～15
-- 会话自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 59/59 通过；Main_TeachingHall Play 模式 0 错误 0 警告；Sandbox_Robot Play 模式 0 错误（1 条警告为演示预期的联锁拒绝）；场景无未保存改动，已退出 Play 模式
+  - 代码：Scripts/Core/Config/{NavigationConfig（新）, AgvConfig}.cs；Scripts/Simulation/Robot/{AgvController, DiffDriveKinematics（新）, AgvFootprint（新）}.cs；Scripts/Simulation/Navigation/*.cs（30 个新文件）；Scripts/Simulation/World/RegionMarker.cs；Scripts/Presentation/App/{AppBootstrap, NavigationRuntime, NavigationDemoRoutine, SandboxNavDemo}.cs（新）、Input/*.cs（新）、Visualization/*.cs（新）、RivetSim.Presentation.asmdef；Scripts/Editor/Generators/{KeepOutZoneGenerator, NavigationSceneSetup}.cs（新）、{AgvGenerator, AircraftA320Builder, MainSceneBuilder, SandboxSceneBuilder, MaterialLibraryBuilder, RivetZoneGenerator, GenerateAllMenu}.cs；Scripts/Editor/Tools/{ProjectPaths, ProjectSetupMenu, ScreenshotTool}.cs；Scripts/Tests/EditMode/{GridAStarTests, CostMapTests, DiffDriveKinematicsTests, NavigationGeometryTests}.cs（新）
+  - 资产：Config/CFG_Navigation.asset（新）、CFG_Agv.asset；UI/UI_NavOverlay.uxml/.uss（新）；Art/Materials/M_Vis_*（新）；Prefabs（PF_AGV、PF_Aircraft_A320_Model 等重新生成）；Scenes/Main_TeachingHall.unity、Scenes/Sandbox/*
+  - 文档：Docs/Architecture.md §3.2 / §3.3 / §4 / §6 / §6.1、Docs/DECISIONS.md（ADR-015）、Docs/Reference/A320_Hierarchy.md、Docs/PROGRESS.md、Docs/Screenshots/M3/16～21
+- 会话自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 82/82 通过（新增 23 个）；Main_TeachingHall Play 模式 0 错误，3 条警告均为联锁演示预期的拒绝；Sandbox_Robot Play 模式 0 错误 0 警告；场景无未保存改动，已退出 Play 模式
+- 截图（Docs/Screenshots/M3/）：16 沙盒全流程结束（地图、禁行区、通道、停靠误差标注）；17 主场景建图进行中（53%，北侧机身阴影区尚未扫到）；18 建图完成后俯视；18b 同一时刻临时隐藏 A320 渲染器，显示禁行区全貌与 4 条接近通道；19 充电位 → R1-S1 导航中（青色路径、橙色目标箭头）；20 R1-S1 停靠后联锁演示（升降柱升起、倒车被拒绝、停靠误差标注）；21 倒车退出后
 - 遗留问题：
-  - UR5e 预制体默认是零位（手臂伸直），运输姿态 Stow / 观察姿态 Observe 在 M4 写入 CFG_Arm.namedPoses；目前联锁用 `PlaceholderArmPoseState`（视为运输姿态）
-  - 可达性只验证了探头末端，机械臂连杆与机身的碰撞未检查（M4）
-  - 铆钉与标记都在 Environment 层；M3 激光只扫离地 0.30 m，看不到它们，视觉识别在 M4 / M5 按视场判定
+  - UR5e 仍为零位（手臂伸出车头前 0.43 m），原地转向 / 对接车道按含机械臂半径检查激光层；M4 定义 Stow 后复核并去掉该检查
+  - Editor 失去焦点时 Play 模式不推进（Player 设置 Run In Background 为关）；本次用 eval 在 Play 中临时设 `Application.runInBackground = true`，未改项目设置
+  - `capture_game_view` 的 save_path 只能写在 Assets 下；截图改为取内联图片自行解码保存，避免在 Assets 里产生文件
+  - 对接噪声取自固定种子，沙盒与主场景的停靠误差序列相同（可复现，非巧合）
+  - 演示中途退出 Play 时，正在运动的升降柱会记录一条“运动被取消”警告（预期行为）
   - 场景整体偏暗（M7 补光）；A320 三角面约 73 万（M7 复核帧率）
-  - Unity Editor 长时间 eval 会触发 5 s 主线程超时；大量导入时等待 `unity status` 恢复后再继续
-  - 在 PowerShell 里给 `unity command eval --code` 传含双引号的代码会被剥掉引号；改用 Bash 调用 CLI，或用 `eval_file`；Bash heredoc 传给 Python 的中文可能按 GBK 解码，改文件时用 Edit 工具或 `io.open(..., encoding='utf-8')`
-- 下次第一步：执行 PromptTemplates.md 的 M3（AGV 建图、规划与移动，先在 Sandbox_Robot 开发）。先回复计划，确认后再实现
+  - 在 PowerShell 里给 `unity command eval --code` 传含双引号的代码会被剥掉引号；改用 Bash 调用 CLI，或用 `eval_file`
+- 下次第一步：用户验收 M3（截图 16～21 与上表数值）；通过后执行 PromptTemplates.md 的 M4（机械臂与检测），先回复计划
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:1.5、厂房 64 × 44 × 12 m、AGV 1.20 × 0.80 × 0.45 m 加升降柱（见 ADR-010）、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -73,5 +86,7 @@ M3 AGV 建图、规划与移动 —— 未开始（M2 已于 2026-10-18 整体�
 - [ ] v2：升降柱升高后的整机稳定裕度分析（质心高度上升）
 - [ ] M5：启动时用 `TaskMatrixData.GetExecutorKeys()` 与 `ExecutorRegistry` 核对缺失的执行器键名（目前 JSON 中共 37 个）
 - [x] M1：确定 `CFG_SceneLayout` 中尺寸向量（长 × 宽 × 高）与世界坐标轴的对应关系（ADR-008）
-- [ ] M3 / M5：AGV 改为由 AppBootstrap 运行时生成，删除主场景中的 AGV_Preview（ADR-009）
+- [x] M3 / M5：AGV 改为由 AppBootstrap 运行时生成，删除主场景中的 AGV_Preview（ADR-009；M3 完成，见 ADR-015）
+- [ ] M4：定义运输姿态 Stow 后复核整机外廓，去掉导航中“含机械臂扫掠半径”的原地转向 / 对接车道检查（ADR-015）
+- [ ] M5：返回充电位复用 M3 的“导航到充电位前方 1.5 m + 直线倒车”
 - [ ] M7：演示区补光 / 主光方向调整，提升演示台近景亮度

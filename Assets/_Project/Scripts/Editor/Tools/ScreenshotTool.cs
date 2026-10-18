@@ -297,13 +297,12 @@ namespace RivetSim.Editor.Tools
 
         private static void CaptureAgv(Scene scene, List<Object> temp)
         {
-            Transform robot = GeneratorUtility.FindRoot(scene, "Robot");
-            Transform agv = robot != null ? robot.Find(MainSceneBuilder.AgvPreviewName) : null;
-            if (agv == null)
-            {
-                SimLog.Error(LogCategory.System, "场景中没有 AGV_Preview，跳过 AGV 近景。");
-                return;
-            }
+            // AGV 由 AppBootstrap 运行时生成（M3），截图时在起始位临时放一台。
+            var layout = GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset);
+            GameObject prefab = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
+            if (layout == null || prefab == null) return;
+            Transform agv = TempInstance(prefab, temp).transform;
+            agv.SetPositionAndRotation(layout.startPose.WorldPosition, layout.startPose.WorldRotation);
             Vector3 target = agv.TransformPoint(new Vector3(0f, 0.55f, 0.05f));
             Vector3 position = agv.TransformPoint(new Vector3(1.5f, 1.05f, 1.9f));
             Camera camera = CreateTempCamera(temp, position, Quaternion.LookRotation(target - position), 35f);

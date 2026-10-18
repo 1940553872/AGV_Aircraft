@@ -3,6 +3,8 @@ using System.Linq;
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Tools;
+using RivetSim.Presentation.App;
+using RivetSim.Simulation.Navigation;
 using RivetSim.Simulation.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -13,16 +15,14 @@ namespace RivetSim.Editor.Generators
 {
     /// <summary>
     /// 主场景装配：新建并覆盖 Main_TeachingHall（Architecture §4），按 CFG_SceneLayout 布置厂房、三区、模型机占位体、
-    /// 障碍物、充电位、演示台、AGV 预览实例（M3 / M5 改为运行时生成）、灯光、后处理与相机锚点。场景完全由本生成器产出，重复执行结果一致。
+    /// 障碍物、充电位、演示台、检测区、虚拟禁行区、灯光、后处理、相机锚点，以及启动入口 AppBootstrap 与导航可视化（M3）。
+    /// AGV 由 AppBootstrap 在充电位运行时生成（ADR-009 / ADR-015）。场景完全由本生成器产出，重复执行结果一致。
     /// </summary>
     public static class MainSceneBuilder
     {
         /// <summary>根节点名称（Architecture §4）。</summary>
         public static readonly string[] RootNames =
             { "_System", "Environment", "Zone_Work", "Zone_Mobility", "Zone_Demo", "Robot", "Cameras", "UI", "Visualization" };
-
-        /// <summary>AGV 预览实例名称。</summary>
-        public const string AgvPreviewName = "AGV_Preview";
 
         /// <summary>相机锚点名称前缀。</summary>
         public const string CameraAnchorPrefix = "CamAnchor_";
@@ -61,14 +61,10 @@ namespace RivetSim.Editor.Generators
             BuildMobilityZone(roots["Zone_Mobility"], layout);
             BuildDemoZone(roots["Zone_Demo"], layout);
             RivetZoneGenerator.Build(scene);
+            VirtualKeepOutZone keepOut = KeepOutZoneGenerator.Build(scene);
 
-            GameObject agvPrefab = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
-            if (agvPrefab != null)
-            {
-                GeneratorUtility.InstantiatePrefab(agvPrefab, roots["Robot"], layout.startPose.WorldPosition,
-                    layout.startPose.WorldRotation, AgvPreviewName);
-            }
-            BuildCameras(roots["Cameras"], layout);
+            Camera mainCamera = BuildCameras(roots["Cameras"], layout);
+            BuildBootstrap(roots, keepOut, mainCamera);
 
             GeneratorUtility.EnsureFolder(ProjectPaths.MainScene.Substring(0, ProjectPaths.MainScene.LastIndexOf('/')));
             EditorSceneManager.SaveScene(scene, ProjectPaths.MainScene);
@@ -218,7 +214,26 @@ namespace RivetSim.Editor.Generators
         }
 
         // 相机锚点供 M6 CameraRig 使用：1 总览、2 跟随 AGV、3 末端特写、4 演示台。主相机放在总览机位。
-        private static void BuildCameras(Transform root, SceneLayoutConfig layout)
+        // 启动入口与导航可视化：AGV 由 AppBootstrap 运行时生成，引用全部在此写入。
+        private static void BuildBootstrap(Dictionary<string, Transform> roots, VirtualKeepOutZone keepOut, Camera mainCamera)
+        {
+            var bootstrapObject = new GameObject("AppBootstrap");
+            bootstrapObject.transform.SetParent(roots["_System"], false);
+            var bootstrap = bootstrapObject.AddComponent<AppBootstrap>();
+            bootstrap.ConfigureConfigs(
+                GeneratorUtility.LoadConfig<SimSettings>(ProjectPaths.SimSettingsAsset),
+                GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset),
+                GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset),
+                GeneratorUtility.LoadConfig<ArmConfig>(ProjectPaths.ArmAsset),
+                GeneratorUtility.LoadConfig<NavigationConfig>(ProjectPaths.NavigationAsset));
+            Transform regions = roots["Zone_Work"].Find(RivetZoneGenerator.RootName);
+            bootstrap.ConfigureScene(GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath), roots["Robot"], keepOut,
+                regions != null ? regions.GetComponent<RivetRegistry>() : null);
+            NavigationSceneSetup.Views views = NavigationSceneSetup.Build(roots["Visualization"], roots["UI"], bootstrapObject, mainCamera);
+            bootstrap.ConfigureViews(views.Map, views.KeepOut, views.Lidar, views.Path, views.Overlay, views.Teleop);
+        }
+
+        private static Camera BuildCameras(Transform root, SceneLayoutConfig layout)
         {
             Vector3 aircraft = new Vector3(layout.aircraftCenterM.x, 0f, layout.aircraftCenterM.y);
             float hz = layout.hallSizeM.y * 0.5f;
@@ -244,7 +259,7 @@ namespace RivetSim.Editor.Generators
             Anchor(root, "2_FollowAgv", followPos, followLook);
             Anchor(root, "3_EndEffector", effectorPos, effectorLook);
             Anchor(root, "4_DemoStation", deskPos, deskLook);
-            SceneLightingSetup.CreateCamera(root, "Main Camera", overviewPos, overviewLook, MainCameraFovDeg, true);
+            return SceneLightingSetup.CreateCamera(root, "Main Camera", overviewPos, overviewLook, MainCameraFovDeg, true);
         }
 
         private static void Anchor(Transform root, string name, Vector3 position, Vector3 lookAt)

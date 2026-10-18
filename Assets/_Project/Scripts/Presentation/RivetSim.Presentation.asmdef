@@ -3,7 +3,8 @@
     "rootNamespace": "RivetSim.Presentation",
     "references": [
         "RivetSim.Core",
-        "RivetSim.Simulation"
+        "RivetSim.Simulation",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -74,6 +74,21 @@ namespace RivetSim.Editor.Generators
         /// <summary>标记板白底。</summary>
         public const string MarkerBoard = "M_MarkerBoard";
 
+        /// <summary>占据栅格地图叠加层（URP Unlit 透明，贴图运行时写入，M3）。</summary>
+        public const string VisMapOverlay = "M_Vis_MapOverlay";
+
+        /// <summary>虚拟禁行区叠加层（URP Unlit 透明，M3）。</summary>
+        public const string VisKeepOut = "M_Vis_KeepOut";
+
+        /// <summary>规划路径线（青色，M3）。</summary>
+        public const string VisPath = "M_Vis_Path";
+
+        /// <summary>目标位姿箭头（橙色，M3）。</summary>
+        public const string VisGoal = "M_Vis_Goal";
+
+        /// <summary>激光点云（M3）。</summary>
+        public const string VisLidarPoint = "M_Vis_LidarPoint";
+
         // 警示线条纹周期等于线宽，使条纹呈 45°。
         private const string HazardTextureName = "T_HazardStripe";
         private const int HazardTexturePx = 64;
@@ -146,8 +161,9 @@ namespace RivetSim.Editor.Generators
                     ApplyColor(material, spec.Color, spec.Smoothness, spec.Metallic, spec.Emission);
                 }
                 BuildHazardMaterials();
+                BuildVisualizationMaterials();
                 AssetDatabase.SaveAssets();
-                SimLog.Info(LogCategory.System, $"材质库已生成：{Specs.Length + 2} 个材质。");
+                SimLog.Info(LogCategory.System, $"材质库已生成：{Specs.Length + 2 + 5} 个材质。");
             }
             finally
             {
@@ -235,6 +251,46 @@ namespace RivetSim.Editor.Generators
             ApplyColor(material, Color.white, 0.4f, 0f, default);
             material.SetTexture("_BaseMap", stripe);
             material.SetTextureScale("_BaseMap", new Vector2(repeats, 1f));
+            EditorUtility.SetDirty(material);
+        }
+
+        // 可视化材质（Architecture §7 配色）：地图与禁行区叠加层为透明贴图，颜色由贴图像素决定；线条与点云为不受光照的纯色。
+        private static void BuildVisualizationMaterials()
+        {
+            ApplyUnlit(EnsureUnlitMaterial(VisMapOverlay), Color.white, true);
+            ApplyUnlit(EnsureUnlitMaterial(VisKeepOut), Color.white, true);
+            ApplyUnlit(EnsureUnlitMaterial(VisPath), Hex(0x2EC4E6), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisGoal), Hex(0xFF9F1C), false);
+            ApplyUnlit(EnsureUnlitMaterial(VisLidarPoint), Hex(0xFF5D5D), false);
+        }
+
+        /// <summary>读取或创建 URP/Unlit 材质。</summary>
+        public static Material EnsureUnlitMaterial(string name)
+        {
+            string path = MaterialPath(name);
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material != null) return material;
+            material = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = name };
+            AssetDatabase.CreateAsset(material, path);
+            return material;
+        }
+
+        private static void ApplyUnlit(Material material, Color color, bool transparent)
+        {
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Surface", transparent ? 1f : 0f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", (float)(transparent ? BlendMode.SrcAlpha : BlendMode.One));
+            material.SetFloat("_DstBlend", (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+            material.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            material.SetFloat("_DstBlendAlpha", (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+            material.SetFloat("_ZWrite", transparent ? 0f : 1f);
+            // 双面显示：地面叠加层与水平线条无论朝向都可见。
+            material.SetFloat("_Cull", (float)CullMode.Off);
+            if (transparent) material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            else material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.SetOverrideTag("RenderType", transparent ? "Transparent" : "Opaque");
+            material.renderQueue = (int)(transparent ? RenderQueue.Transparent : RenderQueue.Geometry);
             EditorUtility.SetDirty(material);
         }
 

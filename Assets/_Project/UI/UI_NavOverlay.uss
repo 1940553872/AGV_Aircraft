@@ -1,0 +1,70 @@
+.nav-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Regular.asset");
+    color: rgb(230, 238, 247);
+}
+
+.nav-panel {
+    position: absolute;
+    left: 24px;
+    top: 24px;
+    width: 560px;
+    padding: 16px 20px;
+    background-color: rgba(21, 34, 50, 0.88);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    border-radius: 6px;
+}
+
+.nav-title {
+    font-size: 26px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin-bottom: 6px;
+}
+
+.nav-phase {
+    font-size: 20px;
+    color: rgb(255, 159, 28);
+    margin-bottom: 8px;
+    white-space: normal;
+}
+
+.nav-row {
+    font-size: 17px;
+    margin-bottom: 4px;
+    white-space: normal;
+}
+
+.nav-note {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    margin-top: 6px;
+    white-space: normal;
+}
+
+.nav-hint {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    white-space: normal;
+}
+
+.dock-label {
+    position: absolute;
+    display: none;
+    padding: 6px 10px;
+    font-size: 17px;
+    background-color: rgba(14, 22, 33, 0.9);
+    border-width: 2px;
+    border-color: rgb(61, 214, 140);
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.dock-label--fail {
+    border-color: rgb(255, 93, 93);
+}

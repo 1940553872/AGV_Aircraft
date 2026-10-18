@@ -29,6 +29,12 @@ namespace RivetSim.Editor.Tools
         /// <summary>检测配置资产。</summary>
         public const string InspectionAsset = ConfigFolder + "/CFG_Inspection.asset";
 
+        /// <summary>导航配置资产（M3）。</summary>
+        public const string NavigationAsset = ConfigFolder + "/CFG_Navigation.asset";
+
+        /// <summary>M3 导航叠加信息 UXML。</summary>
+        public const string NavOverlayUxml = ProjectRoot + "/UI/UI_NavOverlay.uxml";
+
         /// <summary>生成材质目录。</summary>
         public const string MaterialsFolder = ProjectRoot + "/Art/Materials";
 

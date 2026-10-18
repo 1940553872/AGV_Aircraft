@@ -20,6 +20,9 @@ namespace RivetSim.Core.Config
         [Tooltip("整机质量（含升降柱、机械臂与上装设备），单位 kg")]
         public float massKg = 180f;
 
+        /// <summary>车体外接圆半径（绕车体中心 = 驱动轮轴中点），单位 m；路径规划的膨胀半径。</summary>
+        public float BodyCircumscribedRadiusM => 0.5f * Mathf.Sqrt(bodySizeM.x * bodySizeM.x + bodySizeM.y * bodySizeM.y);
+
         [Header("差速驱动")]
         [Tooltip("驱动轮轮距，单位 m")]
         public float wheelTrackM = 0.66f;
@@ -49,6 +52,9 @@ namespace RivetSim.Core.Config
         [Tooltip("最大角速度，单位 °/s")]
         public float maxAngularSpeedDegPerS = 60f;
 
+        [Tooltip("最大角加速度，单位 °/s²（M3 经用户确认）")]
+        public float maxAngularAccelerationDegPerS2 = 120f;
+
         [Tooltip("倒车退出距离，单位 m")]
         public float reverseExitDistanceM = 0.6f;
 
@@ -70,6 +76,19 @@ namespace RivetSim.Core.Config
 
         [Tooltip("测距噪声幅值（±），单位 m")]
         public float lidarRangeNoiseM = 0.02f;
+
+        [Header("车头对接相机（教学简化模型，归 S2 视觉；M3 经用户确认）")]
+        [Tooltip("对接相机安装位姿：车头中心，离地 0.40 m，朝前")]
+        public MountPose dockingCameraMount = new MountPose(new Vector3(0f, 0.40f, 0.60f), Vector3.zero);
+
+        [Tooltip("对接相机视场（水平 × 垂直），单位 °")]
+        public Vector2 dockingCameraFovDeg = new Vector2(90f, 60f);
+
+        [Tooltip("对接相机识别距离下限，单位 m")]
+        public float dockingCameraMinRangeM = 0.3f;
+
+        [Tooltip("对接相机识别距离上限，单位 m")]
+        public float dockingCameraMaxRangeM = 4.0f;
 
         [Header("升降柱（机械臂装在顶部法兰上）")]
         [Tooltip("升降柱底座安装位姿：平台中心前移 0.15 m，位于上装平台面（离地 0.45 m）")]

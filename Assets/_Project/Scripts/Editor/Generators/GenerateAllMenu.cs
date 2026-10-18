@@ -16,6 +16,7 @@ namespace RivetSim.Editor.Generators
         {
             if (!MainSceneBuilder.EnsureNoUnsavedScenes()) return;
 
+            ProjectSetupMenu.CreateDefaultConfigs();
             MaterialLibraryBuilder.Build();
             PolyHavenMaterialBuilder.Build();
             ZoneLabelBaker.Build();

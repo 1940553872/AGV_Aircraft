@@ -193,7 +193,8 @@ namespace RivetSim.Editor.Generators
                 tag.localScale = new Vector3(inspection.dockingTagSizeM, inspection.dockingTagSizeM, 1f);
             }
             RegionMarker marker = board.AddComponent<RegionMarker>();
-            marker.Configure(tagId, inspection.dockingTagSizeM, MarkerRole.Docking);
+            Vector3 tagCenter = tag != null ? tag.localPosition : new Vector3(0f, PropsGenerator.MarkerBoardTagHeightM, 0f);
+            marker.Configure(tagId, inspection.dockingTagSizeM, MarkerRole.Docking, tagCenter);
             return marker;
         }
     }

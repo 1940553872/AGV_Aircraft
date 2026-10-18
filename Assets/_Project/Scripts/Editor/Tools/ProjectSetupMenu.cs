@@ -92,6 +92,7 @@ namespace RivetSim.Editor.Tools
             EnsureConfig<ArmConfig>("CFG_Arm");
             EnsureConfig<InspectionConfig>("CFG_Inspection");
             EnsureConfig<UiThemeConfig>("CFG_UiTheme");
+            EnsureConfig<NavigationConfig>("CFG_Navigation");
 
             if (simSettings.taskMatrixJson == null)
             {
