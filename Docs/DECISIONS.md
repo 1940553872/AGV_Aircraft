@@ -17,3 +17,6 @@ Unity 6.0 没有 UI Toolkit 世界空间面板，因此用 PanelSettings.targetT
 
 ## ADR-006 显式依赖 Newtonsoft Json（2026-10-18）
 任务矩阵读取使用 Newtonsoft Json。此前它只是 `com.unity.pipeline`（实验版）带入的间接依赖，pipeline 升级或移除时可能随之消失，因此在 `Packages/manifest.json` 中显式加入 `com.unity.nuget.newtonsoft-json` 3.2.1（与当时锁定版本相同）。`RivetSim.Core` 与 `RivetSim.Tests.EditMode` 通过 `precompiledReferences` 引用 `Newtonsoft.Json.dll`。
+
+## ADR-007 配置资产生成只补缺、不覆盖（2026-10-18）
+CLAUDE.md 要求生成器重复执行时覆盖上一次的结果。该规则适用于场景、预制体、材质等**生成物**；CFG_* 配置资产是**人工调参的数据源**，覆盖会丢失调整。因此 `RivetSim/Setup/Create Default Configs` 只创建缺少的 CFG 资产，已有资产保持不变；默认值写在配置类的字段初始值中（来自 Architecture §6.1 / §7），需要恢复默认时手动删除对应资产后重新执行菜单。
