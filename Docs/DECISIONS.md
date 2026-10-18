@@ -45,3 +45,6 @@ Architecture §4 规定 `Robot` 根节点在运行时生成 AGV。M1 为了布�
 - CFG_Agv 删除 `armMount`，机械臂安装高度由升降柱推算（`ArmMountHeightM(伸出量)` = 平台面 + 固定段 + 伸出量），避免同一高度存两份。
 - `SafetyMonitor` 为纯 C# 类，依赖只读状态接口；M2 第二部分提前实现 `AgvController` 最小子集（零速锁定、速度指令、线加速度限幅）供联锁使用，M3 在其上补充导航与车轮动画，不产生临时桩代码。
 - 控制器提供 `Tick(仿真步长)`，由启动入口（Sandbox 中为 `SandboxLiftDemo`，正式场景为 M5 的 AppBootstrap）按 `SimClock` 推进；控制器内不读取 `UnityEngine.Time`。
+
+## ADR-013 M2 以第一、二部分结束，导入外部资产推迟（2026-10-18）
+用户在第三部分计划提交后表示需要调整，随后宣布 M2 验收通过并结束会话。M2 的验收范围因此为：厂房与布局重建（ADR-011）和 AGV 升降柱（ADR-012）。原第三部分“导入外部资产”（UR5e、A320、AprilTag、Poly Haven 材质、UI 字体资源、RivetZoneGenerator、可达性验证）改为独立任务，沿用 PromptTemplates M2 模板“第三部分”与 PROGRESS“资产准备”中的检查结果，开始前先听取用户的调整意见。M3 只依赖底盘与场地布局，可先于导入任务进行，虚拟禁行区暂按 CFG_SceneLayout 外形参数生成；M4 依赖 UR5e 与铆钉区，须在导入任务完成后开始。
