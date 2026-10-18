@@ -40,10 +40,10 @@ namespace RivetSim.Tests.EditMode
             SceneLayoutReport report = SceneLayoutValidator.Validate(_layout, _agv);
             Assert.That(report.NarrowestPassageM, Is.EqualTo(1.8f).Within(1e-4f));
             Assert.That(report.RouteToFuselageM, Is.EqualTo(6.375f).Within(1e-3f));
-            Assert.That(report.RouteToAircraftBoundsM, Is.EqualTo(6.165f).Within(1e-3f));
+            Assert.That(report.RouteToAircraftBoundsM, Is.EqualTo(6.375f).Within(1e-3f));
             Assert.That(report.RouteToObstacleM, Is.EqualTo(0.5f).Within(1e-3f));
             Assert.That(report.AircraftToObstacleM, Is.EqualTo(4.675f).Within(1e-3f));
-            Assert.That(report.AircraftToWorkZoneEdgeM, Is.EqualTo(4.065f).Within(1e-3f));
+            Assert.That(report.AircraftToWorkZoneEdgeM, Is.EqualTo(4.075f).Within(1e-3f));
             Assert.That(report.RouteLengthM, Is.EqualTo(169.2f).Within(1e-2f));
             Assert.That(report.ChargingDockToWorkZoneM, Is.EqualTo(10.4f).Within(1e-3f));
             Assert.That(report.DemoAudienceDepthM, Is.EqualTo(5.1f).Within(1e-3f));

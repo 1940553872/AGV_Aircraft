@@ -12,7 +12,7 @@ namespace RivetSim.Core.Config
     {
         [TextArea(2, 6)]
         [Tooltip("参数来源与修改说明")]
-        public string notes = "v1 预估值，见 Docs/Architecture.md §4、§6.1 与 ADR-010；M2 第一部分（2026-10-18）按模型机 1:1.5、厂房 64 × 44 × 12 m 重排三区、障碍物、充电位、起始位、巡游路线与演示区，经用户确认。";
+        public string notes = "v1 预估值，见 Docs/Architecture.md §4、§6.1 与 ADR-010；M2 第一部分（2026-10-18）按模型机 1:1.5、厂房 64 × 44 × 12 m 重排三区、障碍物、充电位、起始位、巡游路线与演示区，经用户确认；M2 第三部分（2026-10-18）按导入的 A320 模型实测更新翼展 22.73 m、机高 7.92 m、机身直径 2.63 m、中线离地 2.63 m、下缘离地 1.25 m（机长 25.05 m 为缩放基准）。";
 
         [Header("大厅")]
         [Tooltip("大厅尺寸（长 × 宽 × 高），单位 m；长沿世界 X，宽沿世界 Z")]
@@ -70,19 +70,19 @@ namespace RivetSim.Core.Config
         public float aircraftLengthM = 25.05f;
 
         [Tooltip("翼展，单位 m")]
-        public float aircraftWingspanM = 23.87f;
+        public float aircraftWingspanM = 22.73f;
 
         [Tooltip("机高，单位 m")]
-        public float aircraftHeightM = 7.84f;
+        public float aircraftHeightM = 7.92f;
 
         [Tooltip("机身直径，单位 m")]
         public float fuselageDiameterM = 2.63f;
 
-        [Tooltip("机身下缘离地高度，单位 m（估算值，M2 第三部分导入后以实测为准）")]
-        public float fuselageBottomHeightM = 1.27f;
+        [Tooltip("机身下缘离地高度，单位 m（A320 模型实测）")]
+        public float fuselageBottomHeightM = 1.25f;
 
-        [Tooltip("机身中线离地高度，单位 m（估算值，M2 第三部分导入后以实测为准）")]
-        public float fuselageCenterlineHeightM = 2.60f;
+        [Tooltip("机身中线离地高度，单位 m（A320 模型实测）")]
+        public float fuselageCenterlineHeightM = 2.63f;
 
         [Header("演示区")]
         [Tooltip("演示台位姿：偏航角为显示器朝向（90° = 显示器朝 +X，面向大厅）")]

@@ -46,5 +46,11 @@ Architecture §4 规定 `Robot` 根节点在运行时生成 AGV。M1 为了布�
 - `SafetyMonitor` 为纯 C# 类，依赖只读状态接口；M2 第二部分提前实现 `AgvController` 最小子集（零速锁定、速度指令、线加速度限幅）供联锁使用，M3 在其上补充导航与车轮动画，不产生临时桩代码。
 - 控制器提供 `Tick(仿真步长)`，由启动入口（Sandbox 中为 `SandboxLiftDemo`，正式场景为 M5 的 AppBootstrap）按 `SimClock` 推进；控制器内不读取 `UnityEngine.Time`。
 
-## ADR-013 M2 以第一、二部分结束，导入外部资产推迟（2026-10-18）
-用户在第三部分计划提交后表示需要调整，随后宣布 M2 验收通过并结束会话。M2 的验收范围因此为：厂房与布局重建（ADR-011）和 AGV 升降柱（ADR-012）。原第三部分“导入外部资产”（UR5e、A320、AprilTag、Poly Haven 材质、UI 字体资源、RivetZoneGenerator、可达性验证）改为独立任务，沿用 PromptTemplates M2 模板“第三部分”与 PROGRESS“资产准备”中的检查结果，开始前先听取用户的调整意见。M3 只依赖底盘与场地布局，可先于导入任务进行，虚拟禁行区暂按 CFG_SceneLayout 外形参数生成；M4 依赖 UR5e 与铆钉区，须在导入任务完成后开始。
+## ADR-013 M2 第三部分拆为 3A / 3B；A320 与 UR5e 的导入方式（2026-10-18）
+- 更正：本条早先记为“M2 以第一、二部分结束、导入外部资产推迟”，用户随后说明 M2 尚未结束，该记录作废。M2 第三部分按用户确认拆为 3A（导入外部资产）与 3B（RivetZoneGenerator 与可达性验证），3A 截图确认后再做 3B。
+- glTFast 采用 Package Manager 给出的兼容版本 `com.unity.cloud.gltfast` 6.20.0。
+- A320 三角面：用户确认不减面，接受约 73 万（只隐藏完全包在机身内的驾驶舱件约 4.3 千面，可见 727,718 面）。早先估算的“驾驶舱内饰 7.4 万面”实为前起落架；包围盒看似异常的薄板（Cube.017_196 等、Cube.077_48）经截图确认是可见的舱门 / 发动机部件，均保留。
+- A320 结构：`PF_Aircraft_A320_Model` 为 glb 的 Prefab Variant（隐藏内部件、层设为 Aircraft、只给机身外壳 Cylinder.027_68 加 MeshCollider），外层 `PF_Aircraft_A320` 内嵌该 Variant 并做统一缩放（机长 / 原始机长 = 0.139595）与旋转（glTFast 导入后机头朝 +X，再绕 Y 轴 −90° 使机头朝 +Z）；外层根节点在主起落架中点的地面投影（地面 = 主机轮最低点）。之所以加外层：Variant 根节点的旋转在实例化时会被场景摆放覆盖。外形尺寸按顶点计算（渲染器包围盒会把斜放的薄片放大）。
+- 模型机外形改用实测值写入 CFG_SceneLayout（用户确认）：翼展 22.73 m、机高 7.92 m、机身直径 2.63 m、中线离地 2.63 m、下缘离地 1.25 m；机长 25.05 m 为缩放基准。
+- UR5e：按 `ur_macro.xacro` 的连杆链与三个 yaml 生成 `PF_Arm_UR5e`（`ArmRig` + 6 个 `ArmJoint`，不用 ArticulationBody）。ROS → Unity 统一由 `RosFrame` 换算（位置 (−y, z, x)，旋转 C·R·Cᵀ，关节角取反）；Unity 导入 Z 向上的 DAE 时网格坐标为 (−x, z, −y)，实测后每个网格再绕 Y 轴 +90° 校正。UR 原材质（Standard）换成 URP 材质 M_UR5e_*，颜色沿用原材质。零位与竖直姿态的正运动学与 yaml 一致（EditMode 测试）。
+- 材质：地面 / 墙面 / 演示台台面 / AGV 平台改用 Poly Haven 贴图，由 ARM 图派生金属度 / 光滑度（R = 金属度，A = 1 − 粗糙度）与 AO 贴图；UI 默认字体为 Noto Sans SC Regular 的动态 FontAsset。

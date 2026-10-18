@@ -94,6 +94,13 @@ namespace RivetSim.Editor.Generators
 
         private static void BuildWorkZone(Transform root, SceneLayoutConfig layout)
         {
+            // 有 A320 预制体时使用它（M2 第三部分），否则退回占位模型机。
+            GameObject a320 = AssetDatabase.LoadAssetAtPath<GameObject>(AircraftA320Builder.PrefabPath);
+            if (a320 != null)
+            {
+                BuildA320(root, layout, a320);
+                return;
+            }
             GameObject aircraftPrefab = GeneratorUtility.LoadPrefab(AircraftPlaceholderGenerator.PrefabPath);
             GameObject standPrefab = GeneratorUtility.LoadPrefab(PropsGenerator.AircraftStandPath);
             GameObject chockPrefab = GeneratorUtility.LoadPrefab(PropsGenerator.WheelChockPath);
@@ -108,6 +115,26 @@ namespace RivetSim.Editor.Generators
             float chockOffset = AircraftPlaceholderGenerator.MainWheelDiameterM(layout) * 0.5f + ChockGapM;
             foreach (Vector3 wheel in AircraftPlaceholderGenerator.MainWheelPositions(layout))
             {
+                GeneratorUtility.InstantiatePrefab(chockPrefab, supports, wheel + Vector3.forward * chockOffset, Quaternion.Euler(0f, 180f, 0f), "Chock");
+                GeneratorUtility.InstantiatePrefab(chockPrefab, supports, wheel - Vector3.forward * chockOffset, Quaternion.identity, "Chock");
+            }
+        }
+
+        // A320 根节点在主起落架中点；按实测包围盒中心对齐 CFG_SceneLayout.aircraftCenterM。真机靠起落架支撑，不放机翼支撑架，只放轮挡。
+        private static void BuildA320(Transform root, SceneLayoutConfig layout, GameObject prefab)
+        {
+            GameObject chockPrefab = GeneratorUtility.LoadPrefab(PropsGenerator.WheelChockPath);
+            GameObject aircraft = GeneratorUtility.InstantiatePrefab(prefab, root, Vector3.zero, Quaternion.identity, "Aircraft");
+            AircraftMeasurement m = AircraftA320Builder.Measure(aircraft);
+            Vector3 origin = new Vector3(layout.aircraftCenterM.x - m.BoundsCenterOffsetM.x, 0f, layout.aircraftCenterM.y - m.BoundsCenterOffsetM.y);
+            aircraft.transform.localPosition = origin;
+            if (chockPrefab == null) return;
+
+            Transform supports = GeneratorUtility.CreateNode("AircraftSupports", root, origin);
+            float chockOffset = m.MainWheelRadiusM + ChockGapM;
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Vector3 wheel = new Vector3(side * m.MainGearSideOffsetM, 0f, 0f);
                 GeneratorUtility.InstantiatePrefab(chockPrefab, supports, wheel + Vector3.forward * chockOffset, Quaternion.Euler(0f, 180f, 0f), "Chock");
                 GeneratorUtility.InstantiatePrefab(chockPrefab, supports, wheel - Vector3.forward * chockOffset, Quaternion.identity, "Chock");
             }

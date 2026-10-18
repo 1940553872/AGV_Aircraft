@@ -16,7 +16,7 @@ MonoBehaviour:
     config/ur5e/joint_limits.yaml\uFF1B\u5176\u4F59\u4E3A Docs/Architecture.md \xA76.1
     \u9884\u4F30\u503C\u3002\u547D\u540D\u59FF\u6001\u5728 M4 \u786E\u5B9A\u3002"
   modelName: UR5e
-  kinematicsYaml: {fileID: 0}
+  kinematicsYaml: {fileID: 4900000, guid: 542db94007bac4a47bc4b16f1c54db8a, type: 3}
   reachM: 0.85
   payloadKg: 5
   comfortTargetAboveMountM: 0.3

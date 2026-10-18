@@ -1,1 +1,6 @@
 @import url("unity-theme://default");
+
+/* 中文字体：Noto Sans SC（SIL OFL 1.1），由 RivetSim/Generate/UI Font Assets 生成 */
+:root {
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Regular.asset");
+}

@@ -111,7 +111,9 @@ namespace RivetSim.Editor.Generators
         public static void BuildAgv()
         {
             var agv = GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset);
-            GameObject arm = GeneratorUtility.LoadPrefab(ArmPrefabPath);
+            // 有 UR5e 时使用它（M2 第三部分），否则退回占位臂。
+            GameObject arm = AssetDatabase.LoadAssetAtPath<GameObject>(UR5eArmGenerator.PrefabPath);
+            if (arm == null) arm = GeneratorUtility.LoadPrefab(ArmPrefabPath);
             if (agv == null || arm == null) return;
 
             Material body = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotBody);
@@ -140,7 +142,7 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.CreateBox("Upper", chassis, new Vector3(0f, (slotTop + height) * 0.5f, 0f),
                 new Vector3(width, height - slotTop, length), body);
             GeneratorUtility.CreateBox("Deck", chassis, new Vector3(0f, height + DeckThicknessM * 0.5f, 0f),
-                new Vector3(width - 0.02f, DeckThicknessM, length - 0.02f), dark);
+                new Vector3(width - 0.02f, DeckThicknessM, length - 0.02f), MaterialLibraryBuilder.EnsureLitMaterial(PolyHavenMaterialBuilder.AgvDeck));
             foreach (float side in new[] { -1f, 1f })
             {
                 GeneratorUtility.CreateBox(side < 0f ? "AccentStripe_L" : "AccentStripe_R", chassis,

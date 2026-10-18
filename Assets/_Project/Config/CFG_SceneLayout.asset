@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA74\u3001\xA76.1
     \u4E0E ADR-010\uFF1BM2 \u7B2C\u4E00\u90E8\u5206\uFF082026-10-18\uFF09\u6309\u6A21\u578B\u673A
-    1:1.5\u3001\u5382\u623F 64 \xD7 44 \xD7 12 m \u91CD\u6392\u4E09\u533A\u3001\u969C\u788D\u7269\u3001\u5145\u7535\u4F4D\u3001\u8D77\u59CB\u4F4D\u3001\u5DE1\u6E38\u8DEF\u7EBF\u4E0E\u6F14\u793A\u533A\uFF0C\u7ECF\u7528\u6237\u786E\u8BA4\u3002"
+    1:1.5\u3001\u5382\u623F 64 \xD7 44 \xD7 12 m \u91CD\u6392\u4E09\u533A\u3001\u969C\u788D\u7269\u3001\u5145\u7535\u4F4D\u3001\u8D77\u59CB\u4F4D\u3001\u5DE1\u6E38\u8DEF\u7EBF\u4E0E\u6F14\u793A\u533A\uFF0C\u7ECF\u7528\u6237\u786E\u8BA4\uFF1BM2
+    \u7B2C\u4E09\u90E8\u5206\uFF082026-10-18\uFF09\u6309\u5BFC\u5165\u7684 A320 \u6A21\u578B\u5B9E\u6D4B\u66F4\u65B0\u7FFC\u5C55
+    22.73 m\u3001\u673A\u9AD8 7.92 m\u3001\u673A\u8EAB\u76F4\u5F84 2.63 m\u3001\u4E2D\u7EBF\u79BB\u5730
+    2.63 m\u3001\u4E0B\u7F18\u79BB\u5730 1.25 m\uFF08\u673A\u957F 25.05 m \u4E3A\u7F29\u653E\u57FA\u51C6\uFF09\u3002"
   hallSizeM: {x: 64, y: 44, z: 12}
   aisleClearanceM: 4
   workZone:
@@ -76,11 +79,11 @@ MonoBehaviour:
   aircraftCenterM: {x: 8, y: 0}
   aircraftScale: 0.6666667
   aircraftLengthM: 25.05
-  aircraftWingspanM: 23.87
-  aircraftHeightM: 7.84
+  aircraftWingspanM: 22.73
+  aircraftHeightM: 7.92
   fuselageDiameterM: 2.63
-  fuselageBottomHeightM: 1.27
-  fuselageCenterlineHeightM: 2.6
+  fuselageBottomHeightM: 1.25
+  fuselageCenterlineHeightM: 2.63
   demoDeskPose:
     positionM: {x: -28.5, y: 0}
     yawDeg: 90

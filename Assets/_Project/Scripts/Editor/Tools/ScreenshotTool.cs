@@ -47,7 +47,45 @@ namespace RivetSim.Editor.Tools
 
         /// <summary>升降柱最低位与最高位两张近景（需打开 Sandbox_Robot），截完复位到最低位。</summary>
         [MenuItem("RivetSim/Debug/Capture Lift Screenshots")]
-        public static void CaptureLift()
+        public static void CaptureLift() => CaptureLift("06_Lift_Lowest.png", "07_Lift_Highest.png");
+
+        /// <summary>AGV 带 UR5e 的升降柱最低位 / 最高位近景（M2 第三部分 3A，需打开 Sandbox_Robot）。</summary>
+        [MenuItem("RivetSim/Debug/Capture UR5e Lift Screenshots")]
+        public static void CaptureUr5eLift() => CaptureLift("11a_AGV_UR5e_Lowest.png", "11b_AGV_UR5e_Highest.png");
+
+        /// <summary>A320 与材质验收截图（M2 第三部分 3A，需打开主场景）：总览、从演示区看机身侧面、演示区材质近景。</summary>
+        [MenuItem("RivetSim/Debug/Capture Asset Import Screenshots")]
+        public static void CaptureAssetImport()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            if (scene.path != ProjectPaths.MainScene)
+            {
+                SimLog.Error(LogCategory.System, $"请先打开 {ProjectPaths.MainScene}。");
+                return;
+            }
+            var layout = GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset);
+            if (layout == null) return;
+            bool wasDirty = scene.isDirty;
+            Directory.CreateDirectory(OutputFolder);
+            var temp = new List<Object>();
+            try
+            {
+                CaptureOverview(scene, temp, "08_A320_Overview.png");
+                CaptureAircraftSide(layout, temp, "09_A320_Side.png");
+                CaptureDemoStation(layout, temp, "12_Materials.png");
+            }
+            finally
+            {
+                foreach (Object o in temp)
+                {
+                    if (o != null) Object.DestroyImmediate(o);
+                }
+                if (!wasDirty) EditorSceneManager.SaveScene(scene);
+            }
+            SimLog.Info(LogCategory.System, $"资产导入截图已输出到 {OutputFolder}/");
+        }
+
+        private static void CaptureLift(string lowestFile, string highestFile)
         {
             Scene scene = SceneManager.GetActiveScene();
             if (scene.path != ProjectPaths.SandboxRobotScene)
@@ -73,10 +111,10 @@ namespace RivetSim.Editor.Tools
                 Vector3 target = agv.TransformPoint(LiftViewTargetM);
                 Camera camera = CreateTempCamera(temp, position, Quaternion.LookRotation(target - position), LiftViewFovDeg);
                 lift.SetExtensionImmediate(0f);
-                Render(camera, CloseUpSizePx, "06_Lift_Lowest.png");
+                Render(camera, CloseUpSizePx, lowestFile);
                 SimLog.Info(LogCategory.System, $"最低位：安装面离地 {lift.MountHeightM:0.000} m");
                 lift.SetExtensionImmediate(lift.Config.liftStrokeM);
-                Render(camera, CloseUpSizePx, "07_Lift_Highest.png");
+                Render(camera, CloseUpSizePx, highestFile);
                 SimLog.Info(LogCategory.System, $"最高位：安装面离地 {lift.MountHeightM:0.000} m");
             }
             finally
@@ -113,10 +151,10 @@ namespace RivetSim.Editor.Tools
                 Transform annotations = BuildAnnotations(layout, agv, temp);
                 CaptureTopDown(layout, temp);
                 Object.DestroyImmediate(annotations.gameObject);
-                CaptureOverview(scene, temp);
-                CaptureAircraftSide(layout, temp);
+                CaptureOverview(scene, temp, "02_Overview.png");
+                CaptureAircraftSide(layout, temp, "03_AircraftSide.png");
                 CaptureAgv(scene, temp);
-                CaptureDemoStation(layout, temp);
+                CaptureDemoStation(layout, temp, "05_DemoStation.png");
             }
             finally
             {
@@ -139,7 +177,7 @@ namespace RivetSim.Editor.Tools
             Render(camera, TopDownSizePx, "01_TopDown.png");
         }
 
-        private static void CaptureOverview(Scene scene, List<Object> temp)
+        private static void CaptureOverview(Scene scene, List<Object> temp, string fileName)
         {
             Transform cameras = GeneratorUtility.FindRoot(scene, "Cameras");
             Transform anchor = cameras != null ? cameras.Find(MainSceneBuilder.CameraAnchorPrefix + "1_Overview") : null;
@@ -149,15 +187,15 @@ namespace RivetSim.Editor.Tools
                 return;
             }
             Camera camera = CreateTempCamera(temp, anchor.position, anchor.rotation, MainSceneBuilder.MainCameraFovDeg);
-            Render(camera, CloseUpSizePx, "02_Overview.png");
+            Render(camera, CloseUpSizePx, fileName);
         }
 
-        private static void CaptureAircraftSide(SceneLayoutConfig layout, List<Object> temp)
+        private static void CaptureAircraftSide(SceneLayoutConfig layout, List<Object> temp, string fileName)
         {
             Vector3 target = new Vector3(layout.aircraftCenterM.x, layout.fuselageCenterlineHeightM, layout.aircraftCenterM.y);
             Vector3 position = new Vector3(layout.demoZone.MaxM.x + SideViewInsetM, SideViewEyeHeightM, layout.aircraftCenterM.y);
             Camera camera = CreateTempCamera(temp, position, Quaternion.LookRotation(target - position), SideViewFovDeg);
-            Render(camera, CloseUpSizePx, "03_AircraftSide.png");
+            Render(camera, CloseUpSizePx, fileName);
         }
 
         private static void CaptureAgv(Scene scene, List<Object> temp)
@@ -175,13 +213,13 @@ namespace RivetSim.Editor.Tools
             Render(camera, CloseUpSizePx, "04_AGV.png");
         }
 
-        private static void CaptureDemoStation(SceneLayoutConfig layout, List<Object> temp)
+        private static void CaptureDemoStation(SceneLayoutConfig layout, List<Object> temp, string fileName)
         {
             PlanarPose desk = layout.demoDeskPose;
             Vector3 position = desk.WorldPosition + desk.WorldRotation * new Vector3(1.5f, 1.75f, 2.3f);
             Vector3 target = desk.WorldPosition + desk.WorldRotation * new Vector3(-0.1f, 1.0f, -0.9f);
             Camera camera = CreateTempCamera(temp, position, Quaternion.LookRotation(target - position), 50f);
-            Render(camera, CloseUpSizePx, "05_DemoStation.png");
+            Render(camera, CloseUpSizePx, fileName);
         }
 
         private static Camera CreateTempCamera(List<Object> temp, Vector3 position, Quaternion rotation, float fovDeg)
