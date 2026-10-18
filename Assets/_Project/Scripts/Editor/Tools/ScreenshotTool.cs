@@ -85,6 +85,103 @@ namespace RivetSim.Editor.Tools
             SimLog.Info(LogCategory.System, $"资产导入截图已输出到 {OutputFolder}/");
         }
 
+        // 检测区截图机位：工位近景（相对 AGV 停靠位姿）、铆钉特写（相对铆钉排中心，沿法向外移）、工位俯视（相对模型机根节点）。
+        private static readonly Vector3 StationViewOffsetM = new Vector3(-2.6f, 2.3f, -2.4f);
+        private static readonly Vector3 StationViewTargetM = new Vector3(0.6f, 1.6f, 0.2f);
+        private const float StationViewFovDeg = 50f;
+        private const float RivetViewDistanceM = 0.55f;
+        private const float RivetViewFovDeg = 40f;
+        private const float StationsTopDownHalfHeightM = 4.5f;
+        private const float DefectMarkerDiameterM = 0.012f;
+
+        /// <summary>检测区验收截图（M2 第三部分 3B，需打开主场景并已生成检测区）：工位近景、铆钉特写、工位俯视。</summary>
+        [MenuItem("RivetSim/Debug/Capture Rivet Zone Screenshots")]
+        public static void CaptureRivetZones()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            Transform work = GeneratorUtility.FindRoot(scene, "Zone_Work");
+            RivetRegistry registry = work != null ? work.Find(RivetZoneGenerator.RootName)?.GetComponent<RivetRegistry>() : null;
+            Transform aircraft = work != null ? work.Find("Aircraft") : null;
+            var agvConfig = GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset);
+            var armConfig = GeneratorUtility.LoadConfig<ArmConfig>(ProjectPaths.ArmAsset);
+            GameObject agvPrefab = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
+            if (registry == null || aircraft == null || agvConfig == null || armConfig == null || agvPrefab == null)
+            {
+                SimLog.Error(LogCategory.System, "请先打开主场景并生成检测区。");
+                return;
+            }
+            bool wasDirty = scene.isDirty;
+            Directory.CreateDirectory(OutputFolder);
+            var temp = new List<Object>();
+            try
+            {
+                InspectionStation first = registry.Regions[0].Stations[0];
+                Rivet middle = first.Rivets[first.Rivets.Count / 2];
+
+                // 13：AGV 停在 R1-S1，升降柱取规划高度，探头压在中间一颗铆钉上。
+                GameObject agv = TempInstance(agvPrefab, temp);
+                bool posed = ReachabilityChecker.PoseAtRivet(agv, first, middle, agvConfig, armConfig);
+                Transform dock = agv.transform;
+                Vector3 position = dock.TransformPoint(StationViewOffsetM);
+                Vector3 target = dock.TransformPoint(StationViewTargetM);
+                Render(CreateTempCamera(temp, position, Quaternion.LookRotation(target - position), StationViewFovDeg), CloseUpSizePx, "13_Station.png");
+                Object.DestroyImmediate(agv);
+
+                // 14：R1-S1 铆钉排与基准标记特写，缺陷钉叠加红色圆片（仅截图时）。
+                var red = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { color = Color.red };
+                temp.Add(red);
+                foreach (Rivet rivet in registry.GetAllRivets())
+                {
+                    if (rivet.Defect == DefectType.None) continue;
+                    GameObject mark = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    mark.hideFlags = HideFlags.DontSave;
+                    temp.Add(mark);
+                    Object.DestroyImmediate(mark.GetComponent<Collider>());
+                    mark.transform.SetPositionAndRotation(rivet.PositionM + rivet.Normal * 0.001f, Quaternion.FromToRotation(Vector3.up, rivet.Normal));
+                    mark.transform.localScale = new Vector3(DefectMarkerDiameterM, 0.0005f, DefectMarkerDiameterM);
+                    mark.GetComponent<Renderer>().sharedMaterial = red;
+                }
+                Vector3 rowCenter = (first.Rivets[0].PositionM + first.Rivets[first.Rivets.Count - 1].PositionM) * 0.5f;
+                Vector3 look = rowCenter + aircraft.forward * 0.05f;
+                Vector3 eye = look + middle.Normal * RivetViewDistanceM;
+                Render(CreateTempCamera(temp, eye, Quaternion.LookRotation(look - eye, Vector3.up), RivetViewFovDeg), CloseUpSizePx, "14_Rivets.png");
+
+                // 15：4 个工位各放一台 AGV（升降柱降到最低），从正上方俯视后机身。
+                foreach (InspectionRegion region in registry.Regions)
+                {
+                    foreach (InspectionStation station in region.Stations)
+                    {
+                        GameObject copy = TempInstance(agvPrefab, temp);
+                        copy.transform.SetPositionAndRotation(station.DockingPose.WorldPosition, station.DockingPose.WorldRotation);
+                    }
+                }
+                Vector3 center = (registry.Regions[0].Stations[0].DockingPose.WorldPosition + registry.Regions[registry.Regions.Count - 1].Stations[0].DockingPose.WorldPosition) * 0.5f;
+                Camera top = CreateTempCamera(temp, center + Vector3.up * TopDownHeightM, Quaternion.Euler(90f, aircraft.eulerAngles.y, 0f), 30f);
+                top.orthographic = true;
+                top.orthographicSize = StationsTopDownHalfHeightM;
+                top.nearClipPlane = 1f;
+                top.farClipPlane = TopDownHeightM + 1f;
+                Render(top, CloseUpSizePx, "15_Stations_TopDown.png");
+                SimLog.Info(LogCategory.System, $"检测区截图已输出到 {OutputFolder}/（13 号图探头逆解{(posed ? "成功" : "失败")}）");
+            }
+            finally
+            {
+                foreach (Object o in temp)
+                {
+                    if (o != null) Object.DestroyImmediate(o);
+                }
+                if (!wasDirty) EditorSceneManager.SaveScene(scene);
+            }
+        }
+
+        private static GameObject TempInstance(GameObject prefab, List<Object> temp)
+        {
+            var go = (GameObject)Object.Instantiate(prefab);
+            go.hideFlags = HideFlags.DontSave;
+            temp.Add(go);
+            return go;
+        }
+
         private static void CaptureLift(string lowestFile, string highestFile)
         {
             Scene scene = SceneManager.GetActiveScene();

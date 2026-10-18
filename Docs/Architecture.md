@@ -69,7 +69,7 @@ D:\Unity_Project\AGV_Aircraft\
 
 ### 3.2 RivetSim.Simulation
 
-**World**：`InspectionRegion`（区域，含区域标记与若干工位）、`InspectionStation`（工位：停靠位姿 + 铆钉列表）、`Rivet`（ID、位置、法向、真值缺陷、检测结果）、`RivetRegistry`、`RegionMarker`（AprilTag 板）、`ChargingDock`。
+**World**：`InspectionRegion`（区域：左 / 右侧与若干工位）、`InspectionStation`（工位：AGV 停靠位姿、铆钉排、停靠标记板与蒙皮基准标记）、`Rivet`（ID、位置、法向、真值缺陷 `DefectType`，检测结果在 M4 写入）、`RivetRegistry`（登记表，挂在 Zone_Work/InspectionRegions）、`RegionMarker`（AprilTag：ID、边长、用途 `MarkerRole`）、`RivetLayout` / `DefectAssigner`（排布与缺陷分配的纯计算）、`ChargingDock`。检测区由 `RivetSim/Generate/Rivet Zones` 生成（M2 第三部分 3B）。
 
 **Robot**
 - `AgvController`：差速运动学，运动学刚体（`MovePosition`），带速度 / 加速度限幅；提供 `SetVelocity`、`Stop`、`ZeroSpeedLock`、`ReleaseZeroSpeedLock`、`IsZeroSpeedLocked`（M2 第二部分已实现此最小子集）；角加速度限幅与车轮转动动画在 M3 补充。
@@ -132,7 +132,7 @@ D:\Unity_Project\AGV_Aircraft\
 - 布局校验（`SceneLayoutValidator`，AGV 车宽 0.80 m）：最窄通道 1.80 m；巡游时 AGV 外轮廓到机身最小 6.38 m、到模型机包围盒最小 6.38 m、到障碍物最小 0.50 m（窄通道内）；模型机到障碍物最近 4.68 m（O4）；模型机到作业区边界最小 4.08 m；充电位到作业区 10.40 m；演示台前观众区进深 5.10 m；停靠设计 0.30 m。
 - 层级根节点：`_System`、`Environment`、`Zone_Work`、`Zone_Mobility`、`Zone_Demo`、`Robot`（运行时生成）、`Cameras`、`UI`、`Visualization`。
 - Layers：`Environment`、`Aircraft`、`Obstacle`、`Robot`、`Visualization`。激光射线只检测前三层。
-- 检测区默认配置：2 个区域（机身左侧、机身右侧）× 每区 2 个工位 × 每工位 12 颗铆钉（12 颗可以触发一次“每 10 颗基准复测”）。
+- 检测区（CFG_Inspection，M2 第三部分 3B）：左右各 1 个区域 × 2 个工位 × 12 颗铆钉，共 48 颗；区域中心在主起落架后 4.85 m（避开右侧机身 4.30～4.33 m 处的竖缝），工位间距 1.5 m（工位中心在主起落架后 4.10 / 5.60 m），铆钉排离地 2.15 m、钉距 25 mm，位置与法向由射线投到机身外壳得到；停靠位姿车头朝 +Z、机械臂基座轴线到蒙皮 0.55 m（世界坐标 R1-S1 (6.222, −3.540)、R1-S2 (6.250, −5.040)、R2-S1 (9.778, −3.540)、R2-S2 (9.750, −5.040)）；停靠标记板在停靠位姿前方 1.0 m、向外 0.8 m（ID 0～3，0.20 m），基准标记贴在铆钉排前端蒙皮上（ID 4～7，0.10 m），充电桩正面 ID 8；真值缺陷按种子 42 取 5 颗（R1-S1-07 腐蚀减薄、R1-S1-10 孔边裂纹、R1-S1-12 铆钉松动、R2-S1-09 孔边裂纹、R2-S1-12 腐蚀减薄）。12 颗可以触发一次“每 10 颗基准复测”。
 
 ---
 
@@ -214,7 +214,7 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | 模型机 | A320-200 外形，缩比 1:1.5，按机长统一缩放导入的模型（系数 0.139595）：机长 25.05 m、翼展 22.73 m、机高 7.92 m、机身直径 2.63 m（2026-10-18 实测；真机 37.57 × 35.80 × 11.76 m，模型自身比例与真机略有差异，原估算翼展 23.87 m、机高 7.84 m） |
 | 机身下缘离地 / 机身中线离地 / 机身顶部 | 1.25 m / 2.63 m / 约 3.95 m（2026-10-18 实测；原点在主起落架中点地面投影，包围盒中心在其后 0.71 m；主起落架半轮距 2.68 m） |
 | 作业区 / 作业通道 | 作业区约 32（X）× 33（Z）m；模型机外轮廓到障碍物 ≥ 4 m |
-| 检测区 | 机身左、右侧各 1 个区域，位于机翼后缘与平尾前缘之间的后机身侧壁（不在机翼、平尾投影下方）；每区 2 个工位，工位间距 1.5 m；每工位 1 排 12 颗铆钉，铆钉排离地约 2.0～2.3 m |
+| 检测区 | 机身左、右侧各 1 个区域，位于机翼后缘（主起落架后约 3.3 m）与平尾前缘（约 8.9 m）之间的后机身侧壁直段；每区 2 个工位，工位间距 1.5 m；每工位 1 排 12 颗铆钉，铆钉排离地 2.15 m（该处机身半宽 1.23 m，法向朝外偏下约 16°）；可达性验证见 Docs/Reference/M2_Reachability.md |
 | 铆钉 | 沉头铆钉，钉头直径 8 mm，钉距 25 mm（按实物尺寸，不随模型机缩放） |
 | 蒙皮 | 铝合金 2 mm，纵波声速 6320 m/s |
 | 真值缺陷比例 | 10%（类型：孔边裂纹、腐蚀减薄、铆钉松动） |

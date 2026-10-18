@@ -60,6 +60,7 @@ namespace RivetSim.Editor.Generators
             BuildWorkZone(roots["Zone_Work"], layout);
             BuildMobilityZone(roots["Zone_Mobility"], layout);
             BuildDemoZone(roots["Zone_Demo"], layout);
+            RivetZoneGenerator.Build(scene);
 
             GameObject agvPrefab = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
             if (agvPrefab != null)

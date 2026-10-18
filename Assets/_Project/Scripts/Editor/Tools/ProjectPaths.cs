@@ -26,6 +26,9 @@ namespace RivetSim.Editor.Tools
         /// <summary>机械臂配置资产。</summary>
         public const string ArmAsset = ConfigFolder + "/CFG_Arm.asset";
 
+        /// <summary>检测配置资产。</summary>
+        public const string InspectionAsset = ConfigFolder + "/CFG_Inspection.asset";
+
         /// <summary>生成材质目录。</summary>
         public const string MaterialsFolder = ProjectRoot + "/Art/Materials";
 

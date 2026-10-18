@@ -1,13 +1,14 @@
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Tools;
+using RivetSim.Simulation.World;
 using UnityEditor;
 using UnityEngine;
 
 namespace RivetSim.Editor.Generators
 {
     /// <summary>
-    /// 道具生成器：充电位、货箱、工具车、锥桶、飞机支撑架、轮挡、区域标记板（空白板，M2 贴 AprilTag）。
+    /// 道具生成器：充电位、货箱、工具车、锥桶、飞机支撑架、轮挡、区域标记板（标记材质由 RivetZoneGenerator 按工位设置）；充电桩正面贴充电位 AprilTag。
     /// 货箱、工具车、锥桶按名义尺寸建模，场景摆放时按 CFG_SceneLayout 的障碍物尺寸缩放；
     /// 充电位按 CFG_Agv 的车体尺寸生成，根节点即 AGV 充电位姿。
     /// </summary>
@@ -41,6 +42,16 @@ namespace RivetSim.Editor.Generators
         private const float PadMarginM = 0.1f;
         private const float PadLineWidthM = 0.06f;
         private const float FloorLineHeightM = 0.002f;
+        private const float DockTagCenterHeightM = 0.36f;
+
+        /// <summary>AprilTag 外圈白边宽度（识别所需空白区），单位 m。</summary>
+        public const float TagBorderM = 0.03f;
+
+        /// <summary>标记图层叠放间距（避免重面闪烁），单位 m。</summary>
+        public const float TagLayerOffsetM = 0.001f;
+
+        /// <summary>标记板上标记中心的高度，单位 m。</summary>
+        public const float MarkerBoardTagHeightM = 0.95f;
         private const float StandBaseSizeM = 0.8f;
         private const float StandColumnDiameterM = 0.25f;
         private const float StandPadSizeM = 0.45f;
@@ -51,9 +62,10 @@ namespace RivetSim.Editor.Generators
         {
             var agv = GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset);
             var layout = GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset);
-            if (agv == null || layout == null) return;
+            var inspection = GeneratorUtility.LoadConfig<InspectionConfig>(ProjectPaths.InspectionAsset);
+            if (agv == null || layout == null || inspection == null) return;
 
-            BuildChargingDock(agv);
+            BuildChargingDock(agv, inspection);
             BuildCrate();
             BuildToolCart();
             BuildCone();
@@ -63,7 +75,7 @@ namespace RivetSim.Editor.Generators
             SimLog.Info(LogCategory.System, "道具预制体已生成：7 个。");
         }
 
-        private static void BuildChargingDock(AgvConfig agv)
+        private static void BuildChargingDock(AgvConfig agv, InspectionConfig inspection)
         {
             Material body = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotDark);
             Material accent = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotAccent);
@@ -87,6 +99,17 @@ namespace RivetSim.Editor.Generators
             {
                 GeneratorUtility.CreateBox(side < 0f ? "Contact_L" : "Contact_R", pile,
                     new Vector3(side * 0.12f, 0.15f, DockDepthM * 0.5f + 0.02f), new Vector3(0.08f, 0.03f, 0.04f), metal);
+            }
+            // 充电位对接标记（AprilTag）贴在充电桩正面（朝向 AGV 车尾）。
+            Material chargerTag = AprilTagMaterialBuilder.Get(inspection.chargerTagId);
+            if (chargerTag != null)
+            {
+                float tag = inspection.dockingTagSizeM;
+                Transform marker = GeneratorUtility.CreateNode("ChargerMarker", pile, new Vector3(0f, DockTagCenterHeightM, DockDepthM * 0.5f + 0.002f));
+                GeneratorUtility.CreateScreenQuad("Backing", marker, Vector3.zero, Vector2.one * (tag + TagBorderM * 2f),
+                    MaterialLibraryBuilder.Get(MaterialLibraryBuilder.MarkerBoard));
+                GeneratorUtility.CreateScreenQuad("Tag", marker, new Vector3(0f, 0f, TagLayerOffsetM), Vector2.one * tag, chargerTag);
+                marker.gameObject.AddComponent<RegionMarker>().Configure(inspection.chargerTagId, tag, MarkerRole.Charger);
             }
             GeneratorUtility.SetLayerRecursive(pile.gameObject, SimLayers.ObstacleIndex);
 
@@ -208,8 +231,10 @@ namespace RivetSim.Editor.Generators
             var root = new GameObject("PF_MarkerBoard");
             GeneratorUtility.CreateBox("Base", root.transform, new Vector3(0f, 0.015f, 0f), new Vector3(0.3f, 0.03f, 0.3f), dark);
             GeneratorUtility.CreateCylinder("Pole", root.transform, new Vector3(0f, 0.4f, 0f), Vector3.up, 0.03f, 0.8f, dark);
-            GeneratorUtility.CreateBox("Frame", root.transform, new Vector3(0f, 0.95f, 0f), new Vector3(0.34f, 0.34f, 0.02f), dark);
-            GeneratorUtility.CreateScreenQuad("Tag", root.transform, new Vector3(0f, 0.95f, 0.011f), new Vector2(0.3f, 0.3f), white);
+            // 深色边框 + 白色底板 + 标记（Tag 的材质与尺寸由 RivetZoneGenerator 按工位设置），标记面朝本地 +Z。
+            GeneratorUtility.CreateBox("Frame", root.transform, new Vector3(0f, MarkerBoardTagHeightM, 0f), new Vector3(0.34f, 0.34f, 0.02f), dark);
+            GeneratorUtility.CreateScreenQuad("Backing", root.transform, new Vector3(0f, MarkerBoardTagHeightM, 0.011f), new Vector2(0.3f, 0.3f), white);
+            GeneratorUtility.CreateScreenQuad("Tag", root.transform, new Vector3(0f, MarkerBoardTagHeightM, 0.011f + TagLayerOffsetM), new Vector2(0.2f, 0.2f), white);
             GeneratorUtility.SetLayerRecursive(root, SimLayers.ObstacleIndex);
             GeneratorUtility.SavePrefab(root, MarkerBoardPath);
         }

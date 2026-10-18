@@ -54,3 +54,10 @@ Architecture §4 规定 `Robot` 根节点在运行时生成 AGV。M1 为了布�
 - 模型机外形改用实测值写入 CFG_SceneLayout（用户确认）：翼展 22.73 m、机高 7.92 m、机身直径 2.63 m、中线离地 2.63 m、下缘离地 1.25 m；机长 25.05 m 为缩放基准。
 - UR5e：按 `ur_macro.xacro` 的连杆链与三个 yaml 生成 `PF_Arm_UR5e`（`ArmRig` + 6 个 `ArmJoint`，不用 ArticulationBody）。ROS → Unity 统一由 `RosFrame` 换算（位置 (−y, z, x)，旋转 C·R·Cᵀ，关节角取反）；Unity 导入 Z 向上的 DAE 时网格坐标为 (−x, z, −y)，实测后每个网格再绕 Y 轴 +90° 校正。UR 原材质（Standard）换成 URP 材质 M_UR5e_*，颜色沿用原材质。零位与竖直姿态的正运动学与 yaml 一致（EditMode 测试）。
 - 材质：地面 / 墙面 / 演示台台面 / AGV 平台改用 Poly Haven 贴图，由 ARM 图派生金属度 / 光滑度（R = 金属度，A = 1 − 粗糙度）与 AO 贴图；UI 默认字体为 Noto Sans SC Regular 的动态 FontAsset。
+
+## ADR-014 检测区排布、标记与可达性验证（2026-10-18）
+- 检测区参数写入 CFG_Inspection（用户确认）：工位间距 1.2 → 1.5 m（§6.1）；新增区域中心位置 `regionCenterAftOfMainGearM`、铆钉排高度 `rivetRowHeightM` 2.15 m、停靠距离 `dockingStandoffM` 0.55 m、停靠标记板偏移 `dockingMarkerAheadM` 1.0 m 与 `dockingMarkerLateralM` 0.8 m（工位间距 1.5 m、车长 1.2 m，正前方会落入相邻工位停车区）、AprilTag ID 与边长。区域中心由 5.0 调为 4.85 m：右侧机身 4.30～4.33 m 处有约 3 cm 的竖缝（疑似舱门分缝），5.0 m 时 R2-S1-04 落在缝上。
+- 铆钉位置与法向由水平射线投到机身外壳碰撞体得到；漏检时在 ±2 mm 内偏移重试。真值缺陷用 `DefectAssigner`（种子取自 CFG_SimSettings，数量 = 四舍五入（总数 × 比例））。
+- “底盘距机身 ≥ 0.30 m”按车体 / 升降柱外形到机身外壳的三维最近距离判定（用户确认），允许 AGV 伸到机身下方。
+- 基准标记贴在蒙皮上（铆钉排前端旁），停靠标记为地面立杆标记板；充电位标记贴在充电桩正面。
+- 可达性用编辑器内的阻尼最小二乘数值逆解采样验证（`ReachabilityChecker`），不进入运行时程序集；正式逆解 `ArmIkSolver` 仍在 M4。机械臂连杆与机身的碰撞未检查（M4）。

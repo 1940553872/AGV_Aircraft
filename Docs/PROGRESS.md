@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M2 厂房与布局重建（1:1.5）＋ AGV 升降柱 ＋ 导入外部资产 —— 第一、二部分已验收；第三部分拆为 3A / 3B（ADR-013）：3A 导入外部资产已于 2026-10-18 验收并合并到 main，3B 检测区与可达性计划中。（会话中曾误记“M2 已结束”，用户已更正）
+M2 厂房与布局重建（1:1.5）＋ AGV 升降柱 ＋ 导入外部资产 —— 第一、二部分已验收；第三部分拆为 3A / 3B（ADR-013）：3A 导入外部资产已于 2026-10-18 验收并合并到 main；3B 检测区与可达性已完成、待用户验收（分支 m2/rivet-zones-b）。（会话中曾误记“M2 已结束”，用户已更正）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -27,32 +27,27 @@ M2 厂房与布局重建（1:1.5）＋ AGV 升降柱 ＋ 导入外部资产 —�
 
 ## 最近一次会话
 - 日期：2026-10-18
-- 完成：M2 第一、二部分验收并合并到 main（339f87e）；M2 第三部分 3A——导入外部资产，已验收（提交 0501bf7，分支 `m2/import-assets-a` 已合并到 main）
-  - 用户确认：拆为 3A / 3B；A320 不减面（约 73 万）；模型机外形改用实测值。见 ADR-013
-  - 依赖：`com.unity.cloud.gltfast` 6.20.0
-  - Editor/Importers：`ThirdPartyImporter`（`RivetSim/Import/Third Party Assets`，复制 + 导入设置）、`UrYamlReader`（UR yaml 最小读取器，支持 `!degrees`）
-  - Simulation/Robot：`RosFrame`（ROS → Unity 换算）、`ArmJoint`、`ArmRig`
-  - Editor/Generators：`UR5eArmGenerator`（PF_Arm_UR5e，CFG_Arm.kinematicsYaml 指向导入的 yaml）、`AircraftA320Builder` + `AircraftMeasurement`（PF_Aircraft_A320_Model Variant + 外层 PF_Aircraft_A320，实测外形）、`PolyHavenMaterialBuilder`（地面 / 墙面 / 台面 / AGV 平台贴图 + 派生金属度光滑度与 AO 贴图）、`UiFontAssetBuilder`（Noto Sans SC 三字重 FontAsset，主题默认 Regular）；`MainSceneBuilder` 优先用 A320（按实测包围盒中心对齐 aircraftCenterM，轮挡按实测机轮，不放机翼支撑架）；`AgvGenerator` 优先用 UR5e，平台用 M_AGV_Deck；`GenerateAllMenu` 加入新生成器
-  - Editor/Tools：`ArmJointTestCapture`（`RivetSim/Debug/Capture Arm Joint Test`）；`ScreenshotTool` 新增 `Capture Asset Import Screenshots`、`Capture UR5e Lift Screenshots`
-  - CFG：CFG_SceneLayout 外形改为实测（翼展 22.73、机高 7.92、机身直径 2.63、中线 2.63、下缘 1.25 m）；CFG_Arm.kinematicsYaml 已指定
-  - UR5e 核对：6 个关节原点与 default_kinematics.yaml 一致，限位 elbow ±180°、其余 ±360°，速度均 180°/s；零位 tool0 = (−0.2329, 0.0628, 0.8172)（Unity，= ROS (0.8172, 0.2329, 0.0628)），竖直姿态 tool0 高 1.0794 m，与理论一致；6 个关节 ±90° 拼图中网格均跟随正确连杆
-  - A320 实测：机长 25.05、翼展 22.73、机高 7.92、机身直径 2.63、中线离地 2.63、下缘离地 1.25 m；主起落架半轮距 2.68 m、机轮半径 0.39 m；包围盒中心在主起落架后 0.71 m
-  - 布局复核（实测外形）：校验通过；最窄通道 1.80 m；巡游时 AGV 到机身 / 包围盒最小 6.38 m；模型机到障碍物 4.68 m；到作业区边界 4.08 m；充电位到作业区 10.40 m；观众区进深 5.10 m
-  - Generate All 连续两次：主场景物体总数均为 936
+- 完成：M2 第三部分 3A 验收并合并到 main（246b3d1）；3B——检测区与可达性，待用户验收，分支 `m2/rivet-zones-b`
+  - 用户确认：CFG_Inspection 全部新参数；安全距离按三维间隙判定；基准标记贴在蒙皮上；停靠标记板前方 1.0 m 再向外 0.8 m；区域中心 5.0 → 4.85 m（避开右侧机身竖缝）。见 ADR-014
+  - Core：`InspectionConfig` 工位间距 1.5 m，新增区域位置、铆钉排高度、停靠距离、标记偏移与 AprilTag 参数
+  - Simulation/World：`InspectionRegion`、`InspectionStation`、`Rivet`、`RivetRegistry`、`RegionMarker`、`DefectType`、`RegionSide`、`MarkerRole`、`RivetLayout`、`DefectAssigner`
+  - Editor：`RivetZoneGenerator`（`RivetSim/Generate/Rivet Zones`，主场景生成时自动调用）、`AprilTagMaterialBuilder`（M_AprilTag_xx）；`PropsGenerator` 标记板改为深色边框 + 白底 + 标记、充电桩正面贴 ID 8；`ReachabilityChecker`（`RivetSim/Debug/Check Station Reachability`，报告 Docs/Reference/M2_Reachability.md）；`ScreenshotTool` 新增 `Capture Rivet Zone Screenshots`
+  - 结果：2 个区域、4 个工位、48 颗铆钉（每工位 12 颗）；真值缺陷 5 颗：R1-S1-07 腐蚀减薄、R1-S1-10 孔边裂纹、R1-S1-12 铆钉松动、R2-S1-09 孔边裂纹、R2-S1-12 腐蚀减薄
+  - 可达性：4 个工位在升降柱伸出 0.30～1.40 m（安装面 1.10～2.20 m）时 12 颗全部可达；LiftHeightPlanner 给出 1.05 m（安装面 1.85 m），该高度下 12/12；三维间隙：车体 0.895 m、升降柱 0.383～0.395 m（要求 ≥ 0.30 m）
+  - Generate All 连续两次：主场景物体总数均为 1078
 - 修改文件：
-  - 代码：Scripts/Core/Config/SceneLayoutConfig.cs；Scripts/Simulation/Robot/{RosFrame, ArmJoint, ArmRig}.cs；Scripts/Editor/Importers/{ThirdPartyImporter, UrYamlReader}.cs；Scripts/Editor/Generators/{UR5eArmGenerator, AircraftA320Builder, AircraftMeasurement, PolyHavenMaterialBuilder, UiFontAssetBuilder, MainSceneBuilder, AgvGenerator, GenerateAllMenu}.cs；Scripts/Editor/Tools/{ArmJointTestCapture, ScreenshotTool}.cs；Scripts/Tests/EditMode/{RosFrameTests（新）, SceneLayoutValidatorTests}.cs
-  - 资产：Assets/ThirdParty/**；Prefabs/Robot/PF_Arm_UR5e、Prefabs/Aircraft/PF_Aircraft_A320{,_Model}；Art/Materials/M_UR5e_*、M_AGV_Deck 等；Art/Textures/Generated/*；UI/Fonts/*、UI/UI_Theme_Runtime.tss；Config/CFG_SceneLayout、CFG_Arm；场景（重新生成）；Packages/manifest.json、packages-lock.json
-  - 文档：Docs/ThirdPartyAssets.md、Docs/Architecture.md §4 / §6.1、Docs/DECISIONS.md（ADR-013 改写）、Docs/Reference/A320_Hierarchy.md、Docs/PROGRESS.md、Docs/Screenshots/M2/08～12；_Downloads/Textures/*/SOURCE.md（下载日期）
-- 会话自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 51/51 通过；Main_TeachingHall Play 模式 0 错误 0 警告；Sandbox_Robot Play 模式 0 错误（2 条警告为演示预期的联锁拒绝）；场景无未保存改动，已退出 Play 模式
+  - 代码：Scripts/Core/Config/InspectionConfig.cs；Scripts/Simulation/World/*.cs（10 个新文件）；Scripts/Editor/Generators/{RivetZoneGenerator, AprilTagMaterialBuilder}.cs（新）、{PropsGenerator, MainSceneBuilder}.cs；Scripts/Editor/Tools/{ReachabilityChecker（新）, ScreenshotTool, ProjectPaths}.cs；Scripts/Tests/EditMode/{RivetLayoutTests, DefectAssignerTests}.cs（新）
+  - 资产：Config/CFG_Inspection.asset；Art/Materials/M_AprilTag_00～08；Prefabs/Environment/PF_MarkerBoard、PF_ChargingDock 等（重新生成）；Scenes/Main_TeachingHall.unity、Scenes/Sandbox/*
+  - 文档：Docs/Architecture.md §3.2 / §4 / §6.1、Docs/DECISIONS.md（ADR-014）、Docs/Reference/M2_Reachability.md、Docs/PROGRESS.md、Docs/Screenshots/M2/13～15
+- 会话自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 59/59 通过；Main_TeachingHall Play 模式 0 错误 0 警告；Sandbox_Robot Play 模式 0 错误（1 条警告为演示预期的联锁拒绝）；场景无未保存改动，已退出 Play 模式
 - 遗留问题：
-  - 3B 未做：RivetZoneGenerator（左右各 1 区 × 2 工位 × 12 颗、投影到机身外壳、10% 真值缺陷）、AprilTag 标记板、UR5e 可达性验证；需先确认 CFG_Inspection 新参数（`stationSpacingM` 1.2 → 1.5 m、`rivetRowHeightM` 2.15 m、标记 ID 与边长、`dockingStandoffM`）
-  - 场景整体偏暗（新贴图更暗），M7 补光；地面混凝土贴图偏褐，必要时调 M_Floor_Epoxy 色调
-  - A320 三角面约 73 万（用户接受）；M7 性能检查时复核帧率
-  - 占位臂 `PF_Arm_Placeholder` 与 `PlaceholderArmPoseState` 保留到 M4；占位模型机生成器保留为无 A320 时的后备
-  - 本会话 Unity Editor 曾两次失去 Pipeline 连接（一次需重启 Editor）：长时间 eval 会触发 5 s 主线程超时，大量导入时等待 `unity status` 恢复后再继续
-  - `capture_game_view --save_path` 会把相对路径解析到 `Assets/` 下：验收截图用 RivetSim/Debug 下的截图菜单
-  - 在 PowerShell 里给 `unity command eval --code` 传含双引号的代码会被剥掉引号；改用 Bash 调用 CLI，或用 `eval_file`；Bash heredoc 传给 Python 的中文会按 GBK 解码，改文件时用 Edit 工具或 `io.open(..., encoding='utf-8')`
-- 下次第一步：给出 3B 计划（先定 CFG_Inspection 新参数），确认后实现
+  - UR5e 预制体默认是零位（手臂伸直），运输姿态 Stow / 观察姿态 Observe 在 M4 写入 CFG_Arm.namedPoses；目前联锁用 `PlaceholderArmPoseState`（视为运输姿态）
+  - 可达性只验证了探头末端，机械臂连杆与机身的碰撞未检查（M4）
+  - 铆钉与标记都在 Environment 层；M3 激光只扫离地 0.30 m，看不到它们，视觉识别在 M4 / M5 按视场判定
+  - 场景整体偏暗（M7 补光）；A320 三角面约 73 万（M7 复核帧率）
+  - Unity Editor 长时间 eval 会触发 5 s 主线程超时；大量导入时等待 `unity status` 恢复后再继续
+  - 在 PowerShell 里给 `unity command eval --code` 传含双引号的代码会被剥掉引号；改用 Bash 调用 CLI，或用 `eval_file`；Bash heredoc 传给 Python 的中文可能按 GBK 解码，改文件时用 Edit 工具或 `io.open(..., encoding='utf-8')`
+- 下次第一步：用户验收 3B（截图 13～15 与可达性报告）后合并分支，M2 整体验收；之后执行 PromptTemplates.md 的 M3
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:1.5、厂房 64 × 44 × 12 m、AGV 1.20 × 0.80 × 0.45 m 加升降柱（见 ADR-010）、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -72,7 +67,7 @@ M2 厂房与布局重建（1:1.5）＋ AGV 升降柱 ＋ 导入外部资产 —�
 | C1～C12 的正式定义 | 固定示例文字 | SOP_TaskMatrix_v1.json |
 
 ## 待办（超出当前里程碑的想法）
-- [ ] M2：模型机 1:1.5、厂房 64 × 44 × 12 m、AGV 升降柱（第一、二部分已验收）、导入外部资产（3A 已验收、3B 未开始），见 ADR-010～013
+- [ ] M2：模型机 1:1.5、厂房 64 × 44 × 12 m、AGV 升降柱（第一、二部分已验收）、导入外部资产（3A 已验收、3B 待验收），见 ADR-010～013
 - [ ] v2：升降柱升高后的整机稳定裕度分析（质心高度上升）
 - [ ] M5：启动时用 `TaskMatrixData.GetExecutorKeys()` 与 `ExecutorRegistry` 核对缺失的执行器键名（目前 JSON 中共 37 个）
 - [x] M1：确定 `CFG_SceneLayout` 中尺寸向量（长 × 宽 × 高）与世界坐标轴的对应关系（ADR-008）
