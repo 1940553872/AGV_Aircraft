@@ -9,7 +9,7 @@
 |---|---|---|
 | M0 | 工程整理：归档测试内容、目录、程序集、Core、矩阵 JSON 读取 | — |
 | M1 | 场景白盒与生成模型：厂房三区、AGV、探头末端、演示台、道具 | M0 |
-| M2 | 导入外部资产：UR5e 运动学骨架、模型机、检测区铆钉、字体、贴图 | M1 ＋ 下载完成 |
+| M2 | 厂房与布局重建（模型机 1:1.5、厂房 64 × 44 × 12 m）＋ AGV 升降柱 ＋ 导入外部资产 | M1 ＋ 下载完成 |
 | M3 | AGV：遥控、激光建图、A* 规划、路径跟踪、对接停靠 | M1 |
 | M4 | 机械臂与检测：逆解、命名姿态、对中 / 接触 / 回退、A 扫、判读 | M2 |
 | M5 | SOP 流程编排：按矩阵 JSON 执行，含循环、换站、条件单元、故障注入 | M3 ＋ M4 |
@@ -63,22 +63,43 @@
 验收：提供 3 张截图（俯视总览并标注三区尺寸、AGV 近景、演示台近景）；说明最窄通道宽度、AGV 到机身的最小距离。我会据此调整布局。
 ```
 
-### M2 导入外部资产
+### M2 厂房与布局重建、AGV 升降柱、导入外部资产
 ```text
-【M2 导入外部资产】
+【M2 厂房与布局重建、AGV 升降柱、导入外部资产】
+依据 ADR-010 与 Architecture §6.1（已更新）。分三部分依次完成，每部分完成后截图给我确认，再进入下一部分；上下文过长时可在部分之间交接并开新会话。
+
+第一部分：厂房与布局重建（模型机 1:1.5）
+1-1. 模型机按 1:1.5：25.05 × 23.87 × 7.84 m，机身沿 Z、机头朝 +Z，侧面朝向演示区。厂房改为 64（X）× 44（Z）× 12 m；作业区约 32 × 33 m（外轮廓四周各 ≥ 4 m）。
+1-2. 按 ADR-010 的分区重排 CFG_SceneLayout：演示区（−X 端，深 9 m，演示台前 ≥ 4 m 观众站位）、西侧移动区（充电位离作业区 ≥ 6 m，保留一处 1.8 m 窄通道和 3～5 个障碍物）、东侧与南北环道；巡游建图路线绕作业区一圈并覆盖移动区。
+1-3. 占位模型机按新尺寸生成（机身直径 2.63 m、机身中线离地约 2.60 m、平尾、发动机、起落架）；钢柱跨距、桁架、顶灯、总览相机按新尺寸重排。
+1-4. 更新 Architecture §4 的布局取值表；运行 RivetSim/Generate/All 两次确认幂等，运行 SceneLayoutValidator。
+验收：俯视总览截图（标注三区尺寸），报告最窄通道、巡游时 AGV 到机身最小距离、模型机到障碍物最近距离。
+
+第二部分：AGV 升降柱（硬件更新 + 动作逻辑）
+2-1. 配置：CFG_Agv 新增升降柱参数（安装位置、截面、固定段高度、行程 0～1.40 m、速度 0.08 m/s、到位精度），车体改为 1.20 × 0.80 × 0.45 m、轮距 0.66 m，取值见 Architecture §6.1。
+2-2. 生成器：AgvGenerator 生成升降柱（固定段 + 伸缩段 + 顶部法兰），机械臂挂在伸缩段法兰下；车载设备盒重新布置，不与升降柱干涉。
+2-3. 运行时（RivetSim.Simulation/Robot）：LiftColumnController（目标高度、匀速 + 起停缓冲运动、到位事件、MoveToHeightAsync / LowerToBottomAsync）；LiftHeightPlanner（按工位铆钉平均高度和 UR5e 舒适工作区计算升降柱目标高度，并限制在行程内）。
+2-4. 联锁（SafetyMonitor 中实现规则，供 S6 使用）：升降柱只在底盘零速锁定后运动；底盘只在升降柱最低位且机械臂运输姿态时运动；违反时拒绝指令并通过 SimLog 记录。
+2-5. 与任务矩阵的对应（label 不变，explain 已更新）：t(1,3)/t(2,3) 升降柱最低位；t(3,3) 升到工位作业高度后进入观察位姿；t(6,3) 工位结束收臂并降到最低；t(6,1) 等升降柱降到最低后才倒车。执行器在 M5 实现，本部分只提供可调用的接口。
+2-6. Sandbox_Robot 演示：零速锁定 → 升到 2.0 m → 降到最低 → 解锁行驶；未锁定时下发升降指令应被拒绝。
+2-7. EditMode 测试：升降运动时间与行程一致、限位、联锁规则（两条）。
+验收：AGV 升降柱最低位与最高位两张近景截图；联锁测试结果。
+
+第三部分：导入外部资产
 资产已放在 _Downloads/，详情见 _Downloads/README.md 与各文件夹的 SOURCE.md：
 - UR5e：_Downloads/Robot_UR5e/（meshes/ur5e/visual/*.dae、config/ur5e/*.yaml、urdf/）
 - 模型机：_Downloads/Aircraft/Airbus_A320-200/airbus_a320-200.glb（CC BY 4.0；原始单位约为真机 4.7 倍；约 73 万三角面）
 - 字体：_Downloads/Fonts/NotoSansSC/；AprilTag：_Downloads/AprilTag/tag36h11/；贴图：_Downloads/Textures/PolyHaven_*/{{已下载 / 未下载}}
-- 模型机仿真尺寸：缩比 1:5（机长 7.5 m），参数见 Architecture §6.1
-请完成：
+- 模型机仿真尺寸：缩比 1:1.5（机长 25.05 m），参数见 Architecture §6.1 与 ADR-010
+请完成（第三部分）：
 1. 先检查各文件夹的 SOURCE.md；缺少许可信息时停下来问我。
 2. UR5e：把 visual/*.dae 复制到 Assets/ThirdParty/Robots/UR5e/；读取 default_kinematics.yaml 与 joint_limits.yaml，生成 PF_Arm_UR5e（6 关节层级，每个关节有正确的旋转轴和限位，挂 ArmRig 组件，不使用 ArticulationBody）。逐项列出关节参数并与 yaml 核对；把 6 个关节分别转动 ±90°，截图检查网格是否跟随正确的连杆。
-3. 模型机：安装 com.unity.cloud.gltfast 后导入 A320；先列出层级，确认 Plane_8 等物体是否为地面或底座（是则移除）、隐藏客舱内饰等不可见部件，把三角面降到 50 万以内；制作 PF_Aircraft_A320（Variant），机头朝 +Z，原点设在主起落架中点地面投影，按上面的尺寸统一缩放；只给机身外壳加 MeshCollider，层设为 Aircraft；替换占位体。
-4. RivetZoneGenerator：按 CFG_Inspection 在机身左右两侧各生成 1 个区域、每区 2 个工位、每工位 12 颗铆钉，投影贴合机身表面；按缺陷比例 10% 随机设置真值缺陷（随机种子取自 CFG_SimSettings）；每个工位生成 1 块停靠标记板和 1 块基准标记板（AprilTag ID 分配见 _Downloads/AprilTag/tag36h11/SOURCE.md）。
+3. 模型机：安装 com.unity.cloud.gltfast 后导入 A320；先列出层级，确认 Plane_8 等物体是否为地面或底座（是则移除）、隐藏客舱内饰等不可见部件，把三角面降到 50 万以内；制作 PF_Aircraft_A320（Variant），机头朝向按 ADR-008 与 Architecture §4 的轴向约定，原点设在主起落架中点地面投影，按上面的尺寸统一缩放；只给机身外壳加 MeshCollider，层设为 Aircraft；替换占位体。
+4. RivetZoneGenerator：按 CFG_Inspection 在机身左右两侧后机身侧壁（机翼后缘与平尾前缘之间）各生成 1 个区域、每区 2 个工位、每工位 12 颗铆钉，投影贴合机身表面；按缺陷比例 10% 随机设置真值缺陷（随机种子取自 CFG_SimSettings）；每个工位生成 1 块停靠标记板和 1 块基准标记板（AprilTag ID 分配见 _Downloads/AprilTag/tag36h11/SOURCE.md）。
 5. 用 Noto Sans SC（Regular / Medium / Bold）创建 UI Toolkit 字体资源；AprilTag 按其 SOURCE.md 的导入设置（Point 过滤、无压缩）制作标记板；如已下载贴图，用 Poly Haven 材质替换纯色材质（光滑度 = 1 − ARM 的 G 通道）。
 6. 更新 Docs/ThirdPartyAssets.md（CC BY 模型记录署名信息）。
-验收：截图（总览、机械臂近景、检测区铆钉近景）；报告三角面总数和每个工位的铆钉数。
+7. 用导入后的实测外轮廓复核作业区与铆钉排高度；对每个工位验证：升降柱取某一高度时，UR5e 能以法向姿态到达该工位全部 12 颗铆钉（先用简单数值逆解或采样验证，正式逆解在 M4）。
+验收：截图（总览、AGV 在工位旁升降柱升起的近景、检测区铆钉近景）；报告三角面总数、每个工位的铆钉数、各工位所需升降柱高度与可达性结果。
 ```
 
 ### M3 AGV 建图、规划与移动
@@ -87,15 +108,18 @@
 按 Architecture §3.2 Robot / Navigation 实现：
 1. AgvController（差速运动学、限幅、零速锁定、车轮动画）；键盘遥控 WASD，空格急停。
 2. Lidar2D（360 线、10 Hz、点云可视化）；OccupancyGridMap（0.1 m，教学简化模型）；MappingRoutine（按 CFG_SceneLayout 的巡游路线行驶并建图，地图半透明叠加在地面上，逐步“长出来”）。
-3. GridAStar（膨胀半径取自 AGV 外廓）+ PathSmoother + PathFollower；NavigationService.NavigateToAsync / DockAsync（识别区域标记后低速对接，记录停靠误差）/ ReverseExitAsync。
-4. 可视化：规划路径（青色线）、目标位姿、停靠误差标注。
-5. EditMode 测试：A* 可达与不可达、差速运动学。
+3. 虚拟禁行区：2D 激光雷达（离地 0.30 m）扫不到机身和机翼，规划时把模型机外轮廓投影（含机翼、平尾、发动机）作为虚拟禁行区叠加到代价地图上，只在各工位处开放接近通道（见 ADR-010）。
+4. GridAStar（膨胀半径取自 AGV 外廓）+ PathSmoother + PathFollower；NavigationService.NavigateToAsync / DockAsync（识别区域标记后低速对接，记录停靠误差）/ ReverseExitAsync。
+5. 可视化：规划路径（青色线）、目标位姿、停靠误差标注、虚拟禁行区（半透明红色）。
+6. 移动前检查联锁：升降柱最低位且机械臂运输姿态。
+7. EditMode 测试：A* 可达与不可达、差速运动学、禁行区生效。
 验收：在 Main 中演示“建图 → 从充电位导航到区域 1 工位 1 → 对接停车 → 倒车退出”，并截图；报告路径长度、用时、停靠误差。
 ```
 
 ### M4 机械臂与超声检测
 ```text
 【M4 机械臂与超声检测】（Sandbox_Robot：AGV 停在一段带铆钉的机身旁）
+0. 先由 LiftHeightPlanner 确定本工位升降柱高度（M2 已实现），逆解基座取升降柱顶部法兰的当前位姿。
 1. ArmIkSolver（阻尼最小二乘，考虑关节限位，失败时换初值重试）；ArmController：MoveToNamedPoseAsync（Stow / Observe，姿态写在 CFG_Arm）、MoveToPoseAsync、ApproachAlongNormalAsync、RetreatAsync。
 2. ProbeEndEffector + ContactModel（虚拟弹簧，教学简化模型）：沿法向逼近，接触力达到 10 N（允许 8～12 N）即停；超过 20 N 时发出“力超限”条件。
 3. AScanSynthesizer + GateJudge（教学简化模型）；对每颗铆钉执行一次“对中 → 接触 → 采集 → 判读 → 回退”；铆钉旁显示结果环（绿 = 合格，黄 = 疑似，红 = 缺陷，灰 = 无效）。
@@ -113,9 +137,10 @@
    - t(6,1)“倒车退出 换站”只在本工位最后一颗铆钉完成时执行，其余逐钉循环中显示为“跳过”；v1 不为它设计故障处理分支。
    - t(4,7)、t(5,4)、t(6,4) 按 JSON 中的 conditionRefs 逐项判定条件 C1、C2～C8、C9～C12（文字与阈值见 JSON 的 conditions），判定结果通过事件发给演示屏逐条显示 ✓ / ✗。
 4. ConditionBus 提供故障注入接口（M6 的 HUD 按钮会调用），本阶段先用键盘 F5 / F6 / F7 测试。
-5. S1～S8 对应设备的 DeviceIndicator 发光联动。
-6. 每个单元状态变化都通过 EventBus 发布 CellStateChangedEvent；日志按“[T5][S4] t(5,4) 接触采集 开始 / 完成”的格式输出。
-7. EditMode 测试：用假执行器验证状态序列（含循环与一次条件触发）。
+5. S3 执行器同时负责升降柱：t(1,3)/t(2,3) 保持最低位，t(3,3) 升到工位高度，t(6,3) 在工位结束时降到最低；t(1,6)/t(2,6)/t(3,6)/t(6,6) 的许可按 ADR-010 的联锁规则判定；t(6,1) 等待升降柱到最低位后才执行。
+6. S1～S8 对应设备的 DeviceIndicator 发光联动（S3 执行期间升降柱与机械臂同时高亮）。
+7. 每个单元状态变化都通过 EventBus 发布 CellStateChangedEvent；日志按“[T5][S4] t(5,4) 接触采集 开始 / 完成”的格式输出。
+8. EditMode 测试：用假执行器验证状态序列（含循环与一次条件触发）。
 验收：4 倍速完整跑完 2 区域 × 2 工位 × 12 颗铆钉；分别注入三种故障各一次，确认对应虚线单元被激活且流程能恢复；附关键日志片段。
 ```
 

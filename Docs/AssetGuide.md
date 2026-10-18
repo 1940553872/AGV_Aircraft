@@ -10,7 +10,7 @@
 | 资产 | 状态 | 位置 |
 |---|---|---|
 | UR5e（ur_description 4.3.1） | ✅ 已就绪 | `_Downloads\Robot_UR5e\` |
-| 模型机：Airbus A320-200（Dlourine，CC BY 4.0） | ✅ 已就绪；按 1:5 缩放（机长 7.5 m），面数需精简 | `_Downloads\Aircraft\Airbus_A320-200\` |
+| 模型机：Airbus A320-200（Dlourine，CC BY 4.0） | ✅ 已就绪；按 1:1.5 缩放（机长 25.05 m），面数需精简 | `_Downloads\Aircraft\Airbus_A320-200\` |
 | Noto Sans SC（Regular / Medium / Bold） | ✅ 已就绪 | `_Downloads\Fonts\NotoSansSC\` |
 | AprilTag tag36h11 ID 0～11 | ✅ 已就绪 | `_Downloads\AprilTag\tag36h11\` |
 | Poly Haven 材质 ×3 | ⏳ 待下载（直链见各 SOURCE.md） | `_Downloads\Textures\PolyHaven_*\` |

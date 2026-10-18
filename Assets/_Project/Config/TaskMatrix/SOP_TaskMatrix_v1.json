@@ -112,7 +112,7 @@
       "kind": "active",
       "label": "运输姿态",
       "executor": "arm.stow",
-      "explain": "机械臂收拢至运输姿态，降低重心并避免移动中与机身干涉。"
+      "explain": "升降柱降到最低，机械臂收拢至运输姿态，降低重心并避免移动中与机身干涉。"
     },
     {
       "id": "t(1,4)",
@@ -139,7 +139,7 @@
       "kind": "active",
       "label": "底盘\n运动许可",
       "executor": "safety.grantChassisMotion",
-      "explain": "确认机械臂处于运输姿态、急停未触发、路径区域无人，授予底盘运动许可。"
+      "explain": "确认升降柱在最低位、机械臂处于运输姿态、急停未触发、路径区域无人，授予底盘运动许可。"
     },
     {
       "id": "t(1,7)",
@@ -185,7 +185,7 @@
       "kind": "active",
       "label": "运输姿态",
       "executor": "arm.holdStow",
-      "explain": "停靠过程中机械臂保持运输姿态。"
+      "explain": "停靠过程中升降柱保持最低位，机械臂保持运输姿态。"
     },
     {
       "id": "t(2,4)",
@@ -257,7 +257,7 @@
       "kind": "active",
       "label": "观察位姿",
       "executor": "arm.toObservePose",
-      "explain": "机械臂移动到观察位姿，为相机提供检测区视野。"
+      "explain": "升降柱升到本工位作业高度，机械臂移动到观察位姿，为相机提供检测区视野。"
     },
     {
       "id": "t(3,4)",
@@ -284,7 +284,7 @@
       "kind": "active",
       "label": "机械臂\n运动许可",
       "executor": "safety.grantArmMotion",
-      "explain": "确认底盘已锁定，授予机械臂运动许可。"
+      "explain": "确认底盘已零速锁定，授予升降柱与机械臂运动许可。"
     },
     {
       "id": "t(3,7)",
@@ -474,7 +474,7 @@
       "kind": "active",
       "label": "倒车退出\n换站",
       "executor": "nav.reverseExitAndChangeStation",
-      "explain": "本工位最后一颗铆钉完成后，底盘倒车退出并转入换站。",
+      "explain": "本工位最后一颗铆钉完成、升降柱降到最低位后，底盘倒车退出并转入换站。",
       "runWhen": "lastRivetInStation",
       "note": "已确认：仅在本工位最后一颗铆钉完成时执行；其余逐钉循环中显示为“跳过”。v1 不为该单元设计故障处理分支。"
     },
@@ -495,7 +495,7 @@
       "kind": "active",
       "label": "保持回退\n收臂",
       "executor": "arm.retractHold",
-      "explain": "探头沿法向回退并保持；工位结束时收臂。"
+      "explain": "探头沿法向回退并保持；工位结束时收臂，升降柱降到最低位。"
     },
     {
       "id": "t(6,4)",

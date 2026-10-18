@@ -7,7 +7,7 @@
 | 文件夹 | 内容 | 状态 | 复制到（M2） |
 |---|---|---|---|
 | Robot_UR5e/ | UR5e 网格（dae/stl）、config/ur5e/*.yaml、urdf/、LICENSE | ✅ 已就绪 | Assets/ThirdParty/Robots/UR5e/ |
-| Aircraft/Airbus_A320-200/ | airbus_a320-200.glb（CC BY 4.0，需署名） | ✅ 已就绪（按 1:5 缩放） | Assets/ThirdParty/Aircraft/Airbus_A320-200/ |
+| Aircraft/Airbus_A320-200/ | airbus_a320-200.glb（CC BY 4.0，需署名） | ✅ 已就绪（按 1:1.5 缩放） | Assets/ThirdParty/Aircraft/Airbus_A320-200/ |
 | Fonts/NotoSansSC/ | Regular / Medium / Bold + OFL.txt | ✅ 已就绪 | Assets/ThirdParty/Fonts/NotoSansSC/ |
 | AprilTag/tag36h11/ | ID 0～11 共 12 张 PNG + LICENSE | ✅ 已就绪 | Assets/ThirdParty/AprilTag/tag36h11/ |
 | Textures/PolyHaven_*/ | 3 套 PBR 材质（地坪、金属板、波纹钢板） | ⏳ 待下载（直链见各 SOURCE.md） | Assets/ThirdParty/Textures/PolyHaven/ |
