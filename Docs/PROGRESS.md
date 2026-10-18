@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M3 AGV 建图、规划与移动 —— 已实现，待用户验收（2026-10-18；M2 已于同日整体验收）
+M4 机械臂与超声检测 —— 未开始（M3 AGV 建图、规划与移动已于 2026-10-18 验收）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -26,10 +26,11 @@ M3 AGV 建图、规划与移动 —— 已实现，待用户验收（2026-10-18�
 | M2 第三部分 3A 导入外部资产 | 2026-10-18 | 用户核对截图 08～12（A320 总览 / 侧面、UR5e 关节测试、AGV 带 UR5e 升降柱最低 / 最高位、材质）；51 个 EditMode 测试通过；提交 0501bf7 |
 | M2 第三部分 3B 检测区与可达性 | 2026-10-18 | 用户核对截图 13～15 与可达性报告（48 颗铆钉、5 颗真值缺陷；4 个工位规划高度下 12/12 可达；车体 / 升降柱三维间隙 0.895 / 0.383 m）；59 个 EditMode 测试通过；提交 48a1141 |
 | **M2 厂房与布局重建（1:1.5）＋ AGV 升降柱 ＋ 导入外部资产（整体）** | 2026-10-18 | 用户整体验收；包含上面 M2 各部分 |
+| M3 AGV 建图、规划与移动 | 2026-10-18 | 用户核对截图 16～21 与数值（建图 182.75 m / 316.3 s；充电位 → R1-S1 导航 26.23 m / 56.4 s；停靠误差 纵向 +2.2 mm、横向 +0.7 mm、偏航 −0.04°，合格；联锁拒绝正确）；82 个 EditMode 测试通过；提交 e63ee3c |
 
 ## 最近一次会话
 - 日期：2026-10-18
-- 完成：M3 AGV 建图、规划与移动（先 Sandbox_Robot，后接入 Main），待用户验收。计划与 4 项决定经用户确认（机轮碰撞体、机械臂零位前伸的处理、AppBootstrap 在 M3 建立、新参数取值），见 ADR-015
+- 完成：M3 AGV 建图、规划与移动（先 Sandbox_Robot，后接入 Main），已验收（提交 e63ee3c，直接提交在 main）。计划与 4 项决定经用户确认（机轮碰撞体、机械臂零位前伸的处理、AppBootstrap 在 M3 建立、新参数取值），见 ADR-015
   - Core：新增 `NavigationConfig`（CFG_Navigation）；CFG_Agv 新增最大角加速度 120 °/s² 与车头对接相机（离地 0.40 m、90° × 60°、0.3～4.0 m）、`BodyCircumscribedRadiusM`
   - Simulation/Robot：`AgvController` 补角加速度限幅、急停、真值位姿、驱动轮转动动画（未重写）；新增 `DiffDriveKinematics`（圆弧弦长积分）、`AgvFootprint`（含机械臂扫掠半径 1.069 m、车头前伸 1.034 m）
   - Simulation/Navigation（新）：GridGeometry、OccupancyGridMap、OccupancyState、Lidar2D、LidarScan、MappingRoutine、VirtualKeepOutZone、KeepOutMask、KeepOutChannel、CostMap、GridAStar、PathSmoother、PlannedPath、PurePursuitTracker、PathFollower、MotionProfile、IMotionTask、MotionStatus、StraightDrive、MarkerVisibility、DockingController、DockingError、DockingResult、NavigationResult、NavigationService，以及 4 个事件
@@ -52,7 +53,8 @@ M3 AGV 建图、规划与移动 —— 已实现，待用户验收（2026-10-18�
   - 代码：Scripts/Core/Config/{NavigationConfig（新）, AgvConfig}.cs；Scripts/Simulation/Robot/{AgvController, DiffDriveKinematics（新）, AgvFootprint（新）}.cs；Scripts/Simulation/Navigation/*.cs（30 个新文件）；Scripts/Simulation/World/RegionMarker.cs；Scripts/Presentation/App/{AppBootstrap, NavigationRuntime, NavigationDemoRoutine, SandboxNavDemo}.cs（新）、Input/*.cs（新）、Visualization/*.cs（新）、RivetSim.Presentation.asmdef；Scripts/Editor/Generators/{KeepOutZoneGenerator, NavigationSceneSetup}.cs（新）、{AgvGenerator, AircraftA320Builder, MainSceneBuilder, SandboxSceneBuilder, MaterialLibraryBuilder, RivetZoneGenerator, GenerateAllMenu}.cs；Scripts/Editor/Tools/{ProjectPaths, ProjectSetupMenu, ScreenshotTool}.cs；Scripts/Tests/EditMode/{GridAStarTests, CostMapTests, DiffDriveKinematicsTests, NavigationGeometryTests}.cs（新）
   - 资产：Config/CFG_Navigation.asset（新）、CFG_Agv.asset；UI/UI_NavOverlay.uxml/.uss（新）；Art/Materials/M_Vis_*（新）；Prefabs（PF_AGV、PF_Aircraft_A320_Model 等重新生成）；Scenes/Main_TeachingHall.unity、Scenes/Sandbox/*
   - 文档：Docs/Architecture.md §3.2 / §3.3 / §4 / §6 / §6.1、Docs/DECISIONS.md（ADR-015）、Docs/Reference/A320_Hierarchy.md、Docs/PROGRESS.md、Docs/Screenshots/M3/16～21
-- 会话自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 82/82 通过（新增 23 个）；Main_TeachingHall Play 模式 0 错误，3 条警告均为联锁演示预期的拒绝；Sandbox_Robot Play 模式 0 错误 0 警告；场景无未保存改动，已退出 Play 模式
+- 会话结束自检（2026-10-18，验收后复核）：unity status = ready（端口 7800）；编译 0 错误；EditMode 82/82 通过；Main_TeachingHall 已保存、无未保存改动，已退出 Play 模式；工作区干净。Console 中保留的 4 条警告来自本会话演示（3 条联锁演示预期拒绝 + 1 条中途退出 Play 时升降柱运动被取消），非编译警告
+- 实现期自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 82/82 通过（新增 23 个）；Main_TeachingHall Play 模式 0 错误，3 条警告均为联锁演示预期的拒绝；Sandbox_Robot Play 模式 0 错误 0 警告；场景无未保存改动，已退出 Play 模式
 - 截图（Docs/Screenshots/M3/）：16 沙盒全流程结束（地图、禁行区、通道、停靠误差标注）；17 主场景建图进行中（53%，北侧机身阴影区尚未扫到）；18 建图完成后俯视；18b 同一时刻临时隐藏 A320 渲染器，显示禁行区全貌与 4 条接近通道；19 充电位 → R1-S1 导航中（青色路径、橙色目标箭头）；20 R1-S1 停靠后联锁演示（升降柱升起、倒车被拒绝、停靠误差标注）；21 倒车退出后
 - 遗留问题：
   - UR5e 仍为零位（手臂伸出车头前 0.43 m），原地转向 / 对接车道按含机械臂半径检查激光层；M4 定义 Stow 后复核并去掉该检查
@@ -62,7 +64,8 @@ M3 AGV 建图、规划与移动 —— 已实现，待用户验收（2026-10-18�
   - 演示中途退出 Play 时，正在运动的升降柱会记录一条“运动被取消”警告（预期行为）
   - 场景整体偏暗（M7 补光）；A320 三角面约 73 万（M7 复核帧率）
   - 在 PowerShell 里给 `unity command eval --code` 传含双引号的代码会被剥掉引号；改用 Bash 调用 CLI，或用 `eval_file`
-- 下次第一步：用户验收 M3（截图 16～21 与上表数值）；通过后执行 PromptTemplates.md 的 M4（机械臂与检测），先回复计划
+- 本会话流程说明：M3 计划的第一次回复漏掉了正文（只显示了确认框），已补发并经用户重新确认；用户确认 M3 实现后未单独走“截图确认 → 再提交”的步骤，代码在验收前已提交推送，验收后另行提交本交接记录
+- 下次第一步：执行 PromptTemplates.md 的 M4（机械臂与超声检测，先在 Sandbox_Robot 开发），先回复计划，确认后再实现；启动提示词见会话末尾给出的版本（含 M3 遗留的 Stow 外廓、IArmPoseState 替换、连杆干涉检查、沙盒场景方案等补充）
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:1.5、厂房 64 × 44 × 12 m、AGV 1.20 × 0.80 × 0.45 m 加升降柱（见 ADR-010）、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
