@@ -3,6 +3,7 @@ using System.IO;
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Generators;
+using RivetSim.Simulation.Robot;
 using RivetSim.Simulation.World;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -38,6 +39,57 @@ namespace RivetSim.Editor.Tools
 
         private static readonly Color RouteColor = new Color(0.18f, 0.77f, 0.90f);
         private static readonly Color TextColor = new Color(1f, 0.85f, 0.3f);
+
+        // 升降柱近景机位（相对 AGV 根节点），单位 m。
+        private static readonly Vector3 LiftViewOffsetM = new Vector3(2.7f, 2.0f, 3.3f);
+        private static readonly Vector3 LiftViewTargetM = new Vector3(0f, 1.5f, 0.1f);
+        private const float LiftViewFovDeg = 50f;
+
+        /// <summary>升降柱最低位与最高位两张近景（需打开 Sandbox_Robot），截完复位到最低位。</summary>
+        [MenuItem("RivetSim/Debug/Capture Lift Screenshots")]
+        public static void CaptureLift()
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            if (scene.path != ProjectPaths.SandboxRobotScene)
+            {
+                SimLog.Error(LogCategory.System, $"请先打开 {ProjectPaths.SandboxRobotScene}。");
+                return;
+            }
+            Transform robot = GeneratorUtility.FindRoot(scene, "Robot");
+            Transform agv = robot != null ? robot.Find("AGV") : null;
+            LiftColumnController lift = agv != null ? agv.GetComponent<LiftColumnController>() : null;
+            if (lift == null)
+            {
+                SimLog.Error(LogCategory.System, "Sandbox_Robot 中没有带 LiftColumnController 的 AGV。");
+                return;
+            }
+
+            bool wasDirty = scene.isDirty;
+            Directory.CreateDirectory(OutputFolder);
+            var temp = new List<Object>();
+            try
+            {
+                Vector3 position = agv.TransformPoint(LiftViewOffsetM);
+                Vector3 target = agv.TransformPoint(LiftViewTargetM);
+                Camera camera = CreateTempCamera(temp, position, Quaternion.LookRotation(target - position), LiftViewFovDeg);
+                lift.SetExtensionImmediate(0f);
+                Render(camera, CloseUpSizePx, "06_Lift_Lowest.png");
+                SimLog.Info(LogCategory.System, $"最低位：安装面离地 {lift.MountHeightM:0.000} m");
+                lift.SetExtensionImmediate(lift.Config.liftStrokeM);
+                Render(camera, CloseUpSizePx, "07_Lift_Highest.png");
+                SimLog.Info(LogCategory.System, $"最高位：安装面离地 {lift.MountHeightM:0.000} m");
+            }
+            finally
+            {
+                lift.SetExtensionImmediate(0f);
+                foreach (Object o in temp)
+                {
+                    if (o != null) Object.DestroyImmediate(o);
+                }
+                if (!wasDirty) EditorSceneManager.SaveScene(scene);
+            }
+            SimLog.Info(LogCategory.System, $"升降柱截图已输出到 {OutputFolder}/");
+        }
 
         /// <summary>生成 5 张验收截图（需打开主场景）。</summary>
         [MenuItem("RivetSim/Debug/Capture Layout Screenshots")]

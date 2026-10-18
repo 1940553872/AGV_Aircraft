@@ -25,6 +25,9 @@ namespace RivetSim.Core.Config
         [Tooltip("额定负载，单位 kg")]
         public float payloadKg = 5f;
 
+        [Tooltip("舒适工作区：目标（工位铆钉平均高度）比机械臂安装面高出的距离，单位 m；升降柱目标高度据此计算（M2 第二部分经用户确认）")]
+        public float comfortTargetAboveMountM = 0.30f;
+
         [Tooltip("关节限位与最大角速度（顺序：基座 → 腕 3）")]
         public JointLimit[] jointLimits =
         {

@@ -72,7 +72,10 @@ D:\Unity_Project\AGV_Aircraft\
 **World**：`InspectionRegion`（区域，含区域标记与若干工位）、`InspectionStation`（工位：停靠位姿 + 铆钉列表）、`Rivet`（ID、位置、法向、真值缺陷、检测结果）、`RivetRegistry`、`RegionMarker`（AprilTag 板）、`ChargingDock`。
 
 **Robot**
-- `AgvController`：差速运动学，运动学刚体（`MovePosition`），带速度 / 加速度限幅；提供 `SetVelocity`、`ZeroSpeedLock`、`IsLocked`；车轮做转动动画。
+- `AgvController`：差速运动学，运动学刚体（`MovePosition`），带速度 / 加速度限幅；提供 `SetVelocity`、`Stop`、`ZeroSpeedLock`、`ReleaseZeroSpeedLock`、`IsZeroSpeedLocked`（M2 第二部分已实现此最小子集）；角加速度限幅与车轮转动动画在 M3 补充。
+- `LiftColumnController`（升降柱，属主体 S3）：`LiftMotionProfile` 匀速 + 起停缓冲（教学简化模型），`MoveToHeightAsync(安装面高度)`、`LowerToBottomAsync`，到位发布 `LiftArrivedEvent`；`LiftHeightPlanner` 按工位铆钉平均高度 − 舒适偏移计算目标并限制在行程内。
+- `SafetyMonitor`（主体 S6）：联锁规则 1 升降柱只在底盘零速锁定后运动；规则 2 底盘行驶或解锁只在升降柱最低位且机械臂运输姿态时允许；违反时拒绝并经 `SimLog`（Safety）记录。依赖只读接口 `IChassisState` / `ILiftState` / `IArmPoseState`（M4 前由 `PlaceholderArmPoseState` 提供）。
+- 控制器不自行读取 `Time`：启动入口持有 `SimClock`，每帧以仿真步长调用各控制器的 `Tick`。
 - `ArmRig`：由 UR5e 的 `default_kinematics.yaml` 建立 6 关节运动学链；`ArmIkSolver` 为阻尼最小二乘数值逆解；`ArmController` 提供 `MoveToNamedPoseAsync`（Stow / Observe）、`MoveToPoseAsync`（关节插值，末段走直线）、`ApproachAlongNormalAsync`、`RetreatAsync`。
 - `ProbeEndEffector`：TCP 坐标系、`ContactModel`（虚拟弹簧 F = k·δ，教学简化模型）。
 - `DeviceIndicator`：挂在 S1～S8 对应的设备上，单元执行时发光高亮（设备与主体的对应关系见 §5.3）。
@@ -225,7 +228,8 @@ JSON 中出现的执行器键名都必须在 `ExecutorRegistry` 中注册；启�
 | 速度 | 巡航 0.6 m/s（上限 1.0 m/s），接近工位 0.15 m/s，对接 0.05 m/s；加速度 0.5 m/s²；角速度上限 60°/s |
 | 倒车退出距离 | 0.6 m |
 | 激光雷达 | 车头中心，离地 0.30 m；360 线、10 Hz、量程 20 m、测距噪声 ±2 cm |
-| 升降柱 | 装在平台中心前移 0.15 m 处；截面 0.25 × 0.25 m，固定段高 0.35 m，行程 0～1.40 m，升降速度 0.08 m/s，到位精度 ±1 mm |
+| 升降柱 | 装在平台中心前移 0.15 m 处；截面 0.25 × 0.25 m，固定段高 0.35 m，行程 0～1.40 m，升降速度 0.08 m/s，起停缓冲加速度 0.16 m/s²（满行程 18.0 s），到位精度 ±1 mm；外观为固定段 + 4 节嵌套伸缩段 |
+| 升降柱目标高度 | 机械臂安装面 = 工位铆钉平均高度 − 0.30 m（CFG_Arm `comfortTargetAboveMountM`），限制在行程内；铆钉排 2.0～2.3 m 时安装面约 1.85 m |
 | 机械臂安装 | 装在升降柱顶部法兰；安装面离地 0.80 m（最低）～2.20 m（最高） |
 | 腕部相机 | 装在 wrist_3 法兰侧面，视场 60° × 45°，工作距离 0.15～0.40 m |
 | 车载设备盒 | 超声仪（S5）0.30 × 0.20 × 0.10 m；安全控制盒（S6）0.20 × 0.15 × 0.10 m；工控机（S7）0.25 × 0.20 × 0.08 m |

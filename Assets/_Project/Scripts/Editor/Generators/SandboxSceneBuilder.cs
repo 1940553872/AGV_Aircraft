@@ -2,6 +2,8 @@ using System.IO;
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Tools;
+using RivetSim.Presentation.App;
+using RivetSim.Simulation.Robot;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -11,7 +13,7 @@ using UnityEngine.UIElements;
 namespace RivetSim.Editor.Generators
 {
     /// <summary>
-    /// 沙盒场景生成器：Sandbox_Robot（地面 + 灯光 + AGV）与 Sandbox_UI（空场景 + UIDocument）。重复执行覆盖上次结果。
+    /// 沙盒场景生成器：Sandbox_Robot（地面 + 灯光 + AGV + 升降柱联锁演示入口）与 Sandbox_UI（空场景 + UIDocument）。重复执行覆盖上次结果。
     /// </summary>
     public static class SandboxSceneBuilder
     {
@@ -24,6 +26,9 @@ namespace RivetSim.Editor.Generators
         private static readonly Vector2Int ReferenceResolution = new Vector2Int(1920, 1080);
         private const float SandboxFloorSizeM = 12f;
         private const float SandboxCameraFovDeg = 40f;
+        // 侧前方机位：升降柱升到最高（安装面 2.2 m）时整机仍在画面内，并留出向前行驶 1 m 的空间。
+        private static readonly Vector3 SandboxCameraPositionM = new Vector3(3.6f, 2.4f, 3.4f);
+        private static readonly Vector3 SandboxCameraLookAtM = new Vector3(0f, 1.2f, 0.4f);
 
         /// <summary>生成两个沙盒场景。</summary>
         [MenuItem("RivetSim/Generate/Sandbox Scenes", priority = 31)]
@@ -50,9 +55,20 @@ namespace RivetSim.Editor.Generators
                 new Vector3(SandboxFloorSizeM, 0.1f, SandboxFloorSizeM), MaterialLibraryBuilder.Get(MaterialLibraryBuilder.FloorEpoxy), true);
             GeneratorUtility.SetLayerRecursive(environment.gameObject, SimLayers.EnvironmentIndex);
 
-            GameObject agv = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
-            if (agv != null) GeneratorUtility.InstantiatePrefab(agv, robot, Vector3.zero, Quaternion.identity, "AGV");
-            SceneLightingSetup.CreateCamera(cameras, "Main Camera", new Vector3(1.8f, 1.6f, 2.4f), new Vector3(0f, 0.5f, 0f), SandboxCameraFovDeg, true);
+            GameObject agvPrefab = GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath);
+            GameObject agv = agvPrefab != null
+                ? GeneratorUtility.InstantiatePrefab(agvPrefab, robot, Vector3.zero, Quaternion.identity, "AGV")
+                : null;
+            SceneLightingSetup.CreateCamera(cameras, "Main Camera", SandboxCameraPositionM, SandboxCameraLookAtM, SandboxCameraFovDeg, true);
+
+            // 升降柱联锁演示入口（M2 第二部分），进入 Play 模式自动运行。
+            var settings = GeneratorUtility.LoadConfig<SimSettings>(ProjectPaths.SimSettingsAsset);
+            if (agv != null && settings != null)
+            {
+                var demo = new GameObject("SandboxLiftDemo");
+                demo.transform.SetParent(system, false);
+                demo.AddComponent<SandboxLiftDemo>().Configure(settings, agv.GetComponent<AgvController>(), agv.GetComponent<LiftColumnController>());
+            }
 
             Save(scene, ProjectPaths.SandboxRobotScene);
         }

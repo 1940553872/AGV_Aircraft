@@ -39,3 +39,9 @@ Architecture §4 规定 `Robot` 根节点在运行时生成 AGV。M1 为了布�
 - CFG_SceneLayout 新增 `chargingDockMinToWorkZoneM`（6 m）与 `demoAudienceDepthMinM`（4 m），由 `SceneLayoutValidator` 检查充电位到作业区距离与演示台前观众区进深（来自 PromptTemplates M2 1-2）。
 - 占位模型机的外观常量改为“相对机长的比例”（比例取自 M1 的 1:5 占位外观），缩比变化时不需改生成器；支撑架与轮挡位置由同一组比例计算。
 - 已有 CFG 资产按 ADR-007 不被菜单覆盖：先改配置类默认值，确认资产现值与旧默认值一致（无人工调参）后，CFG_SceneLayout 用 `EditorUtility.CopySerialized` 整份重写，CFG_Agv 只经 `SerializedObject` 改车体、质量、轮距、雷达位置与 `notes`。
+
+## ADR-012 升降柱与联锁的实现方式（2026-10-18）
+- 升降柱运动用纯计算类 `LiftMotionProfile`（匀速 + 起停缓冲，教学简化模型），剩余距离进入到位精度（±1 mm）即判定到位；`LiftColumnController` 只负责驱动伸缩段与异步接口，便于 EditMode 测试。新增参数 `liftAccelerationMps2`（0.16 m/s²）与 CFG_Arm `comfortTargetAboveMountM`（0.30 m）经用户确认。
+- CFG_Agv 删除 `armMount`，机械臂安装高度由升降柱推算（`ArmMountHeightM(伸出量)` = 平台面 + 固定段 + 伸出量），避免同一高度存两份。
+- `SafetyMonitor` 为纯 C# 类，依赖只读状态接口；M2 第二部分提前实现 `AgvController` 最小子集（零速锁定、速度指令、线加速度限幅）供联锁使用，M3 在其上补充导航与车轮动画，不产生临时桩代码。
+- 控制器提供 `Tick(仿真步长)`，由启动入口（Sandbox 中为 `SandboxLiftDemo`，正式场景为 M5 的 AppBootstrap）按 `SimClock` 推进；控制器内不读取 `UnityEngine.Time`。

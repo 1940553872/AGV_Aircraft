@@ -19,6 +19,7 @@ MonoBehaviour:
   kinematicsYaml: {fileID: 0}
   reachM: 0.85
   payloadKg: 5
+  comfortTargetAboveMountM: 0.3
   jointLimits:
   - jointName: shoulder_pan_joint
     minDeg: -360

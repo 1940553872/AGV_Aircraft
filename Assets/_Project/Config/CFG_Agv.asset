@@ -14,8 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA76.1\uFF1BM2
     \u7B2C\u4E00\u90E8\u5206\uFF082026-10-18\uFF09\u6309 ADR-010 \u5C06\u8F66\u4F53\u6539\u4E3A
-    1.20 \xD7 0.80 \xD7 0.45 m\u3001\u8F6E\u8DDD 0.66 m\u3001\u8D28\u91CF 180 kg\uFF0C\u96F7\u8FBE\u968F\u8F66\u5934\u524D\u79FB\uFF1B\u5347\u964D\u67F1\u4E0E\u673A\u68B0\u81C2\u5B89\u88C5\u9AD8\u5EA6\u5728
-    M2 \u7B2C\u4E8C\u90E8\u5206\u66F4\u65B0\u3002\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002"
+    1.20 \xD7 0.80 \xD7 0.45 m\u3001\u8F6E\u8DDD 0.66 m\u3001\u8D28\u91CF 180 kg\uFF0C\u96F7\u8FBE\u968F\u8F66\u5934\u524D\u79FB\uFF1BM2
+    \u7B2C\u4E8C\u90E8\u5206\uFF082026-10-18\uFF09\u52A0\u5165\u5347\u964D\u67F1\uFF08\u884C\u7A0B
+    1.40 m\u30010.08 m/s\u3001\xB11 mm\uFF0C\u673A\u68B0\u81C2\u5B89\u88C5\u9762
+    0.80\uFF5E2.20 m\uFF09\uFF0C\u8D77\u505C\u7F13\u51B2\u52A0\u901F\u5EA6 0.16 m/s\xB2
+    \u7ECF\u7528\u6237\u786E\u8BA4\uFF1B\u539F armMount \u5B57\u6BB5\u7531\u5347\u964D\u67F1\u63A8\u7B97\u66FF\u4EE3\u3002\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002"
   bodySizeM: {x: 1.2, y: 0.8, z: 0.45}
   massKg: 180
   wheelTrackM: 0.66
@@ -36,9 +39,15 @@ MonoBehaviour:
   lidarRateHz: 10
   lidarRangeM: 20
   lidarRangeNoiseM: 0.02
-  armMount:
+  liftMount:
     positionM: {x: 0, y: 0.45, z: 0.15}
     eulerDeg: {x: 0, y: 0, z: 0}
+  liftSectionSizeM: {x: 0.25, y: 0.25}
+  liftFixedHeightM: 0.35
+  liftStrokeM: 1.4
+  liftSpeedMps: 0.08
+  liftAccelerationMps2: 0.16
+  liftPositionToleranceM: 0.001
   utInstrumentBoxSizeM: {x: 0.3, y: 0.2, z: 0.1}
   safetyBoxSizeM: {x: 0.2, y: 0.15, z: 0.1}
   ipcBoxSizeM: {x: 0.25, y: 0.2, z: 0.08}

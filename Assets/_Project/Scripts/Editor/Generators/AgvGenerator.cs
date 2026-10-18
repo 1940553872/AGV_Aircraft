@@ -1,14 +1,16 @@
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
 using RivetSim.Editor.Tools;
+using RivetSim.Simulation.Robot;
 using UnityEditor;
 using UnityEngine;
 
 namespace RivetSim.Editor.Generators
 {
     /// <summary>
-    /// AGV 生成器：参数化底盘（车体、驱动轮、万向轮、雷达、电池仓、急停、灯带、机械臂底座、车载设备盒 S5 / S6 / S7）
-    /// 与简易六轴占位臂（M2 由 UR5e 替换）。尺寸、轮距、雷达与机械臂安装位姿取自 CFG_Agv，工具长度取自 CFG_Arm。
+    /// AGV 生成器：参数化底盘（车体、驱动轮、万向轮、雷达、电池仓、急停、灯带、升降柱、车载设备盒 S5 / S6 / S7）
+    /// 与简易六轴占位臂（M2 第三部分由 UR5e 替换）。升降柱为固定段 + 多节嵌套伸缩段 + 顶部法兰，机械臂挂在最上一节的法兰上；
+    /// 根节点挂 AgvController（运动学刚体）与 LiftColumnController。尺寸、轮距、雷达与升降柱参数取自 CFG_Agv。
     /// 根节点在底盘地面投影中心，前进方向为本地 +Z。
     /// </summary>
     public static class AgvGenerator
@@ -25,6 +27,9 @@ namespace RivetSim.Editor.Generators
         /// <summary>法兰节点名称。</summary>
         public const string FlangeName = "Flange";
 
+        /// <summary>升降柱根节点名称。</summary>
+        public const string LiftName = "LiftColumn";
+
         // 底盘外观尺寸，单位 m。
         private const float GroundClearanceM = 0.06f;
         private const float LidarSlotHalfHeightM = 0.04f;
@@ -36,6 +41,14 @@ namespace RivetSim.Editor.Generators
         private const float DeckThicknessM = 0.006f;
         private const float DeviceMarginM = 0.04f;
         private const float DeviceGapM = 0.03f;
+
+        // 升降柱外观：伸缩段节数、每节截面内缩、节间顶面错位（避免重面闪烁）、法兰与段间搭接，单位 m。
+        private const int LiftStageCount = 4;
+        private const float LiftStageInsetM = 0.03f;
+        private const float LiftStageTopStepM = 0.004f;
+        private const float LiftStageOverlapM = 0.05f;
+        private const float LiftFlangeThicknessM = 0.02f;
+        private const float LiftFlangeDiameterM = 0.18f;
 
         // 占位臂连杆长度，单位 m（取 UR5e 公开 DH 参数的近似值，仅作外观；M2 以 yaml 为准）。
         private const float ShoulderHeightM = 0.1625f;
@@ -163,11 +176,18 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.CreateCylinder("Housing", lidar, Vector3.zero, Vector3.up, LidarDiameterM, LidarHeightM, dark);
             GeneratorUtility.CreateCylinder("Window", lidar, Vector3.zero, Vector3.up, LidarDiameterM + 0.004f, LidarHeightM * 0.4f, lidarWindow);
 
-            // 机械臂底座与占位臂。
-            Transform armMount = GeneratorUtility.CreateNode(ArmMountName, t, agv.armMount.positionM, Quaternion.Euler(agv.armMount.eulerDeg));
-            GeneratorUtility.InstantiatePrefab(arm, armMount, new Vector3(0f, DeckThicknessM, 0f), Quaternion.identity, "Arm");
+            // 升降柱与占位臂（挂在最上一节的法兰上）。
+            Transform[] stages = BuildLiftColumn(t, agv, body, dark, accent, out Transform armMount);
+            GeneratorUtility.InstantiatePrefab(arm, armMount, Vector3.zero, Quaternion.identity, "Arm");
 
             BuildDevices(t, agv, length, width, height + DeckThicknessM, dark);
+
+            // 运行时组件：运动学刚体底盘与升降柱控制器。
+            var rigidbody = root.AddComponent<Rigidbody>();
+            rigidbody.isKinematic = true;
+            rigidbody.useGravity = false;
+            root.AddComponent<AgvController>().Configure(agv);
+            root.AddComponent<LiftColumnController>().Configure(agv, stages);
 
             GeneratorUtility.SetLayerRecursive(root, SimLayers.RobotIndex);
             GeneratorUtility.SavePrefab(root, AgvPrefabPath);
@@ -206,6 +226,40 @@ namespace RivetSim.Editor.Generators
             }
             if (x - DeviceGapM > width * 0.5f)
                 SimLog.Warning(LogCategory.System, "车载设备盒总宽超出车体宽度，请检查 CFG_Agv。");
+        }
+
+        // 固定段 + 多节伸缩段：伸缩段收在固定段内（底部伸入平台下方 LiftStageOverlapM），第 i 节随伸出量上升 (i + 1) / 节数。
+        // 最上一节顶面为机械臂安装面，最低位时离地 = 平台面 + 固定段高度。
+        private static Transform[] BuildLiftColumn(Transform parent, AgvConfig agv, Material body, Material dark, Material accent,
+            out Transform armMount)
+        {
+            Transform lift = GeneratorUtility.CreateNode(LiftName, parent, agv.liftMount.positionM, Quaternion.Euler(agv.liftMount.eulerDeg));
+            float topM = agv.liftFixedHeightM - LiftFlangeThicknessM;
+            Vector2 section = agv.liftSectionSizeM;
+
+            float fixedTop = topM - LiftStageTopStepM * LiftStageCount;
+            GeneratorUtility.CreateBox("FixedSection", lift, new Vector3(0f, fixedTop * 0.5f, 0f), new Vector3(section.x, fixedTop, section.y), body);
+            GeneratorUtility.CreateBox("FixedCollar", lift, new Vector3(0f, fixedTop - 0.015f, 0f),
+                new Vector3(section.x + 0.01f, 0.03f, section.y + 0.01f), accent);
+
+            var stages = new Transform[LiftStageCount];
+            for (int i = 0; i < LiftStageCount; i++)
+            {
+                Transform stage = GeneratorUtility.CreateNode($"Stage_{i + 1}", lift, Vector3.zero);
+                float stageTop = topM - LiftStageTopStepM * (LiftStageCount - 1 - i);
+                float stageHeight = stageTop + LiftStageOverlapM;
+                Vector2 size = section - Vector2.one * (LiftStageInsetM * (i + 1));
+                GeneratorUtility.CreateBox("Tube", stage, new Vector3(0f, stageTop - stageHeight * 0.5f, 0f),
+                    new Vector3(size.x, stageHeight, size.y), i % 2 == 0 ? dark : body);
+                stages[i] = stage;
+            }
+
+            Transform top = stages[LiftStageCount - 1];
+            Transform flange = GeneratorUtility.CreateNode("TopFlange", top, new Vector3(0f, topM, 0f));
+            GeneratorUtility.CreateCylinder("Plate", flange, new Vector3(0f, LiftFlangeThicknessM * 0.5f, 0f), Vector3.up,
+                LiftFlangeDiameterM, LiftFlangeThicknessM, dark);
+            armMount = GeneratorUtility.CreateNode(ArmMountName, top, new Vector3(0f, agv.liftFixedHeightM, 0f));
+            return stages;
         }
 
         private static Transform Joint(string name, Transform parent, Vector3 localPosition, Vector3 axis, float angleDeg)

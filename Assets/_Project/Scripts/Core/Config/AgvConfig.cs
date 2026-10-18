@@ -3,7 +3,7 @@ using UnityEngine;
 namespace RivetSim.Core.Config
 {
     /// <summary>
-    /// AGV 配置（CFG_Agv）：车体尺寸、差速驱动参数、速度限制、雷达与机械臂安装位姿、车载设备盒、电池与通讯（占位）。
+    /// AGV 配置（CFG_Agv）：车体尺寸、差速驱动参数、速度限制、雷达安装位姿、升降柱（机械臂装在其顶部法兰上）、车载设备盒、电池与通讯（占位）。
     /// 安装位姿以底盘地面投影中心为原点，x 右、y 上、z 前。
     /// </summary>
     [CreateAssetMenu(fileName = "CFG_Agv", menuName = "RivetSim/Config/AGV")]
@@ -11,7 +11,7 @@ namespace RivetSim.Core.Config
     {
         [TextArea(2, 6)]
         [Tooltip("参数来源与修改说明")]
-        public string notes = "v1 预估值，见 Docs/Architecture.md §6.1；M2 第一部分（2026-10-18）按 ADR-010 将车体改为 1.20 × 0.80 × 0.45 m、轮距 0.66 m、质量 180 kg，雷达随车头前移；升降柱与机械臂安装高度在 M2 第二部分更新。后续按实际选型修改。";
+        public string notes = "v1 预估值，见 Docs/Architecture.md §6.1；M2 第一部分（2026-10-18）按 ADR-010 将车体改为 1.20 × 0.80 × 0.45 m、轮距 0.66 m、质量 180 kg，雷达随车头前移；M2 第二部分（2026-10-18）加入升降柱（行程 1.40 m、0.08 m/s、±1 mm，机械臂安装面 0.80～2.20 m），起停缓冲加速度 0.16 m/s² 经用户确认；原 armMount 字段由升降柱推算替代。后续按实际选型修改。";
 
         [Header("车体")]
         [Tooltip("车体尺寸（长 × 宽 × 高），单位 m；高度即上装平台面高")]
@@ -71,9 +71,34 @@ namespace RivetSim.Core.Config
         [Tooltip("测距噪声幅值（±），单位 m")]
         public float lidarRangeNoiseM = 0.02f;
 
-        [Header("机械臂安装")]
-        [Tooltip("机械臂安装位姿：平台中心前移 0.15 m，安装面高 0.45 m")]
-        public MountPose armMount = new MountPose(new Vector3(0f, 0.45f, 0.15f), Vector3.zero);
+        [Header("升降柱（机械臂装在顶部法兰上）")]
+        [Tooltip("升降柱底座安装位姿：平台中心前移 0.15 m，位于上装平台面（离地 0.45 m）")]
+        public MountPose liftMount = new MountPose(new Vector3(0f, 0.45f, 0.15f), Vector3.zero);
+
+        [Tooltip("升降柱固定段截面（宽 × 深），单位 m")]
+        public Vector2 liftSectionSizeM = new Vector2(0.25f, 0.25f);
+
+        [Tooltip("升降柱固定段高度（平台面到最低位法兰顶面），单位 m")]
+        public float liftFixedHeightM = 0.35f;
+
+        [Tooltip("升降柱行程，单位 m")]
+        public float liftStrokeM = 1.40f;
+
+        [Tooltip("升降柱匀速段速度，单位 m/s")]
+        public float liftSpeedMps = 0.08f;
+
+        [Tooltip("升降柱起停缓冲加速度，单位 m/s²（M2 第二部分经用户确认：缓冲 0.5 s、每端 20 mm）")]
+        public float liftAccelerationMps2 = 0.16f;
+
+        [Tooltip("升降柱到位精度（±），单位 m")]
+        public float liftPositionToleranceM = 0.001f;
+
+        /// <summary>升降柱伸出量为 extensionM 时机械臂安装面离地高度，单位 m（伸出量限制在行程内）。</summary>
+        public float ArmMountHeightM(float extensionM) =>
+            liftMount.positionM.y + liftFixedHeightM + Mathf.Clamp(extensionM, 0f, liftStrokeM);
+
+        /// <summary>机械臂安装面离地高度为 mountHeightM 时所需的升降柱伸出量，单位 m（未限制在行程内）。</summary>
+        public float ExtensionForMountHeightM(float mountHeightM) => mountHeightM - liftMount.positionM.y - liftFixedHeightM;
 
         [Header("车载设备盒（长 × 宽 × 高，单位 m）")]
         [Tooltip("超声仪（S5）")]
