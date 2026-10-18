@@ -4,7 +4,9 @@
     "references": [
         "RivetSim.Core",
         "RivetSim.Simulation",
-        "RivetSim.Presentation"
+        "RivetSim.Presentation",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

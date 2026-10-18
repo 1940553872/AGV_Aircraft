@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M1 场景白盒与生成模型 —— 未开始（M0 已于 2026-10-18 验收）
+M1 场景白盒与生成模型 —— 已实现，待用户验收（2026-10-18）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -22,21 +22,22 @@ M1 场景白盒与生成模型 —— 未开始（M0 已于 2026-10-18 验收）
 
 ## 最近一次会话
 - 日期：2026-10-18
-- 完成：M0 工程整理与骨架（已验收）
-  - 归档旧测试内容到 `Assets/_Archive/`（AssetDatabase.MoveAsset，GUID 保留），归档场景已移出 Build Settings
-  - 按 Architecture §2 建立 `_Project/` 目录；5 个 asmdef（Core ← Simulation ← Presentation；Editor 仅编辑器；Tests.EditMode → Core、Simulation）
-  - Core：`SimClock`、`EventBus` + `ISimEvent`、`SimLog`（含 `LogCategory` / `SimLogLevel` / `SimLogEntry`）、任务矩阵数据模型与 `TaskMatrixLoader`（§3.1 校验，外加条件引用、trigger、id 与行列一致性检查）
-  - 配置类型 6 种（SimSettings、SceneLayoutConfig、AgvConfig、ArmConfig、InspectionConfig、UiThemeConfig）及辅助结构体；`Config/` 下已生成 CFG_* 默认资产，`CFG_SimSettings.taskMatrixJson` 指向矩阵 JSON
-  - 新增 `SimLayers`（Layer 名称、编号与激光层掩码常量），Layers 8～12 = Environment / Aircraft / Obstacle / Robot / Visualization；Fixed Timestep = 0.01 s
-  - 编辑器菜单：`RivetSim/Setup/*`（建目录、Layers 与时间步、默认配置，均可重复执行；配置资产已存在时不覆盖）、`RivetSim/Debug/Print Task Matrix`
-  - EditMode 测试 24 个全部通过；打印矩阵已与 SOP_TaskMatrix_v1.png 逐格核对一致
-- 修改文件：Assets/_Project/**（Scripts、Config/CFG_*.asset、空目录骨架）、Assets/_Archive/**、Packages/manifest.json、Packages/packages-lock.json、ProjectSettings/TagManager.asset、TimeManager.asset、EditorBuildSettings.asset、Docs/DECISIONS.md（ADR-006、ADR-007）、Docs/PROGRESS.md
+- 完成：M1 场景白盒与生成模型（待验收）
+  - CFG_SceneLayout 写入经确认的布局取值（三区、5 个障碍物、充电位、起始位、巡游路线、模型机中心、演示台 / 大屏 / 入口门），表格见 Architecture §4；轴约定见 ADR-008
+  - Core：`ObstacleSpec`、`ObstacleKind`、`SizeAxes`；`ZoneRect` / `PlanarPose` 增加构造函数与换算属性；`SceneLayoutConfig.obstacles` 改为 `ObstacleSpec[]`，新增 `aircraftCenterM`、`demoDeskPose`、`bigScreenPose`、入口门 3 项
+  - Simulation：`SceneLayoutValidator` + `SceneLayoutReport`（包含关系、作业通道、路线可通行、最窄通道、最小距离）
+  - Editor：`RivetSim/Generate/*` 生成器（Material Library、Zone Labels、Props、Aircraft Placeholder、End Effector、Arm Placeholder、AGV、Demo Station、Main Teaching Hall Scene、Sandbox Scenes、All），`HallGenerator`、`SceneLightingSetup`、`GeneratorUtility`；`RivetSim/Debug/Capture M1 Screenshots`；Editor asmdef 增加 URP Core / Universal Runtime 引用
+  - 生成物：29 个材质 + 5 个地面文字材质、T_HazardStripe、T_ZoneLabel_*、VP_Main、13 个预制体、Main_TeachingHall（Build Settings 第 0 个）、Sandbox_Robot、Sandbox_UI、UI_PanelSettings_Sandbox + UI_Theme_Runtime.tss
+  - 提前导入 NotoSansSC-Bold.ttf 与 OFL.txt 到 `Assets/ThirdParty/Fonts/NotoSansSC/`（地面文字烘焙用）
+  - 文档：ADR-008、ADR-009；Architecture §4 布局取值表；ThirdPartyAssets.md 字体路径
+- 布局校验结果：最窄通道 1.60 m（O1 与 O2 之间，AGV 宽 0.70 m，单侧余量 0.45 m）；巡游路线全长 60 m，AGV 外轮廓到机身最小 1.40 m（机头处），到障碍物最小 0.45 m（窄通道）；模型机到障碍物最小 5.40 m，到作业区边界最小 3.25 m；停靠设计 AGV 底盘到机身 0.30 m（M2 / M3 验证）
+- 截图（Docs/Screenshots/M1/）：01_TopDown 俯视总览（带标注）、02_AGV AGV 近景、03_DemoStation 演示台近景、04_GameView_Play Play 模式总览机位
+- 自检：编译 0 错误 0 警告；EditMode 31/31 通过（新增 7 个）；Play 模式 Console 0 错误 0 警告；`Generate/All` 连续执行两次场景节点数（400）与资产数（69）不变；场景已保存，已退出 Play 模式
 - 遗留问题：
-  - 未定参数留空（随机种子已定为 42）：三区矩形、障碍物、充电位、起始位、巡游路线 → M1；机械臂 Stow / Observe 姿态、闸门 A/B 阈值 → M4
-  - 当前打开的是归档场景 `_Archive/Scenes/HelloWorld.unity`；M1 建立 Main_TeachingHall 后切换
-  - JSON 未改动（label、explain 均未修改）
-- 会话结束自检（2026-10-18）：unity status = ready；编译 0 错误 0 警告；EditMode 24/24 通过；Play 模式 Console 无错误；无未保存场景；已推送 GitHub
-- 下次第一步：执行 PromptTemplates.md 的 M1（场景白盒与生成模型）；先确定三区矩形、障碍物、充电位、起始位、巡游路线的取值，以及 CFG_SceneLayout 尺寸向量与世界坐标轴的对应关系，经确认后写入 CFG_SceneLayout
+  - 演示台靠西墙，近景偏暗；M7 观感打磨时考虑补光或调整主光方向
+  - 占位模型机机翼为无后掠长方体；工位建议放在机翼后缘与平尾之间（机身中心 Z 约 −1.0 / −2.2），M2 按真实模型确定
+  - `capture_game_view --save_path` 会把相对路径解析到 `Assets/` 下，存图后须移出并删除误建目录（本次已处理）
+- 下次第一步：用户验收 M1（布局与截图）；通过后执行 M2（导入外部资产）
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:5、AGV 1.00 × 0.70 × 0.45 m、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -57,4 +58,6 @@ M1 场景白盒与生成模型 —— 未开始（M0 已于 2026-10-18 验收）
 
 ## 待办（超出当前里程碑的想法）
 - [ ] M5：启动时用 `TaskMatrixData.GetExecutorKeys()` 与 `ExecutorRegistry` 核对缺失的执行器键名（目前 JSON 中共 37 个）
-- [ ] M1：确定 `CFG_SceneLayout` 中尺寸向量（长 × 宽 × 高）与世界坐标轴的对应关系
+- [x] M1：确定 `CFG_SceneLayout` 中尺寸向量（长 × 宽 × 高）与世界坐标轴的对应关系（ADR-008）
+- [ ] M3 / M5：AGV 改为由 AppBootstrap 运行时生成，删除主场景中的 AGV_Preview（ADR-009）
+- [ ] M7：演示区补光 / 主光方向调整，提升演示台近景亮度

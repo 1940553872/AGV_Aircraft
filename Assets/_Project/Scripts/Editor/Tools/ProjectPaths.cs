@@ -17,6 +17,54 @@ namespace RivetSim.Editor.Tools
         /// <summary>仿真全局设置资产。</summary>
         public const string SimSettingsAsset = ConfigFolder + "/CFG_SimSettings.asset";
 
+        /// <summary>场景布局配置资产。</summary>
+        public const string SceneLayoutAsset = ConfigFolder + "/CFG_SceneLayout.asset";
+
+        /// <summary>AGV 配置资产。</summary>
+        public const string AgvAsset = ConfigFolder + "/CFG_Agv.asset";
+
+        /// <summary>机械臂配置资产。</summary>
+        public const string ArmAsset = ConfigFolder + "/CFG_Arm.asset";
+
+        /// <summary>生成材质目录。</summary>
+        public const string MaterialsFolder = ProjectRoot + "/Art/Materials";
+
+        /// <summary>生成贴图目录。</summary>
+        public const string TexturesFolder = ProjectRoot + "/Art/Textures";
+
+        /// <summary>后处理 Volume Profile。</summary>
+        public const string MainVolumeProfile = ProjectRoot + "/Art/VP_Main.asset";
+
+        /// <summary>环境道具预制体目录。</summary>
+        public const string PrefabsEnvironment = ProjectRoot + "/Prefabs/Environment";
+
+        /// <summary>机器人预制体目录。</summary>
+        public const string PrefabsRobot = ProjectRoot + "/Prefabs/Robot";
+
+        /// <summary>模型机预制体目录。</summary>
+        public const string PrefabsAircraft = ProjectRoot + "/Prefabs/Aircraft";
+
+        /// <summary>演示台预制体目录。</summary>
+        public const string PrefabsDemoStation = ProjectRoot + "/Prefabs/DemoStation";
+
+        /// <summary>主场景。</summary>
+        public const string MainScene = ProjectRoot + "/Scenes/Main_TeachingHall.unity";
+
+        /// <summary>机器人沙盒场景。</summary>
+        public const string SandboxRobotScene = ProjectRoot + "/Scenes/Sandbox/Sandbox_Robot.unity";
+
+        /// <summary>UI 沙盒场景。</summary>
+        public const string SandboxUiScene = ProjectRoot + "/Scenes/Sandbox/Sandbox_UI.unity";
+
+        /// <summary>UI 资源目录。</summary>
+        public const string UiFolder = ProjectRoot + "/UI";
+
+        /// <summary>中文粗体字体（地面区域文字烘焙用）。</summary>
+        public const string NotoSansScBold = "Assets/ThirdParty/Fonts/NotoSansSC/NotoSansSC-Bold.ttf";
+
+        /// <summary>验收截图目录（工程根目录下，相对路径）。</summary>
+        public const string ScreenshotsFolder = "Docs/Screenshots";
+
         /// <summary>
         /// Architecture §2 规定的 _Project 子目录（相对 Assets/_Project）。
         /// </summary>

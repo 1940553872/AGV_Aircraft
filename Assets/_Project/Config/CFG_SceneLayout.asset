@@ -12,27 +12,68 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7ebb460784315a41ac81ffa1c929a09, type: 3}
   m_Name: CFG_SceneLayout
   m_EditorClassIdentifier: 
-  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA74\u3001\xA76.1\u3002\u4E09\u533A\u77E9\u5F62\u3001\u969C\u788D\u7269\u3001\u5145\u7535\u4F4D\u3001\u8D77\u59CB\u4F4D\u4E0E\u5DE1\u6E38\u8DEF\u7EBF\u5728
-    M1 \u786E\u5B9A\u3002"
+  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA74\u3001\xA76.1\uFF1B\u4E09\u533A\u77E9\u5F62\u3001\u969C\u788D\u7269\u3001\u5145\u7535\u4F4D\u3001\u8D77\u59CB\u4F4D\u3001\u5DE1\u6E38\u8DEF\u7EBF\u4E0E\u6F14\u793A\u533A\u6446\u653E\u4E8E
+    M1\uFF082026-10-18\uFF09\u7ECF\u7528\u6237\u786E\u8BA4\u3002"
   hallSizeM: {x: 40, y: 24, z: 10}
   aisleClearanceM: 2.5
   workZone:
-    centerM: {x: 0, y: 0}
-    sizeM: {x: 0, y: 0}
+    centerM: {x: 3.5, y: 0}
+    sizeM: {x: 14, y: 14}
   mobilityZone:
-    centerM: {x: 0, y: 0}
-    sizeM: {x: 0, y: 0}
+    centerM: {x: 3.5, y: 0}
+    sizeM: {x: 33, y: 24}
   demoZone:
-    centerM: {x: 0, y: 0}
-    sizeM: {x: 0, y: 0}
-  obstacles: []
+    centerM: {x: -16.5, y: 0}
+    sizeM: {x: 7, y: 24}
+  obstacles:
+  - name: "O1 \u8D27\u7BB1\u5806"
+    kind: 0
+    footprint:
+      centerM: {x: -6, y: -2.8}
+      sizeM: {x: 1, y: 4}
+    heightM: 1
+  - name: "O2 \u8D27\u7BB1\u5806"
+    kind: 0
+    footprint:
+      centerM: {x: -6, y: 2.8}
+      sizeM: {x: 1, y: 4}
+    heightM: 1
+  - name: "O3 \u5DE5\u5177\u8F66"
+    kind: 1
+    footprint:
+      centerM: {x: 13.5, y: 5}
+      sizeM: {x: 1.2, y: 0.6}
+    heightM: 0.95
+  - name: "O4 \u5DE5\u5177\u8F66"
+    kind: 1
+    footprint:
+      centerM: {x: 0, y: 9.5}
+      sizeM: {x: 1.2, y: 0.6}
+    heightM: 0.95
+  - name: "O5 \u9525\u6876"
+    kind: 2
+    footprint:
+      centerM: {x: 12.5, y: -8.5}
+      sizeM: {x: 0.4, y: 0.4}
+    heightM: 0.7
   chargingDockPose:
-    positionM: {x: 0, y: 0}
-    yawDeg: 0
+    positionM: {x: -11.4, y: -6}
+    yawDeg: 90
   startPose:
-    positionM: {x: 0, y: 0}
-    yawDeg: 0
-  mappingRouteM: []
+    positionM: {x: -10, y: 0}
+    yawDeg: 90
+  mappingRouteM:
+  - {x: -10, y: 0}
+  - {x: -6, y: 0}
+  - {x: -2, y: 0}
+  - {x: -2, y: -5.5}
+  - {x: 9, y: -5.5}
+  - {x: 9, y: 5.5}
+  - {x: -2, y: 5.5}
+  - {x: -2, y: 0}
+  - {x: -6, y: 0}
+  - {x: -10, y: 0}
+  aircraftCenterM: {x: 3.5, y: 0}
   aircraftScale: 0.2
   aircraftLengthM: 7.5
   aircraftWingspanM: 7.2
@@ -40,6 +81,15 @@ MonoBehaviour:
   fuselageDiameterM: 0.79
   fuselageBottomHeightM: 0.4
   fuselageCenterlineHeightM: 0.8
+  demoDeskPose:
+    positionM: {x: -15, y: 0}
+    yawDeg: 90
+  bigScreenPose:
+    positionM: {x: -19.8, y: 0}
+    yawDeg: 90
+  entranceDoorCenterXM: -16.5
+  entranceDoorWidthM: 3
+  entranceDoorHeightM: 3.5
   demoDeskSizeM: {x: 1.6, y: 0.8, z: 0.75}
   monitorCount: 2
   monitorDiagonalInch: 27

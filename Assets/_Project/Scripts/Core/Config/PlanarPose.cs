@@ -16,5 +16,18 @@ namespace RivetSim.Core.Config
         /// <summary>偏航角，单位 °，0 指向 +Z，顺时针为正。</summary>
         [Tooltip("偏航角，单位 °，0 指向 +Z，顺时针为正")]
         public float yawDeg;
+
+        /// <summary>创建平面位姿。</summary>
+        public PlanarPose(Vector2 positionM, float yawDeg)
+        {
+            this.positionM = positionM;
+            this.yawDeg = yawDeg;
+        }
+
+        /// <summary>世界坐标位置（Y = 0）。</summary>
+        public Vector3 WorldPosition => new Vector3(positionM.x, 0f, positionM.y);
+
+        /// <summary>世界旋转（绕 Y 轴）。</summary>
+        public Quaternion WorldRotation => Quaternion.Euler(0f, yawDeg, 0f);
     }
 }
