@@ -6,7 +6,7 @@ using UnityEngine;
 namespace RivetSim.Tests.EditMode
 {
     /// <summary>
-    /// SceneLayoutValidator 测试：M1 默认布局合法，关键间距与计划一致；违规布局能被发现。
+    /// SceneLayoutValidator 测试：M2 默认布局（模型机 1:1.5、厂房 64 × 44 × 12 m）合法，关键间距与计划一致；违规布局能被发现。
     /// </summary>
     public sealed class SceneLayoutValidatorTests
     {
@@ -38,18 +38,21 @@ namespace RivetSim.Tests.EditMode
         public void DefaultLayout_KeyDistancesMatchPlan()
         {
             SceneLayoutReport report = SceneLayoutValidator.Validate(_layout, _agv);
-            Assert.That(report.NarrowestPassageM, Is.EqualTo(1.6f).Within(1e-4f));
-            Assert.That(report.RouteToFuselageM, Is.EqualTo(1.40f).Within(1e-4f));
-            Assert.That(report.RouteToAircraftBoundsM, Is.EqualTo(1.40f).Within(1e-4f));
-            Assert.That(report.AircraftToObstacleM, Is.EqualTo(5.4f).Within(1e-4f));
-            Assert.That(report.AircraftToWorkZoneEdgeM, Is.EqualTo(3.25f).Within(1e-4f));
-            Assert.That(report.RouteLengthM, Is.EqualTo(60f).Within(1e-3f));
+            Assert.That(report.NarrowestPassageM, Is.EqualTo(1.8f).Within(1e-4f));
+            Assert.That(report.RouteToFuselageM, Is.EqualTo(6.375f).Within(1e-3f));
+            Assert.That(report.RouteToAircraftBoundsM, Is.EqualTo(6.165f).Within(1e-3f));
+            Assert.That(report.RouteToObstacleM, Is.EqualTo(0.5f).Within(1e-3f));
+            Assert.That(report.AircraftToObstacleM, Is.EqualTo(4.675f).Within(1e-3f));
+            Assert.That(report.AircraftToWorkZoneEdgeM, Is.EqualTo(4.065f).Within(1e-3f));
+            Assert.That(report.RouteLengthM, Is.EqualTo(169.2f).Within(1e-2f));
+            Assert.That(report.ChargingDockToWorkZoneM, Is.EqualTo(10.4f).Within(1e-3f));
+            Assert.That(report.DemoAudienceDepthM, Is.EqualTo(5.1f).Within(1e-3f));
         }
 
         [Test]
         public void ObstacleInsideWorkZone_IsReported()
         {
-            _layout.obstacles[2].footprint.centerM = new Vector2(9f, 0f);
+            _layout.obstacles[2].footprint.centerM = new Vector2(22f, 0f);
             SceneLayoutReport report = SceneLayoutValidator.Validate(_layout, _agv);
             Assert.That(report.IsValid, Is.False);
             Assert.That(report.Errors, Has.Some.Contains("侵入作业区"));
@@ -58,12 +61,30 @@ namespace RivetSim.Tests.EditMode
         [Test]
         public void PassageNarrowerThanAgv_IsReported()
         {
-            _layout.obstacles[0].footprint.centerM = new Vector2(-6.0f, -2.2f);
-            _layout.obstacles[1].footprint.centerM = new Vector2(-6.0f, 2.2f);
+            _layout.obstacles[0].footprint.centerM = new Vector2(-15.0f, -2.7f);
+            _layout.obstacles[1].footprint.centerM = new Vector2(-15.0f, 2.7f);
             SceneLayoutReport report = SceneLayoutValidator.Validate(_layout, _agv);
             Assert.That(report.NarrowestPassageM, Is.EqualTo(0.4f).Within(1e-4f));
             Assert.That(report.Errors, Has.Some.Contains("小于 AGV 车宽"));
             Assert.That(report.Errors, Has.Some.Contains("碰撞"));
+        }
+
+        [Test]
+        public void ChargingDockTooCloseToWorkZone_IsReported()
+        {
+            _layout.chargingDockPose.positionM = new Vector2(-12.0f, -12.0f);
+            SceneLayoutReport report = SceneLayoutValidator.Validate(_layout, _agv);
+            Assert.That(report.ChargingDockToWorkZoneM, Is.EqualTo(4.0f).Within(1e-4f));
+            Assert.That(report.Errors, Has.Some.Contains("充电位到作业区"));
+        }
+
+        [Test]
+        public void DemoAudienceTooShallow_IsReported()
+        {
+            _layout.demoDeskPose.positionM = new Vector2(-25.0f, 0f);
+            SceneLayoutReport report = SceneLayoutValidator.Validate(_layout, _agv);
+            Assert.That(report.DemoAudienceDepthM, Is.EqualTo(1.6f).Within(1e-4f));
+            Assert.That(report.Errors, Has.Some.Contains("观众区进深"));
         }
 
         [Test]

@@ -41,19 +41,23 @@ namespace RivetSim.Editor.Generators
         private const float PadMarginM = 0.1f;
         private const float PadLineWidthM = 0.06f;
         private const float FloorLineHeightM = 0.002f;
+        private const float StandBaseSizeM = 0.8f;
+        private const float StandColumnDiameterM = 0.25f;
+        private const float StandPadSizeM = 0.45f;
 
         /// <summary>生成全部道具预制体。</summary>
         [MenuItem("RivetSim/Generate/Props", priority = 12)]
         public static void Build()
         {
             var agv = GeneratorUtility.LoadConfig<AgvConfig>(ProjectPaths.AgvAsset);
-            if (agv == null) return;
+            var layout = GeneratorUtility.LoadConfig<SceneLayoutConfig>(ProjectPaths.SceneLayoutAsset);
+            if (agv == null || layout == null) return;
 
             BuildChargingDock(agv);
             BuildCrate();
             BuildToolCart();
             BuildCone();
-            BuildAircraftStand();
+            BuildAircraftStand(layout);
             BuildWheelChock();
             BuildMarkerBoard();
             SimLog.Info(LogCategory.System, "道具预制体已生成：7 个。");
@@ -172,15 +176,15 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.SavePrefab(root, ConePath);
         }
 
-        private static void BuildAircraftStand()
+        private static void BuildAircraftStand(SceneLayoutConfig layout)
         {
             Material yellow = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.SafetyYellow);
             Material dark = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotDark);
             var root = new GameObject("PF_AircraftStand");
-            float h = AircraftPlaceholderGenerator.WingBottomHeightM;
-            GeneratorUtility.CreateBox("BasePlate", root.transform, new Vector3(0f, 0.02f, 0f), new Vector3(0.45f, 0.04f, 0.45f), dark, true);
-            GeneratorUtility.CreateCylinder("Column", root.transform, new Vector3(0f, h * 0.5f, 0f), Vector3.up, 0.09f, h - 0.04f, yellow, true);
-            GeneratorUtility.CreateBox("TopPad", root.transform, new Vector3(0f, h - 0.015f, 0f), new Vector3(0.2f, 0.03f, 0.2f), dark);
+            float h = AircraftPlaceholderGenerator.WingBottomHeightM(layout);
+            GeneratorUtility.CreateBox("BasePlate", root.transform, new Vector3(0f, 0.03f, 0f), new Vector3(StandBaseSizeM, 0.06f, StandBaseSizeM), dark, true);
+            GeneratorUtility.CreateCylinder("Column", root.transform, new Vector3(0f, h * 0.5f, 0f), Vector3.up, StandColumnDiameterM, h - 0.06f, yellow, true);
+            GeneratorUtility.CreateBox("TopPad", root.transform, new Vector3(0f, h - 0.025f, 0f), new Vector3(StandPadSizeM, 0.05f, StandPadSizeM), dark);
             GeneratorUtility.SetLayerRecursive(root, SimLayers.ObstacleIndex);
             GeneratorUtility.SavePrefab(root, AircraftStandPath);
         }
@@ -189,9 +193,10 @@ namespace RivetSim.Editor.Generators
         {
             Material yellow = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.SafetyYellow);
             var root = new GameObject("PF_WheelChock");
-            GeneratorUtility.CreateBox("Base", root.transform, new Vector3(0f, 0.02f, 0f), new Vector3(0.12f, 0.04f, 0.1f), yellow);
-            GeneratorUtility.CreateBox("Wedge", root.transform, new Vector3(0f, 0.04f, 0f), Quaternion.Euler(35f, 0f, 0f),
-                new Vector3(0.12f, 0.05f, 0.08f), yellow);
+            // 名义尺寸对应 1:1.5 模型机主机轮（直径约 0.73 m）。
+            GeneratorUtility.CreateBox("Base", root.transform, new Vector3(0f, 0.04f, 0f), new Vector3(0.30f, 0.08f, 0.25f), yellow);
+            GeneratorUtility.CreateBox("Wedge", root.transform, new Vector3(0f, 0.09f, 0f), Quaternion.Euler(35f, 0f, 0f),
+                new Vector3(0.30f, 0.12f, 0.20f), yellow);
             GeneratorUtility.SetLayerRecursive(root, SimLayers.ObstacleIndex);
             GeneratorUtility.SavePrefab(root, WheelChockPath);
         }

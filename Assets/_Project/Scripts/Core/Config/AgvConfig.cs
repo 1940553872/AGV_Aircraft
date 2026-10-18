@@ -11,18 +11,18 @@ namespace RivetSim.Core.Config
     {
         [TextArea(2, 6)]
         [Tooltip("参数来源与修改说明")]
-        public string notes = "v1 预估值，见 Docs/Architecture.md §6.1；后续按实际选型修改。";
+        public string notes = "v1 预估值，见 Docs/Architecture.md §6.1；M2 第一部分（2026-10-18）按 ADR-010 将车体改为 1.20 × 0.80 × 0.45 m、轮距 0.66 m、质量 180 kg，雷达随车头前移；升降柱与机械臂安装高度在 M2 第二部分更新。后续按实际选型修改。";
 
         [Header("车体")]
         [Tooltip("车体尺寸（长 × 宽 × 高），单位 m；高度即上装平台面高")]
-        public Vector3 bodySizeM = new Vector3(1.00f, 0.70f, 0.45f);
+        public Vector3 bodySizeM = new Vector3(1.20f, 0.80f, 0.45f);
 
-        [Tooltip("整机质量（含机械臂与上装设备），单位 kg")]
-        public float massKg = 120f;
+        [Tooltip("整机质量（含升降柱、机械臂与上装设备），单位 kg")]
+        public float massKg = 180f;
 
         [Header("差速驱动")]
         [Tooltip("驱动轮轮距，单位 m")]
-        public float wheelTrackM = 0.56f;
+        public float wheelTrackM = 0.66f;
 
         [Tooltip("驱动轮直径，单位 m")]
         public float driveWheelDiameterM = 0.20f;
@@ -57,7 +57,7 @@ namespace RivetSim.Core.Config
 
         [Header("激光雷达")]
         [Tooltip("雷达安装位姿：车头中心，离地 0.30 m")]
-        public MountPose lidarMount = new MountPose(new Vector3(0f, 0.30f, 0.50f), Vector3.zero);
+        public MountPose lidarMount = new MountPose(new Vector3(0f, 0.30f, 0.60f), Vector3.zero);
 
         [Tooltip("每圈射线数")]
         public int lidarBeamCount = 360;

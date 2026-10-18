@@ -27,8 +27,16 @@ namespace RivetSim.Editor.Generators
         /// <summary>相机锚点名称前缀。</summary>
         public const string CameraAnchorPrefix = "CamAnchor_";
 
-        private const float MainCameraFovDeg = 60f;
-        private const float OverviewHeightRatio = 0.7f;
+        /// <summary>主相机（总览机位）竖直视场角，单位 °。</summary>
+        public const float MainCameraFovDeg = 60f;
+        private const float OverviewHeightRatio = 0.75f;
+        private const float OverviewCornerInsetM = 2f;
+        private const float OverviewLookOffsetXM = -10f;
+        private const float OverviewLookZM = 6f;
+        private const float ChockGapM = 0.08f;
+        // 末端特写锚点：看向后机身侧壁检测区附近（铆钉排离地约 2.0～2.3 m，Architecture §6.1）。
+        private const float EffectorLookHeightM = 2.15f;
+        private const float EffectorLookZRatio = -0.2f;
 
         /// <summary>生成主场景。</summary>
         [MenuItem("RivetSim/Generate/Main Teaching Hall Scene", priority = 30)]
@@ -95,10 +103,10 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.InstantiatePrefab(aircraftPrefab, root, origin, Quaternion.identity, "Aircraft");
 
             Transform supports = GeneratorUtility.CreateNode("AircraftSupports", root, origin);
-            foreach (Vector3 p in AircraftPlaceholderGenerator.StandPositions)
+            foreach (Vector3 p in AircraftPlaceholderGenerator.StandPositions(layout))
                 GeneratorUtility.InstantiatePrefab(standPrefab, supports, p, Quaternion.identity, "Stand");
-            float chockOffset = AircraftPlaceholderGenerator.MainWheelDiameter * 0.5f + 0.06f;
-            foreach (Vector3 wheel in AircraftPlaceholderGenerator.MainWheelPositions)
+            float chockOffset = AircraftPlaceholderGenerator.MainWheelDiameterM(layout) * 0.5f + ChockGapM;
+            foreach (Vector3 wheel in AircraftPlaceholderGenerator.MainWheelPositions(layout))
             {
                 GeneratorUtility.InstantiatePrefab(chockPrefab, supports, wheel + Vector3.forward * chockOffset, Quaternion.Euler(0f, 180f, 0f), "Chock");
                 GeneratorUtility.InstantiatePrefab(chockPrefab, supports, wheel - Vector3.forward * chockOffset, Quaternion.identity, "Chock");
@@ -186,16 +194,18 @@ namespace RivetSim.Editor.Generators
         {
             Vector3 aircraft = new Vector3(layout.aircraftCenterM.x, 0f, layout.aircraftCenterM.y);
             float hz = layout.hallSizeM.y * 0.5f;
-            // 总览机位在顶灯与桁架下方，避免遮挡。
-            Vector3 overviewPos = new Vector3(aircraft.x - 7f, layout.hallSizeM.z * OverviewHeightRatio, -hz + 1f);
-            Vector3 overviewLook = new Vector3(aircraft.x - 4f, 0f, 2f);
+            // 总览机位在西南角、顶灯与桁架下方，斜向看厂房中部，使演示区、移动区与模型机同时入画。
+            float hx = layout.hallSizeM.x * 0.5f;
+            Vector3 overviewPos = new Vector3(-hx + OverviewCornerInsetM, layout.hallSizeM.z * OverviewHeightRatio, -hz + OverviewCornerInsetM);
+            Vector3 overviewLook = new Vector3(aircraft.x + OverviewLookOffsetXM, 0f, OverviewLookZM);
 
             PlanarPose start = layout.startPose;
             Vector3 agvPos = start.WorldPosition;
             Vector3 followPos = agvPos + start.WorldRotation * new Vector3(1.6f, 1.6f, -2.4f);
             Vector3 followLook = agvPos + Vector3.up * 0.6f;
 
-            Vector3 effectorLook = aircraft + new Vector3(-0.6f, layout.fuselageCenterlineHeightM, -1.0f);
+            Vector3 effectorLook = aircraft + new Vector3(-layout.fuselageDiameterM * 0.5f, EffectorLookHeightM,
+                layout.aircraftLengthM * EffectorLookZRatio);
             Vector3 effectorPos = effectorLook + new Vector3(-1.8f, 0.5f, 0.8f);
 
             PlanarPose desk = layout.demoDeskPose;

@@ -44,6 +44,12 @@ namespace RivetSim.Simulation.World
         /// <summary>巡游路线总长，单位 m。</summary>
         public float RouteLengthM { get; internal set; }
 
+        /// <summary>充电位到作业区边界的距离，单位 m。</summary>
+        public float ChargingDockToWorkZoneM { get; internal set; }
+
+        /// <summary>演示台前缘到演示区边界的观众站位进深，单位 m。</summary>
+        public float DemoAudienceDepthM { get; internal set; }
+
         /// <summary>生成多行中文摘要。</summary>
         public string ToText()
         {
@@ -52,7 +58,8 @@ namespace RivetSim.Simulation.World
             sb.Append($"最窄通道：{NarrowestPassageM:0.00} m（{NarrowestPassageLabel}），AGV 车宽 {AgvWidthM:0.00} m，单侧余量 {(NarrowestPassageM - AgvWidthM) * 0.5f:0.00} m").Append('\n');
             sb.Append($"巡游路线：全长 {RouteLengthM:0.0} m；AGV 外轮廓到机身最小 {RouteToFuselageM:0.00} m，到模型机包围盒最小 {RouteToAircraftBoundsM:0.00} m，到障碍物最小 {RouteToObstacleM:0.00} m").Append('\n');
             sb.Append($"停靠设计：AGV 底盘到机身 {DockingFuselageClearanceM:0.00} m（CFG_Agv）").Append('\n');
-            sb.Append($"作业通道：模型机到障碍物最小 {AircraftToObstacleM:0.00} m，到作业区边界最小 {AircraftToWorkZoneEdgeM:0.00} m");
+            sb.Append($"作业通道：模型机到障碍物最小 {AircraftToObstacleM:0.00} m，到作业区边界最小 {AircraftToWorkZoneEdgeM:0.00} m").Append('\n');
+            sb.Append($"充电位到作业区：{ChargingDockToWorkZoneM:0.00} m；演示台前观众区进深：{DemoAudienceDepthM:0.00} m");
             foreach (string error in Errors) sb.Append("\n  × ").Append(error);
             return sb.ToString();
         }

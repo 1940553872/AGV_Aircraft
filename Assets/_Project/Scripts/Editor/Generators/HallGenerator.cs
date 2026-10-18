@@ -14,20 +14,23 @@ namespace RivetSim.Editor.Generators
         private const float WallThicknessM = 0.3f;
         private const float DadoHeightM = 1.2f;
         private const float ColumnSizeM = 0.4f;
-        private const float ColumnSpacingM = 8f;
+        // 9 m 跨距使 44 m 宽的西墙为奇数跨，墙中心（大屏位置）不落柱。
+        private const float ColumnSpacingM = 9f;
         private const float TrussDepthM = 0.6f;
         private const float TrussWidthM = 0.25f;
         private const float LampDropM = 1.5f;
-        private const float LampSizeXM = 1.2f;
-        private const float LampSizeZM = 0.4f;
+        private const float LampSizeXM = 2.0f;
+        private const float LampSizeZM = 0.5f;
+        private const float LampRowSpacingM = 14f;
         private const float MarkingHeightM = 0.002f;
         private const float LabelHeightAboveFloorM = 0.004f;
         private const float DemoLineWidthM = 0.10f;
         private const float StartLineWidthM = 0.05f;
-        private const float WorkLabelHeightM = 0.9f;
-        private const float MobilityLabelHeightM = 1.6f;
-        private const float DemoLabelHeightM = 1.4f;
-        private const float SmallLabelHeightM = 0.45f;
+        private const float WorkLabelHeightM = 2.0f;
+        private const float MobilityLabelHeightM = 2.8f;
+        private const float DemoLabelHeightM = 2.0f;
+        private const float DemoLabelInsetM = 3.5f;
+        private const float SmallLabelHeightM = 0.6f;
 
         /// <summary>生成厂房主体（放在 Environment 根节点下，Environment 层）。</summary>
         public static void BuildHall(Transform root, SceneLayoutConfig layout)
@@ -104,13 +107,16 @@ namespace RivetSim.Editor.Generators
             foreach (float z in new[] { -hz * 0.5f, 0f, hz * 0.5f })
                 GeneratorUtility.CreateBox("Purlin", roof, new Vector3(0f, h - 0.1f, z), new Vector3(lx, 0.15f, 0.15f), steel);
 
+            // 顶灯：每个 X 向跨间一列，按 LampRowSpacingM 沿 Z 均分成若干排。
             Transform lamps = GeneratorUtility.CreateNode("Lamps", root, Vector3.zero);
+            int lampRows = Mathf.Max(2, Mathf.RoundToInt(lz / LampRowSpacingM));
             for (int i = 0; i < baysX; i++)
             {
                 float x = -hx + (i + 0.5f) * stepX;
-                foreach (float z in new[] { -hz * 0.5f, hz * 0.5f })
+                for (int j = 0; j < lampRows; j++)
                 {
-                    Transform fixture = GeneratorUtility.CreateNode($"Lamp_{i}", lamps, new Vector3(x, h - LampDropM, z));
+                    float z = -hz + (j + 0.5f) * lz / lampRows;
+                    Transform fixture = GeneratorUtility.CreateNode($"Lamp_{i}_{j}", lamps, new Vector3(x, h - LampDropM, z));
                     GeneratorUtility.CreateBox("Housing", fixture, new Vector3(0f, 0.05f, 0f), new Vector3(LampSizeXM + 0.06f, 0.08f, LampSizeZM + 0.06f), steel);
                     GeneratorUtility.CreateBox("Emitter", fixture, Vector3.zero, new Vector3(LampSizeXM, 0.02f, LampSizeZM), lamp);
                     GeneratorUtility.CreateBox("Rod", fixture, new Vector3(0f, LampDropM * 0.5f, 0f), new Vector3(0.02f, LampDropM, 0.02f), steel);
@@ -154,7 +160,7 @@ namespace RivetSim.Editor.Generators
             Material yellow = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.LineYellow);
             GeneratorUtility.CreateBox("Boundary", demoLines, new Vector3(demo.MaxM.x, y, demo.centerM.y),
                 new Vector3(DemoLineWidthM, MarkingHeightM, demo.sizeM.y), yellow);
-            Label(demoLines, ZoneLabelBaker.Demo, new Vector3(demo.centerM.x, 0f, demo.MinM.y + 2.5f), DemoLabelHeightM);
+            Label(demoLines, ZoneLabelBaker.Demo, new Vector3(demo.centerM.x, 0f, demo.MinM.y + DemoLabelInsetM), DemoLabelHeightM);
 
             foreach (Transform t in new[] { workLines, mobilityLines, demoLines })
                 GeneratorUtility.SetLayerRecursive(t.gameObject, SimLayers.EnvironmentIndex);

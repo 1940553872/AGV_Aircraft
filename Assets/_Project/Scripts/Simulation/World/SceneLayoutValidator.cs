@@ -6,7 +6,7 @@ namespace RivetSim.Simulation.World
 {
     /// <summary>
     /// 场景布局校验：检查三区包含关系、障碍物与作业通道、起始位 / 充电位 / 巡游路线的可通行性，
-    /// 并计算最窄通道与 AGV 到机身的最小距离。所有计算在世界 X / Z 平面内进行，单位 m。
+    /// 充电位到作业区的距离与演示台前观众区进深，并计算最窄通道与 AGV 到机身的最小距离。所有计算在世界 X / Z 平面内进行，单位 m。
     /// </summary>
     public static class SceneLayoutValidator
     {
@@ -35,7 +35,45 @@ namespace RivetSim.Simulation.World
             CheckPoint(report, layout, mobility, layout.startPose.positionM, agvHalfWidthM, "起始位");
             CheckPoint(report, layout, mobility, layout.chargingDockPose.positionM, agvHalfWidthM, "充电位");
             CheckRoute(report, layout, mobility, fuselage, aircraftBounds, agvHalfWidthM);
+            CheckChargingDock(report, layout, work);
+            CheckDemoAudience(report, layout, demo);
             return report;
+        }
+
+        private static void CheckChargingDock(SceneLayoutReport report, SceneLayoutConfig layout, Rect work)
+        {
+            report.ChargingDockToWorkZoneM = PointRectDistance(layout.chargingDockPose.positionM, work);
+            if (report.ChargingDockToWorkZoneM < layout.chargingDockMinToWorkZoneM)
+                report.Errors.Add($"充电位到作业区 {report.ChargingDockToWorkZoneM:0.00} m，小于要求 {layout.chargingDockMinToWorkZoneM:0.00} m");
+        }
+
+        // 观众站位进深：从演示台前缘（操作侧，沿演示台朝向）到演示区边界的距离。
+        private static void CheckDemoAudience(SceneLayoutReport report, SceneLayoutConfig layout, Rect demo)
+        {
+            PlanarPose desk = layout.demoDeskPose;
+            Vector3 forward3 = desk.WorldRotation * Vector3.forward;
+            var forward = new Vector2(forward3.x, forward3.z);
+            Vector2 frontEdge = desk.positionM + forward * (layout.demoDeskSizeM.y * 0.5f);
+            if (!demo.Contains(frontEdge))
+            {
+                report.DemoAudienceDepthM = 0f;
+                report.Errors.Add("演示台前缘不在演示区内");
+                return;
+            }
+            report.DemoAudienceDepthM = RayExitDistance(frontEdge, forward, demo);
+            if (report.DemoAudienceDepthM < layout.demoAudienceDepthMinM)
+                report.Errors.Add($"演示台前观众区进深 {report.DemoAudienceDepthM:0.00} m，小于要求 {layout.demoAudienceDepthMinM:0.00} m");
+        }
+
+        /// <summary>矩形内一点沿单位方向射出到矩形边界的距离。</summary>
+        internal static float RayExitDistance(Vector2 origin, Vector2 direction, Rect r)
+        {
+            float t = float.PositiveInfinity;
+            if (direction.x > 1e-6f) t = Mathf.Min(t, (r.xMax - origin.x) / direction.x);
+            else if (direction.x < -1e-6f) t = Mathf.Min(t, (r.xMin - origin.x) / direction.x);
+            if (direction.y > 1e-6f) t = Mathf.Min(t, (r.yMax - origin.y) / direction.y);
+            else if (direction.y < -1e-6f) t = Mathf.Min(t, (r.yMin - origin.y) / direction.y);
+            return t;
         }
 
         private static void CheckZones(SceneLayoutReport report, Rect hall, Rect work, Rect mobility, Rect demo,

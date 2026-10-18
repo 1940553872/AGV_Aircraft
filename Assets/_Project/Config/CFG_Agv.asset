@@ -12,10 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6380b8ad67f93f48abfdb479c224049, type: 3}
   m_Name: CFG_Agv
   m_EditorClassIdentifier: 
-  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA76.1\uFF1B\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002"
-  bodySizeM: {x: 1, y: 0.7, z: 0.45}
-  massKg: 120
-  wheelTrackM: 0.56
+  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA76.1\uFF1BM2
+    \u7B2C\u4E00\u90E8\u5206\uFF082026-10-18\uFF09\u6309 ADR-010 \u5C06\u8F66\u4F53\u6539\u4E3A
+    1.20 \xD7 0.80 \xD7 0.45 m\u3001\u8F6E\u8DDD 0.66 m\u3001\u8D28\u91CF 180 kg\uFF0C\u96F7\u8FBE\u968F\u8F66\u5934\u524D\u79FB\uFF1B\u5347\u964D\u67F1\u4E0E\u673A\u68B0\u81C2\u5B89\u88C5\u9AD8\u5EA6\u5728
+    M2 \u7B2C\u4E8C\u90E8\u5206\u66F4\u65B0\u3002\u540E\u7EED\u6309\u5B9E\u9645\u9009\u578B\u4FEE\u6539\u3002"
+  bodySizeM: {x: 1.2, y: 0.8, z: 0.45}
+  massKg: 180
+  wheelTrackM: 0.66
   driveWheelDiameterM: 0.2
   casterCount: 2
   cruiseSpeedMps: 0.6
@@ -27,7 +30,7 @@ MonoBehaviour:
   reverseExitDistanceM: 0.6
   fuselageSafetyClearanceM: 0.3
   lidarMount:
-    positionM: {x: 0, y: 0.3, z: 0.5}
+    positionM: {x: 0, y: 0.3, z: 0.6}
     eulerDeg: {x: 0, y: 0, z: 0}
   lidarBeamCount: 360
   lidarRateHz: 10
