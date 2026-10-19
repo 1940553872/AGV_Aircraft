@@ -84,7 +84,7 @@ git clone https://github.com/1940553872/AGV_Aircraft.git
 ```
 
 3. 退出：按 **Esc** 弹出确认框，再按 **Enter**；或点 HUD 右上角的“Esc 退出”按钮。
-4. 分发时可以删掉 `AGV_Aircraft_BurstDebugInformation_DoNotShip/` 目录。
+4. **拷贝到其他电脑**：只拷 exe 是不行的，必须拷贝**整个输出文件夹**：`AGV_Aircraft.exe`、`AGV_Aircraft_Data/`、`UnityPlayer.dll`、`MonoBleedingEdge/`、`D3D12/`、`UnityCrashHandler64.exe`（约 220 MB，建议打成 zip）。对方不需要安装 Unity，要求是 Windows 10 / 11 64 位、支持 DirectX 11 的显卡。`AGV_Aircraft_BurstDebugInformation_DoNotShip/`、`PerfLogs/`、`build_summary.txt` 不用拷。
 
 **帧率复测**：加参数 `-perfRun` 启动时，程序先以 ×2 运行 180 s，再切到 ×8 跑到流程结束，然后自动退出。结果写在 exe 同目录的 `PerfLogs/summary.txt`（帧率、倍速保护、尖峰）和 `frames.csv`。参考结果见 [Docs/Reports/Build_v1.1.md](Docs/Reports/Build_v1.1.md)（Ultra 9 275HX + RTX 5060 Laptop：×8 平均 398 FPS）。
 
@@ -350,4 +350,4 @@ RivetSim.Tests.EditMode → Core, Simulation
 
 > “Airbus A320-200” by Dlourine (https://sketchfab.com/fDlruosne), licensed under CC BY 4.0, scaled and simplified for this simulation.
 
-各资产的版本、下载日期与放置路径见 [Docs/ThirdPartyAssets.md](Docs/ThirdPartyAssets.md)，许可原文随资产保存在 `Assets/ThirdParty/` 各目录中。第三方资产按各自的许可使用；本项目自身的代码目前**没有声明开源许可证**，如需复用，请先联系仓库作者。
+各资产的版本、下载日期与放置路径见 [Docs/ThirdPartyAssets.md](Docs/ThirdPartyAssets.md)，许可原文随资产保存在 `Assets/ThirdParty/` 各目录中。本项目自身的代码、配置与文档以 [MIT 许可证](LICENSE) 发布；第三方资产**不适用 MIT**，按上表中各自的许可使用。分发构建出的程序时，需保留 A320 署名（程序内已显示），并附上 UR5e / AprilTag 的 BSD 声明和 Noto Sans SC 的 OFL 文本。
