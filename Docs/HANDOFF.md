@@ -33,6 +33,7 @@
 ## 编辑器与验证
 - 生成：`RivetSim/Generate/Demo UI Assets`（RT、屏幕材质、4 份 PanelSettings）；MainSceneBuilder 末尾 `DemoUiGenerator.BuildMain`。
 - 验证：`RivetSim/Verify/Run M8`（`M8VerifyRunner`，快进完整流程 + 随机故障 + ×8 窗口 + 强制降速检查 + 间隙 + 布局 + 遮挡 + 截图）→ Docs/Reports/M8.md，约 2 min。M7 `Run M7 Demo`、M6 `Run Demo UI`、M5 `Run Mission (Fast)` 仍可用。
+- 退出：Esc / HUD 右上角“Esc 退出”按钮 → `HudView.ShowExitConfirm`（`DemoUiHub.OpenExitConfirm` 暂停仿真，取消时恢复）；Enter / “退出” → `AppExit.Quit()`（编辑器退出 Play）。
 - 构建：`RivetSim/Build/Windows v1.1`（`BuildV11`）→ Builds/v1.1/（不入库）。帧率复测：`AGV_Aircraft.exe -perfRun -screen-fullscreen 0 -screen-width 1920 -screen-height 1080 -popupwindow`，`BuildPerfProbe` 写 PerfLogs/summary.txt 后自动退出（约 5.5 min）。
 - 布局检查共用 `UiLayoutCheck`（Begin / Check / End）。ThirdPartyImporter 跳过内容相同的文件（忽略换行差异）。
 

@@ -17,6 +17,7 @@ namespace RivetSim.Presentation.App
     /// 可视化开关与演示屏全屏；t(1,8) 操作员初值通道打开时弹出小地图点选提示，点选结果写回通道（再由执行器写入 MissionBlackboard.InitialPose）。
     /// M8：故障类条件单元被激活时（ConditionBus.AnomalyRaised）弹出 3 s 提示“系统检测到异常：…，正在自动处理”；
     /// B 键 / HUD 按钮切换大屏视图（全屏时切换全屏视图）；倍速保护降速时提示。不再提供手动故障注入。
+    /// v1.1：Esc / HUD“退出”按钮打开退出确认框（打开期间暂停仿真，取消后恢复），确认后经 <see cref="AppExit"/> 退出程序。
     /// </summary>
     public sealed class DemoUiHub : IDisposable
     {
@@ -32,6 +33,7 @@ namespace RivetSim.Presentation.App
         private readonly TaskMatrixData _data;
         private readonly UiThemeConfig _theme;
         private bool _bigScreenStatus;
+        private bool _pausedForExit;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
         /// <summary>演示模式控制器（验证工具用）。</summary>
@@ -73,6 +75,9 @@ namespace RivetSim.Presentation.App
             hud.VisualizationToggled += OnVisualization;
             hud.FullscreenToggled += ToggleFullscreen;
             hud.PosePicked += OnPosePicked;
+            hud.ExitRequested += OpenExitConfirm;
+            hud.ExitConfirmed += AppExit.Quit;
+            hud.ExitCancelled += CloseExitConfirm;
             hud.SetMode(mode.Mode);
             mode.ModeChanged += hud.SetMode;
             if (hotkeys != null)
@@ -82,6 +87,8 @@ namespace RivetSim.Presentation.App
                 hotkeys.PausePressed += mode.TogglePause;
                 hotkeys.NextPressed += OnNext;
                 hotkeys.ViewPressed += ToggleBigScreenView;
+                hotkeys.EscapePressed += OnEscape;
+                hotkeys.ConfirmPressed += OnConfirm;
             }
             if (rig != null)
             {
@@ -97,6 +104,34 @@ namespace RivetSim.Presentation.App
                 operatorPose.Closed += OnPoseClosed;
             }
             _subscriptions.Add(bus.Subscribe<PhaseEnteredEvent>(OnPhase));
+        }
+
+        /// <summary>打开退出确认框，并暂停仿真（原本已暂停则不动）。</summary>
+        public void OpenExitConfirm()
+        {
+            if (_hud.IsExitConfirmOpen) return;
+            _pausedForExit = !_mode.IsPaused;
+            if (_pausedForExit) _mode.TogglePause();
+            _hud.ShowExitConfirm();
+        }
+
+        /// <summary>关闭退出确认框，恢复打开前的暂停状态。</summary>
+        public void CloseExitConfirm()
+        {
+            _hud.HideExitConfirm();
+            if (_pausedForExit && _mode.IsPaused) _mode.TogglePause();
+            _pausedForExit = false;
+        }
+
+        private void OnEscape()
+        {
+            if (_hud.IsExitConfirmOpen) CloseExitConfirm();
+            else OpenExitConfirm();
+        }
+
+        private void OnConfirm()
+        {
+            if (_hud.IsExitConfirmOpen) AppExit.Quit();
         }
 
         /// <summary>切换演示屏全屏（Tab / HUD 按钮）。</summary>

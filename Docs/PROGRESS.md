@@ -40,7 +40,8 @@
   - 探针：`BuildPerfProbe`（Presentation/App），仅在启动参数带 `-perfRun` 时创建；×2 运行 180 s 后切 ×8 至工序结束，写 PerfLogs/frames.csv、summary.txt、2 张 1280×720 截图并退出
 - 结果（Docs/Reports/Build_v1.1.md，本机 Ultra 9 275HX + RTX 5060 Laptop，1920×1080 窗口）：×2 平均 464 / 1% Low 273 FPS；×8 平均 398 / 1% Low 95 FPS；倍速保护 0 次；不含截图帧，超过 33 ms 的单帧尖峰有 3 帧（41～46 ms，出现在 t(1,8) / t(1,1) / t(6,1) 切换处）；流程完整，48 颗、检出 5/5
 - 发现的问题（未修）：独立程序矩阵流程用时 974.0 s，编辑器快进为 1074.2 s；阶段切换处有偶发尖峰；Burst 调试目录分发时要删除
-- 截图：Docs/Screenshots/Build_v1.1/Build_v1.1_x2.png、Build_v1.1_x8.png
+- 追加（用户要求）：Esc 或 HUD 右上角“Esc 退出”按钮弹出确认框（打开期间暂停仿真），Enter 或“退出”调用 `AppExit.Quit()`；编辑器和独立程序里，键盘与鼠标两种方式都已验证（报告 §7）
+- 截图：Docs/Screenshots/Build_v1.1/Build_v1.1_x2.png、Build_v1.1_x8.png、Build_v1.1_exit_confirm.png
 - 下次第一步：等待用户验收；之后修复上述问题（另开会话）或进入 v2
 
 ## v1 已知限制

@@ -11,6 +11,7 @@ namespace RivetSim.Presentation.UI
     /// 机位 1～4 与自动机位、可视化开关、矩阵全屏、大屏视图切换（M8）、快捷键提示与致谢角标；
     /// 异常提示条（M8：“系统检测到异常：…，正在自动处理”，按实际时间自动隐藏）；t(1,8) 识别失败时弹出小地图点选提示。
     /// 只发出请求事件，由入口转给 DemoModeController / CameraRig 等。M8 起不再提供故障注入按钮。
+    /// v1.1：右上角“Esc 退出”按钮与退出确认框（确认 / 取消只发事件，由 DemoUiHub 暂停仿真并退出程序）。
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class HudView : MonoBehaviour
@@ -24,7 +25,7 @@ namespace RivetSim.Presentation.UI
         private IDemoStatusSource _status;
         private IMiniMapSource _map;
         private UiThemeConfig _theme;
-        private VisualElement _root, _main, _poseScrim, _alert;
+        private VisualElement _root, _main, _poseScrim, _alert, _exitScrim;
         private Button _modeAuto, _modeStep, _modeManual, _pause, _next, _vis, _fullscreen, _bigScreen;
         private DropdownField _speed;
         private float _alertUntil;
@@ -36,12 +37,24 @@ namespace RivetSim.Presentation.UI
         private long _shownSecond = -1;
         private float _shownSpeed = -1f;
         private bool _shownPaused;
-        private bool _poseOpen, _poseAuto;
+        private bool _poseOpen, _poseAuto, _exitOpen;
         private float _poseDelayS;
         private double _poseOpenedSimS;
         private int _poseShownSecond = -1;
         private int _cameraPreset = -1;
         private bool _cameraAuto;
+
+        /// <summary>点击右上角“退出”按钮。</summary>
+        public event Action ExitRequested;
+
+        /// <summary>退出确认框中点击“退出”。</summary>
+        public event Action ExitConfirmed;
+
+        /// <summary>退出确认框中点击“取消”。</summary>
+        public event Action ExitCancelled;
+
+        /// <summary>退出确认框是否打开。</summary>
+        public bool IsExitConfirmOpen => _exitOpen;
 
         /// <summary>请求切换模式。</summary>
         public event Action<DemoMode> ModeRequested;
@@ -169,6 +182,22 @@ namespace RivetSim.Presentation.UI
             _poseScrim.style.display = DisplayStyle.None;
         }
 
+        /// <summary>显示退出确认框（矩阵全屏时也显示）。</summary>
+        public void ShowExitConfirm()
+        {
+            if (!Bind()) return;
+            _exitOpen = true;
+            _exitScrim.style.display = DisplayStyle.Flex;
+        }
+
+        /// <summary>关闭退出确认框。</summary>
+        public void HideExitConfirm()
+        {
+            _exitOpen = false;
+            if (!Bind()) return;
+            _exitScrim.style.display = DisplayStyle.None;
+        }
+
         private bool Bind()
         {
             if (_built) return true;
@@ -177,6 +206,10 @@ namespace RivetSim.Presentation.UI
             _root = root;
             _main = root.Q("hud-main");
             _poseScrim = root.Q("hud-pose-scrim");
+            _exitScrim = root.Q("hud-exit-scrim");
+            Hook("hud-exit", () => ExitRequested?.Invoke());
+            Hook("hud-exit-confirm", () => ExitConfirmed?.Invoke());
+            Hook("hud-exit-cancel", () => ExitCancelled?.Invoke());
             _modeAuto = Hook("hud-mode-auto", () => ModeRequested?.Invoke(DemoMode.Auto));
             _modeStep = Hook("hud-mode-step", () => ModeRequested?.Invoke(DemoMode.Step));
             _modeManual = Hook("hud-mode-manual", () => ModeRequested?.Invoke(DemoMode.Manual));

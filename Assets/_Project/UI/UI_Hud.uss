@@ -257,3 +257,70 @@
     margin-top: 8px;
     -unity-text-align: middle-right;
 }
+
+/* —— 退出：右上角按钮与确认框 —— */
+.hud-group--last {
+    margin-right: 0;
+}
+
+.hud-btn--exit:hover {
+    border-color: rgb(230, 80, 80);
+}
+
+.hud-exit-scrim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(14, 22, 33, 0.6);
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+
+.hud-exit {
+    width: 520px;
+    padding: 20px 24px;
+    background-color: rgb(21, 34, 50);
+    border-width: 2px;
+    border-color: rgb(230, 80, 80);
+    border-radius: 8px;
+}
+
+.hud-exit-title {
+    font-size: 26px;
+    color: rgb(230, 238, 247);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin-bottom: 6px;
+}
+
+.hud-exit-text {
+    font-size: 18px;
+    color: rgb(143, 163, 184);
+    white-space: normal;
+    margin-bottom: 16px;
+}
+
+.hud-exit-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+}
+
+.hud-btn--dialog {
+    height: 40px;
+    min-width: 128px;
+    margin: 0 0 0 10px;
+}
+
+.hud-btn--danger {
+    background-color: rgb(230, 80, 80);
+    border-color: rgb(230, 80, 80);
+    color: rgb(255, 255, 255);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+}
+
+.hud-btn--danger:hover {
+    background-color: rgb(245, 105, 105);
+    border-color: rgb(245, 105, 105);
+}

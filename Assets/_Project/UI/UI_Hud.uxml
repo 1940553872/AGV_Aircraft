@@ -33,11 +33,14 @@
                     <ui:Button name="hud-fullscreen" class="hud-btn" text="Tab 矩阵全屏" />
                     <ui:Button name="hud-bigscreen" class="hud-btn" text="B 大屏：任务矩阵" />
                 </ui:VisualElement>
+                <ui:VisualElement class="hud-panel hud-group hud-group--last" picking-mode="Ignore">
+                    <ui:Button name="hud-exit" class="hud-btn hud-btn--exit" text="Esc 退出" />
+                </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="hud-alert" class="hud-alert" picking-mode="Ignore">
                 <ui:Label name="hud-alert-text" class="hud-alert-text" text="" picking-mode="Ignore" />
             </ui:VisualElement>
-            <ui:Label name="hud-hints" class="hud-hints" text="1～4 机位 · 0 自动机位 · Tab 矩阵全屏 · P 暂停 · N 下一步 · B 大屏视图 · V 可视化 · 空格急停 · WASD 遥控（遥控模式）" picking-mode="Ignore" />
+            <ui:Label name="hud-hints" class="hud-hints" text="1～4 机位 · 0 自动机位 · Tab 矩阵全屏 · P 暂停 · N 下一步 · B 大屏视图 · V 可视化 · 空格急停 · WASD 遥控（遥控模式） · Esc 退出" picking-mode="Ignore" />
         </ui:VisualElement>
         <ui:Label name="hud-credit" class="hud-credit" text="“Airbus A320-200” by Dlourine (https://sketchfab.com/fDlruosne), licensed under CC BY 4.0, scaled and simplified for this simulation." picking-mode="Ignore" />
         <ui:VisualElement name="hud-pose-scrim" class="hud-pose-scrim">
@@ -46,6 +49,16 @@
                 <ui:Label class="hud-pose-text" text="在小地图上点击 AGV 的实际位置（朝向沿用当前估计，教学简化模型）。点选后 S1 按初值重新定位并继续全局导航。" />
                 <ui:VisualElement name="hud-pose-map" class="hud-pose-map" />
                 <ui:Label name="hud-pose-countdown" class="hud-pose-countdown" text="" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="hud-exit-scrim" class="hud-exit-scrim">
+            <ui:VisualElement class="hud-exit">
+                <ui:Label class="hud-exit-title" text="退出程序？" />
+                <ui:Label class="hud-exit-text" text="演示进度不会保存。确认框打开期间仿真已暂停，取消后继续。" />
+                <ui:VisualElement class="hud-exit-actions">
+                    <ui:Button name="hud-exit-cancel" class="hud-btn hud-btn--dialog" text="取消（Esc）" />
+                    <ui:Button name="hud-exit-confirm" class="hud-btn hud-btn--dialog hud-btn--danger" text="退出（Enter）" />
+                </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
