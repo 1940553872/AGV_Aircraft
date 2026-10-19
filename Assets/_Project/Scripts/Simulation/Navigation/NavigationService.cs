@@ -101,9 +101,12 @@ namespace RivetSim.Simulation.Navigation
             GridGeometry g = CostMap.Geometry;
             Vector2 start = _chassis.Pose.positionM;
             // 引入点：终点沿目标朝向后退前视距离。可通行且到终点直线无遮挡时先规划到引入点，再沿目标朝向直线进入终点，
-            // 横向偏差在到点前收敛；离终点已很近时不加。
-            Vector2 leadIn = goal.positionM - DiffDriveKinematics.Heading(goal.yawDeg) * _nav.lookaheadM;
-            bool useLeadIn = (start - goal.positionM).sqrMagnitude > _nav.lookaheadM * _nav.lookaheadM &&
+            // 横向偏差在到点前收敛；离终点已很近时不加。起点已在终点前方（沿目标朝向）时也不加：否则路径要越过终点再折返，
+            // 终点段按“终点在车头方向的投影”判定到达，会停在引入点（M5 返回充电位时停在充电位后方约 0.7 m）；此时直接到终点再原地转向。
+            Vector2 heading = DiffDriveKinematics.Heading(goal.yawDeg);
+            Vector2 leadIn = goal.positionM - heading * _nav.lookaheadM;
+            bool useLeadIn = Vector2.Dot(start - goal.positionM, heading) <= 0f &&
+                             (start - goal.positionM).sqrMagnitude > _nav.lookaheadM * _nav.lookaheadM &&
                              !CostMap.IsBlocked(g.WorldToCell(leadIn)) && PathSmoother.LineOfSight(CostMap, leadIn, goal.positionM);
             Vector2 target = useLeadIn ? leadIn : goal.positionM;
             if (!_astar.TryPlan(CostMap, g.WorldToCell(start), g.WorldToCell(target), _cells, out failure)) return false;

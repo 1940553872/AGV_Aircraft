@@ -142,6 +142,10 @@ namespace RivetSim.Presentation.App
             if (!back.Success) return Fail(report, $"返回充电位失败：{back.FailureReason}");
             NavigationResult dockIn = await nav.DriveStraightAsync(-_nav.dockApproachDistanceM, _agv.approachSpeedMps, "倒车进入充电位", ct);
             if (!dockIn.Success) return Fail(report, $"倒车进入充电位失败：{dockIn.FailureReason}");
+            DockingError parkError = DockingError.Between(charger, _runtime.Chassis.Pose);
+            bool parked = parkError.IsWithin(_nav.goalPositionToleranceM, _nav.goalYawToleranceDeg);
+            SimLog.Write(LogCategory.Nav, parked ? SimLogLevel.Info : SimLogLevel.Warning,
+                $"返回充电位：停车误差（相对充电位）{parkError}，{(parked ? "在" : "超出")}到点容差 {_nav.goalPositionToleranceM * 1000f:0} mm / {_nav.goalYawToleranceDeg:0.0}° 内");
             double t3 = _runtime.Clock.TimeS;
             report.ReturnS = t3 - t2;
             report.TotalS = t3 - t0;
