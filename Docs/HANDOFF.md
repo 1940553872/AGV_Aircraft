@@ -1,6 +1,6 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，M8 v1.1 小更新验收通过（main = 6430569 + 本次文档提交）。下一个：独立程序构建（需单独指令）或 v2。
+更新：2026-10-19，v1.1 独立程序构建与复测完成，等待用户验收（Docs/Reports/Build_v1.1.md）。下一个：修复复测发现的问题（另开会话）或 v2。
 
 ## 现有接口（直接调用，不要重写）
 - RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController（`Rig.Tcp`）、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`。
@@ -33,6 +33,7 @@
 ## 编辑器与验证
 - 生成：`RivetSim/Generate/Demo UI Assets`（RT、屏幕材质、4 份 PanelSettings）；MainSceneBuilder 末尾 `DemoUiGenerator.BuildMain`。
 - 验证：`RivetSim/Verify/Run M8`（`M8VerifyRunner`，快进完整流程 + 随机故障 + ×8 窗口 + 强制降速检查 + 间隙 + 布局 + 遮挡 + 截图）→ Docs/Reports/M8.md，约 2 min。M7 `Run M7 Demo`、M6 `Run Demo UI`、M5 `Run Mission (Fast)` 仍可用。
+- 构建：`RivetSim/Build/Windows v1.1`（`BuildV11`）→ Builds/v1.1/（不入库）。帧率复测：`AGV_Aircraft.exe -perfRun -screen-fullscreen 0 -screen-width 1920 -screen-height 1080 -popupwindow`，`BuildPerfProbe` 写 PerfLogs/summary.txt 后自动退出（约 5.5 min）。
 - 布局检查共用 `UiLayoutCheck`（Begin / Check / End）。ThirdPartyImporter 跳过内容相同的文件（忽略换行差异）。
 
 ## 关键约定
@@ -49,8 +50,9 @@
 - 操作员初值只写黑板与日志，导航仍用真值位姿；点选只给位置。
 - C4 / C6 / C8 有个别 ✗（M8 583 次检查中 4 次），未逐颗定位原因。
 - 机械臂末端连杆到机身最小 148 mm、探头末端 73 mm；v1 只检查不规划。
-- Editor 中偶发单帧尖峰；×8 平均 226 FPS 未在独立程序复测；未做独立程序构建。
+- 独立程序（本机）×8 平均 398 FPS、保护 0 次；t(1,8) / t(1,1) / t(6,1) 切换处偶发 40～46 ms 尖峰，原因未定位。
+- 独立程序矩阵流程 974.0 s，编辑器快进 1074.2 s（相同故障计划），相差 100 s，原因未查。
 
 ## 下一步
-- 可选：Windows 独立程序构建到 Builds/v1.1/ 并在目标机复测帧率与 ×8 倍速保护（需用户单独指令）。
+- 修复：矩阵流程用时差 100 s、阶段切换尖峰（Development Build + Profiler）；分发前删除 Burst 调试目录；在目标机按上述命令复测。
 - v2 候选（PROGRESS.md “v2 建议”）：初值参与定位与点选朝向、C4 / C8 逐颗定位、§6.1 参数按选型替换、演示屏 RT 提到 2560×1440、§9 后续内容。

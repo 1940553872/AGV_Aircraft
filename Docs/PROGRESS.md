@@ -35,30 +35,20 @@
 
 ## 最近一次会话
 - 日期：2026-10-19
-- 完成：M8 v1.1 小更新（模板第 1～10 项；模板无第 8 项，按编号笔误处理）。已定决策 1～5 与计划待决问题 4 项均按默认执行
-  - 倍速：HUD 改为下拉框（×0.5～×8）；`SpeedGuard`（Presentation/App）在 ×8 下按窗口统计帧率，低于 `speedGuardMinFps` 自动降到 ×4 并提示
-  - 演示台：显示器（含边框、屏幕、支架）×1.4（`CFG_SceneLayout.monitorScale`），桌面 2.00 m、屏幕中心 1.22 m；桌面与桌体用 Poly Haven Oak Veneer 01（CC0，已登记）
-  - 右屏“检测结果与设备状态”：同一套 UI_DemoConsole.uxml 的 dc-status-page（`InspectionStatusView`）；右屏独立 RT（T_DemoStatusRT / M_DemoScreenStatus / UI_PanelSettings_ConsoleStatus）；大屏用 B / HUD 按钮换材质切换；全屏时顶栏按钮或 B 切换；设备数据经 `IDeviceStatusSource`（电量 / 延迟为教学简化模型 `TeachingPowerCommModel`，参数在 CFG_Agv）
-  - 机位防遮挡：CameraRig 从 T3 起按当前铆钉外法向在机身外侧、同高、偏 ±35° 等候选角取景；每 0.2 s SphereCast + 车体 / 机械臂有向包围盒检查，被挡切换（`IRivetFocusSource` / `MissionRivetFocusSource`）
-  - 小地图：未显示原因为“未知”色与卡片底色相同、“空闲”色与分隔线同色；改色并补画禁行区、工位、充电位、铆钉结果点
-  - 故障：删除 HUD 故障面板与 F5～F7（`FaultHotkeys` 已删）；`RandomFaultScheduler` 按 `randomSeed + randomFaultSeedOffset` 每类每轮一次；`ConditionBus.AnomalyRaised` → HUD 3 s 提示“系统检测到异常：…，正在自动处理”并记日志
-  - 矩阵文字：按 M8_label_update.json 替换，原文在 `labelOriginal` / `nameOriginal`；润色 explain 11 处与条件阶段名（清单见 Docs/Reference/SOP_TaskMatrix_v1.md）；单元字号 16→15 px，两行内显示
-  - 明度：墙面贴图按平均色定标到 #E0E3E8，屋顶内侧 M_Roof_Inner #D9DDE2，曝光 +0.3 EV 等（前后对照见 Docs/Reports/M8.md §8；`RivetSim/Config/Apply M8 Values` 写入资产）
-  - 工具：`M8VerifyRunner`（`RivetSim/Verify/Run M8`）；`VehicleClearanceMeter`（车体到机身距离）；ThirdPartyImporter 跳过内容相同的文件（忽略换行差异）
-  - Tests：`RandomFaultSchedulerTests` 4 项；`TaskMatrixLoaderTests` 增加原文保留 1 项
-- 结果（Docs/Reports/M8.md）：流程完成（仿真 1475.9 s，48 颗）；三类故障各 1 次均显示提示并自动恢复；×8 窗口平均 226 FPS、未降速，强制降速检查 ×8→×4 通过；整机到机身最小 148 mm（机械臂末端连杆），车体最小 535 mm，0 帧穿模；两种屏幕视图、说明卡、HUD、右屏 1920×1080 布局问题 0；遮挡检查 218 次、切换 5 次、全被挡 0 帧
-- 自检：编译 0 错误 0 警告；EditMode 125/125；Generate All 后主场景 987 个物体（+DemoConsoleStatus）；Play 0 错误
-- 截图（Docs/Screenshots/M8/，1280×720）：M8_01_Overview、M8_02_DemoStation、M8_03_Closeup、M8_04_MiniMap
-- 2026-10-19 复核：编译 0 错误；EditMode 125/125；Console 警告均为故障注入与条件 ✗ 的预期日志；已提交并推送到 origin/main（提交“M8：v1.1 小更新”）
-- 2026-10-19 用户验收通过；HANDOFF.md 已重写，ADR-017 记录 M8 决策
-- 下次第一步：独立程序构建（Builds/v1.1/，目标机复测帧率与 ×8 倍速保护）或 v2，需用户单独指令
+- 完成：v1.1 独立程序构建与复测（计划待决 7 项按默认；不改流程与界面）
+  - 构建：`RivetSim/Build/Windows v1.1`（`BuildV11`）→ Builds/v1.1/AGV_Aircraft.exe（Win64、Mono、Release，219.1 MB，0 错误）；bundleVersion 1.1.0
+  - 探针：`BuildPerfProbe`（Presentation/App），仅在启动参数带 `-perfRun` 时创建；×2 运行 180 s 后切 ×8 至工序结束，写 PerfLogs/frames.csv、summary.txt、2 张 1280×720 截图并退出
+- 结果（Docs/Reports/Build_v1.1.md，本机 Ultra 9 275HX + RTX 5060 Laptop，1920×1080 窗口）：×2 平均 464 / 1% Low 273 FPS；×8 平均 398 / 1% Low 95 FPS；倍速保护 0 次；不含截图帧，超过 33 ms 的单帧尖峰有 3 帧（41～46 ms，出现在 t(1,8) / t(1,1) / t(6,1) 切换处）；流程完整，48 颗、检出 5/5
+- 发现的问题（未修）：独立程序矩阵流程用时 974.0 s，编辑器快进为 1074.2 s；阶段切换处有偶发尖峰；Burst 调试目录分发时要删除
+- 截图：Docs/Screenshots/Build_v1.1/Build_v1.1_x2.png、Build_v1.1_x8.png
+- 下次第一步：等待用户验收；之后修复上述问题（另开会话）或进入 v2
 
 ## v1 已知限制
 - 建图、A 扫、接触力、视觉均为教学简化模型；导航用真值位姿，无里程计漂移与扫描匹配。
 - t(1,8) 操作员初值只写黑板与日志，不参与定位；点选只给位置，朝向沿用当前估计。
 - C4 / C8 有个别 ✗（本次 576 次检查中 3 次），未逐颗定位原因；C1～C12 为固定示例文字与阈值，只上报不阻断。
 - 硬件与场地参数多为 §6.1 预估值（见 Docs/Reports/M7.md §3），未按实际选型标定。
-- 帧率在 Editor 中测得，单帧最低约 19 FPS 的偶发尖峰未在独立程序中复测；未做独立程序构建。
+- 独立程序已构建并在本机复测（Docs/Reports/Build_v1.1.md）：×8 平均 398 FPS，保护未触发；阶段切换处偶发 40～46 ms 尖峰；矩阵流程用时比编辑器快进短 100 s，原因未查。
 - 第一次运行 Sandbox_UI 时出现过 2 条字体资产导入警告，之后未复现。
 
 ## v2 建议
