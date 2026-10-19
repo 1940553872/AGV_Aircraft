@@ -1,6 +1,6 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，M7 联调与观感打磨完成（v1 交付，待验收）。下一个：等待验收；独立程序构建需用户单独指令。
+更新：2026-10-19，M7 验收通过，v1 交付（main = 2981c10 + 本次文档提交）。下一个：独立程序构建（需单独指令）或 v2。
 
 ## 现有接口（直接调用，不要重写）
 - RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController（`Rig.Tcp`）、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`。
@@ -53,4 +53,5 @@
 - Editor 中各观察窗口都有单帧约 19 FPS 的偶发尖峰（平均 366 FPS），未在独立程序中复测。
 
 ## 下一步
-- 等待 v1 验收。之后按需：Windows 独立程序构建（模板 M7 第 5 项，需单独指令）、v2 建议见 PROGRESS.md。
+- v1 已验收。可选：Windows 独立程序构建到 Builds/v1/ 并在目标机复测帧率（模板 M7 第 5 项，需用户单独指令）。
+- v2 候选（详见 PROGRESS.md “v2 建议”）：初值参与定位与点选朝向、C4 / C8 逐颗定位、§6.1 参数按选型替换、§9 后续版本内容。
