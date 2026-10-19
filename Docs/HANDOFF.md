@@ -1,6 +1,6 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，v1.1 独立程序构建与复测完成，等待用户验收（Docs/Reports/Build_v1.1.md）。下一个：修复复测发现的问题（另开会话）或 v2。
+更新：2026-10-19，v1.1 独立程序构建与复测（含 Esc / HUD 退出）验收通过（Docs/Reports/Build_v1.1.md）。下一个：修复复测发现的问题（另开会话）或 v2。
 
 ## 现有接口（直接调用，不要重写）
 - RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController（`Rig.Tcp`）、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`。
