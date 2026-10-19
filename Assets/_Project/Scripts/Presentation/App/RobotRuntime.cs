@@ -44,6 +44,15 @@ namespace RivetSim.Presentation.App
         /// <summary>机械臂控制器（S3）。</summary>
         public ArmController Arm => _arm;
 
+        /// <summary>底盘（S1）。</summary>
+        public AgvController Chassis => _chassis;
+
+        /// <summary>升降柱（S3 同时负责）。</summary>
+        public LiftColumnController Lift => _lift;
+
+        /// <summary>快速推进：每帧推进的仿真时间，单位 s（0 表示按真实帧间隔 × 倍速；Verify 菜单使用）。</summary>
+        public float FastForwardSimSecondsPerFrame { get; set; }
+
         /// <summary>接触力模型（S4，教学简化模型）。</summary>
         public ContactModel Contact { get; }
 
@@ -96,7 +105,7 @@ namespace RivetSim.Presentation.App
         /// <summary>按真实帧间隔推进仿真时间与全部控制器。</summary>
         public void Update(float realDeltaS)
         {
-            _accumulatorS += Clock.Advance(realDeltaS);
+            _accumulatorS += FastForwardSimSecondsPerFrame > 0f ? Clock.AdvanceSim(FastForwardSimSecondsPerFrame) : Clock.Advance(realDeltaS);
             while (_accumulatorS >= _stepS)
             {
                 _accumulatorS -= _stepS;

@@ -21,6 +21,9 @@ namespace RivetSim.Simulation.Robot
         /// <summary>故障注入：表面沿法向向外偏移的距离，单位 m（0 为无故障）。</summary>
         public float SurfaceOffsetFaultM { get; set; }
 
+        /// <summary>耦合故障系数（M5 故障注入“采集无效”：模拟耦合剂不足），耦合质量乘以该值；默认 1。</summary>
+        public float CouplingFaultFactor { get; set; } = 1f;
+
         /// <summary>浮动夹持压缩量（含越过行程的部分），单位 m。</summary>
         public float CompressionM { get; private set; }
 
@@ -77,7 +80,7 @@ namespace RivetSim.Simulation.Robot
         }
 
         /// <summary>当前接触力对应的耦合质量（0～1）。</summary>
-        public float Coupling => CouplingFromForce(ForceN, _inspection.contactForceMinN, _inspection.couplingZeroForceN);
+        public float Coupling => CouplingFromForce(ForceN, _inspection.contactForceMinN, _inspection.couplingZeroForceN) * Mathf.Clamp01(CouplingFaultFactor);
 
         /// <summary>压缩量 → 接触力：行程内线性，行程用尽后硬限位刚度，单位 N。</summary>
         public static float ForceFromCompression(float compressionM, float travelM, float springNpm, float hardStopNpm)

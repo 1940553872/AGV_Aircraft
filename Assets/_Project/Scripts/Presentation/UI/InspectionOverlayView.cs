@@ -79,7 +79,7 @@ namespace RivetSim.Presentation.UI
         {
             if (!Bind()) return;
             InspectionRecord r = e.Record;
-            _ascan.SetData(e.Waveform, r.Gates, _inspection.gateAThresholdRatio, _inspection.gateBThresholdRatio, _inspection.backwallDefectRatio);
+            if (e.Waveform != null) _ascan.SetData(e.Waveform, r.Gates, _inspection.gateAThresholdRatio, _inspection.gateBThresholdRatio, _inspection.backwallDefectRatio);
             foreach (InspectionVerdict v in Enum.GetValues(typeof(InspectionVerdict)))
                 _verdict.EnableInClassList(VerdictClassPrefix + v.ToString().ToLowerInvariant(), v == r.Verdict);
             _verdict.text = $"{r.RivetId}：{RivetInspectionService.Label(r.Verdict)}——{r.Reason}";

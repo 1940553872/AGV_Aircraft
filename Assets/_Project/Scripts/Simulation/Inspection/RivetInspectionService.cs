@@ -98,16 +98,37 @@ namespace RivetSim.Simulation.Inspection
         /// <summary>T3 基准注册：移动到 Observe（左侧工位用镜像）→ 相机对准基准标记 → 识别得到标记位姿估计。</summary>
         public async Awaitable<ArmMotionResult> RegisterStationAsync(InspectionStation station, CancellationToken ct)
         {
+            ArmMotionResult observe = await MoveToObserveAsync(station, ct);
+            if (!observe.Success) return observe;
+            return await RegisterDatumAsync(station, ct);
+        }
+
+        /// <summary>T3 观察位姿：清除注册结果，经直立过渡姿态移动到 Observe（左侧工位用镜像）。</summary>
+        public async Awaitable<ArmMotionResult> MoveToObserveAsync(InspectionStation station, CancellationToken ct)
+        {
             Registration = null;
-            if (station.DatumMarker == null) return ArmMotionResult.Failed($"{station.StationId} 没有基准标记");
-            double start = _timeS();
             _mirrored = IsLeftSide(_arm, station);
             Step($"T3 注册：经直立过渡姿态移动到观察姿态{(_mirrored ? "（左侧镜像）" : "")}");
             ArmMotionResult ready = await _arm.MoveToNamedPoseAsync(ArmConfig.ReadyPoseName, false, ct);
             if (!ready.Success) return ready;
+            return await _arm.MoveToNamedPoseAsync(ArmConfig.ObservePoseName, _mirrored, ct);
+        }
+
+        /// <summary>基准复测（t(6,2)）：从当前铆钉位姿回到该侧观察姿态，重新识别基准标记并更新注册结果；之后下一颗用关节插值对中。</summary>
+        public async Awaitable<ArmMotionResult> RemeasureDatumAsync(InspectionStation station, CancellationToken ct)
+        {
+            _mirrored = IsLeftSide(_arm, station);
+            Step("基准复测：回到观察姿态");
             ArmMotionResult observe = await _arm.MoveToNamedPoseAsync(ArmConfig.ObservePoseName, _mirrored, ct);
             if (!observe.Success) return observe;
+            return await RegisterDatumAsync(station, ct);
+        }
 
+        /// <summary>T3 基准注册（从观察姿态起）：相机对准基准标记 → 识别得到标记位姿估计。</summary>
+        public async Awaitable<ArmMotionResult> RegisterDatumAsync(InspectionStation station, CancellationToken ct)
+        {
+            if (station.DatumMarker == null) return ArmMotionResult.Failed($"{station.StationId} 没有基准标记");
+            double start = _timeS();
             Step($"T3 注册：腕部相机对准基准标记 ID {station.DatumMarker.TagId}");
             var q = new float[_arm.Rig.JointCount];
             bool solved = false;
@@ -139,6 +160,16 @@ namespace RivetSim.Simulation.Inspection
         /// </summary>
         public async Awaitable<ArmMotionResult> CenterOnRivetAsync(Rivet rivet, bool first, CancellationToken ct)
         {
+            ArmMotionResult move = await MoveToPredictedAsync(rivet, first, ct);
+            if (!move.Success) return move;
+            ArmMotionResult measure = await MeasureRivetCenterAsync(rivet, ct);
+            if (!measure.Success) return measure;
+            return await CorrectToMeasuredAsync(rivet, ct);
+        }
+
+        /// <summary>T4 规划：移动到预计钉位法向外 preContactStandoffM（first 为 true 时关节插值后直线进入，否则直线横移）。</summary>
+        public async Awaitable<ArmMotionResult> MoveToPredictedAsync(Rivet rivet, bool first, CancellationToken ct)
+        {
             if (Registration == null) return ArmMotionResult.Failed("工位尚未注册");
             Registration.TryGetPredicted(rivet, out Vector3 predicted, out Vector3 normal);
             float standoff = _armConfig.preContactStandoffM;
@@ -163,37 +194,80 @@ namespace RivetSim.Simulation.Inspection
             {
                 move = await _arm.MoveLinearAsync(ToolPoseFacing(predicted, normal, standoff, _rollDeg), _armConfig.nearFieldSpeedMps, $"移到 {rivet.RivetId}", ct);
             }
-            if (!move.Success) return move;
+            return move;
+        }
 
+        /// <summary>T4 钉心复测：腕部相机测量钉心（结果供 <see cref="CorrectToMeasuredAsync"/> 使用）。</summary>
+        public async Awaitable<ArmMotionResult> MeasureRivetCenterAsync(Rivet rivet, CancellationToken ct)
+        {
+            Step($"T4 钉心复测：{rivet.RivetId}");
             CameraActive = true;
             ArmMotionResult measure = await _arm.DwellAsync(_armConfig.visionMeasureTimeS, "钉心复测", ct);
             CameraActive = false;
             if (!measure.Success) return measure;
             if (!_vision.TryMeasureRivet(_arm.Rig.WristCamera, rivet, out _measuredCenter))
                 return ArmMotionResult.Failed($"腕部相机未看到 {rivet.RivetId}（视场 / 工作距离外）");
-            return await _arm.MoveLinearAsync(ToolPoseFacing(_measuredCenter, normal, standoff, _rollDeg), _armConfig.nearFieldSpeedMps,
+            return measure;
+        }
+
+        /// <summary>T4 视觉修正：直线移到实测钉心法向外 preContactStandoffM。</summary>
+        public Awaitable<ArmMotionResult> CorrectToMeasuredAsync(Rivet rivet, CancellationToken ct)
+        {
+            if (Registration == null) return _arm.DwellAsync(0f, "工位尚未注册", ct);
+            Registration.TryGetPredicted(rivet, out _, out Vector3 normal);
+            float standoff = _armConfig.preContactStandoffM;
+            Step($"T4 视觉修正：{rivet.RivetId}");
+            return _arm.MoveLinearAsync(ToolPoseFacing(_measuredCenter, normal, standoff, _rollDeg), _armConfig.nearFieldSpeedMps,
                 $"修正对中 {rivet.RivetId}", ct);
         }
 
         /// <summary>T5 贴合采集：沿法向逼近到目标接触力 → 采集 → 合成 A 扫并判读 → 写入记录与铆钉结果、发布事件。</summary>
         public async Awaitable<ArmMotionResult> ContactAndAcquireAsync(Rivet rivet, CancellationToken ct)
         {
-            Step($"T5 贴合：{rivet.RivetId} 沿法向逼近（目标 {_inspection.targetContactForceN:0} N）");
-            _contact.SetSurface(rivet.PositionM, rivet.Normal);
-            ArmMotionResult approach = await _arm.ApproachAlongNormalAsync(_armConfig.preContactStandoffM, $"贴合 {rivet.RivetId}", ct);
+            ArmMotionResult approach = await ApproachContactAsync(rivet, ct);
             if (!approach.Success) return approach;
+            ArmMotionResult acquire = await AcquireAsync(rivet, ct);
+            if (!acquire.Success) return acquire;
+            CommitRecord(rivet, JudgeLastAcquisition(rivet));
+            return new ArmMotionResult(true, "", approach.DurationS + acquire.DurationS, float.NaN);
+        }
 
+        /// <summary>最近一次采集（<see cref="AcquireAsync"/>）的结果；未采集时为空。</summary>
+        public AcquisitionSample LastAcquisition { get; private set; }
+
+        /// <summary>T5 力控接触（S3）：设置接触表面，沿法向逼近到目标接触力（超限时发布力超限事件并失败）。</summary>
+        public Awaitable<ArmMotionResult> ApproachContactAsync(Rivet rivet, CancellationToken ct)
+        {
+            Step($"T5 贴合：{rivet.RivetId} 沿法向逼近（目标 {_inspection.targetContactForceN:0} N）");
+            LastAcquisition = null;
+            _contact.SetSurface(rivet.PositionM, rivet.Normal);
+            return _arm.ApproachAlongNormalAsync(_armConfig.preContactStandoffM, $"贴合 {rivet.RivetId}", ct);
+        }
+
+        /// <summary>T5 接触采集（S4）：保持接触 acquisitionDurationS 并合成 A 扫，记录采集起止接触力与耦合质量。</summary>
+        public async Awaitable<ArmMotionResult> AcquireAsync(Rivet rivet, CancellationToken ct)
+        {
             Step($"T5 采集：{rivet.RivetId}（{_inspection.acquisitionDurationS:0.0} s）");
+            float forceStart = _contact.ForceN;
             ArmMotionResult acquire = await _arm.DwellAsync(_inspection.acquisitionDurationS, "超声采集", ct);
             if (!acquire.Success) return acquire;
-
-            float force = _contact.ForceN;
             float coupling = _contact.Coupling;
             AScanWaveform waveform = _synthesizer.Synthesize(rivet.Defect, coupling);
-            GateResult gates = _judge.Judge(waveform);
+            LastAcquisition = new AcquisitionSample(rivet, forceStart, _contact.ForceN, coupling, acquire.DurationS, waveform, _judge.Judge(waveform));
+            return acquire;
+        }
+
+        /// <summary>T5 有效性（S5）：闸门判读，并按接触力范围与耦合质量判定采集是否无效；不写入记录。</summary>
+        public InspectionRecord JudgeLastAcquisition(Rivet rivet)
+        {
+            AcquisitionSample sample = LastAcquisition;
+            if (sample == null || sample.Rivet != rivet) return null;
+            float force = sample.ForceEndN;
+            float coupling = sample.Coupling;
+            GateResult gates = sample.Gates;
             InspectionVerdict verdict = gates.Verdict;
             string reason = gates.Reason;
-            if (!_contact.IsWithinAllowedRange)
+            if (force < _inspection.contactForceMinN || force > _inspection.contactForceMaxN)
             {
                 verdict = InspectionVerdict.Invalid;
                 reason = $"接触力 {force:0.0} N 不在 {_inspection.contactForceMinN:0}～{_inspection.contactForceMaxN:0} N";
@@ -208,11 +282,50 @@ namespace RivetSim.Simulation.Inspection
             {
                 TimeS = _timeS(),
             };
-            rivet.SetResult(verdict);
-            _store.Add(record);
-            _bus?.Publish(new RivetInspectedEvent(rivet, record, waveform));
-            return new ArmMotionResult(true, "", approach.DurationS + acquire.DurationS, float.NaN);
+            return record;
         }
+
+        /// <summary>T5 保存（S8）：写入记录与铆钉结果，发布 <see cref="RivetInspectedEvent"/>。</summary>
+        public void CommitRecord(Rivet rivet, InspectionRecord record)
+        {
+            if (record == null) return;
+            rivet.SetResult(record.Verdict);
+            _store.Add(record);
+            AScanWaveform waveform = LastAcquisition != null && LastAcquisition.Rivet == rivet ? LastAcquisition.Waveform : null;
+            _bus?.Publish(new RivetInspectedEvent(rivet, record, waveform));
+        }
+
+        /// <summary>未能完成采集的铆钉（故障未恢复）：记为无效并写入记录。</summary>
+        public InspectionRecord CommitUnrecovered(Rivet rivet, string stationId, string reason)
+        {
+            var record = new InspectionRecord(rivet.RivetId, stationId, rivet.Defect, InspectionVerdict.Invalid, reason, _contact.ForceN, _contact.Coupling, 0f, default)
+            {
+                TimeS = _timeS(),
+            };
+            rivet.SetResult(record.Verdict);
+            _store.Add(record);
+            _bus?.Publish(new RivetInspectedEvent(rivet, record, null));
+            return record;
+        }
+
+        /// <summary>
+        /// 沿工具轴回退到端面距钉位表面 distanceM（沿表面法向度量，含接触压缩），接触表面清除、接触力归零。
+        /// T6 用 nearFieldDistanceM 加余量离开近距离限速区；受控退出与重贴用 preContactStandoffM 回到贴合起点。
+        /// </summary>
+        public Awaitable<ArmMotionResult> RetreatToDistanceAsync(Rivet rivet, float distanceM, string label, CancellationToken ct)
+        {
+            Step($"{label}：{rivet.RivetId}");
+            float travel = distanceM - SurfaceDistanceM(rivet);
+            _contact.ClearSurface();
+            if (travel <= 0f) return _arm.DwellAsync(0f, label, ct);
+            return _arm.RetreatAsync(travel, $"{label} {rivet.RivetId}", ct);
+        }
+
+        /// <summary>腕部相机实测钉心（最近一次 T4 复测）。</summary>
+        public Vector3 MeasuredCenter => _measuredCenter;
+
+        /// <summary>探头端面（TCP）沿钉位法向到铆钉表面的距离，单位 m（压入表面为负）。</summary>
+        public float SurfaceDistanceM(Rivet rivet) => Vector3.Dot(_arm.TcpPoseWorld.position - rivet.PositionM, rivet.Normal.normalized);
 
         /// <summary>T6 释放：沿工具轴回退到对中距离，接触力归零。</summary>
         public async Awaitable<ArmMotionResult> ReleaseAsync(Rivet rivet, CancellationToken ct)

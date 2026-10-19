@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RivetSim.Core.Config;
 using UnityEngine;
@@ -39,7 +40,8 @@ namespace RivetSim.Simulation.Robot
             if (vehicleRoot != null)
             {
                 foreach (Renderer r in vehicleRoot.GetComponentsInChildren<Renderer>(true))
-                    if (!r.transform.IsChildOf(rig.transform) && r is MeshRenderer) renderers.Add(r);
+                    if (!r.transform.IsChildOf(rig.transform) && r is MeshRenderer && !r.name.StartsWith(SimLayers.VisualOnlyPrefix, StringComparison.Ordinal))
+                        renderers.Add(r);
             }
             _vehicleRenderers = renderers.ToArray();
         }

@@ -212,6 +212,7 @@ namespace RivetSim.Editor.Generators
 
             GeneratorUtility.SetLayerRecursive(root, SimLayers.RobotIndex);
             GeneratorUtility.SavePrefab(root, AgvPrefabPath);
+            DeviceIndicatorGenerator.ApplyToAgv();
             SimLog.Info(LogCategory.System, $"AGV 已生成：{AgvPrefabPath}（{length:0.00} × {width:0.00} × {height:0.00} m）");
         }
 

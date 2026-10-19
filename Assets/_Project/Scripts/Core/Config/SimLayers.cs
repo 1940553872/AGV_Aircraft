@@ -27,6 +27,9 @@ namespace RivetSim.Core.Config
         /// <summary>Visualization 层编号。</summary>
         public const int VisualizationIndex = 12;
 
+        /// <summary>纯视觉物体（设备发光外壳等）的名称前缀：外廓量测与连杆间隙检查跳过这些渲染器。</summary>
+        public const string VisualOnlyPrefix = "VisualOnly_";
+
         /// <summary>激光雷达检测的层掩码（Environment | Aircraft | Obstacle）。</summary>
         public const int LidarMask = (1 << EnvironmentIndex) | (1 << AircraftIndex) | (1 << ObstacleIndex);
     }

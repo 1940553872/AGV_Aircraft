@@ -1,3 +1,4 @@
+using RivetSim.Core.Config;
 using UnityEngine;
 
 namespace RivetSim.Simulation.Robot
@@ -19,6 +20,7 @@ namespace RivetSim.Simulation.Robot
             var vertices = new System.Collections.Generic.List<Vector3>();
             foreach (Renderer renderer in agvRoot.GetComponentsInChildren<Renderer>())
             {
+                if (renderer.name.StartsWith(SimLayers.VisualOnlyPrefix, System.StringComparison.Ordinal)) continue;
                 bool isArm = armRoot != null && renderer.transform.IsChildOf(armRoot);
                 Matrix4x4 m = toRoot * renderer.transform.localToWorldMatrix;
                 MeshFilter filter = renderer.GetComponent<MeshFilter>();

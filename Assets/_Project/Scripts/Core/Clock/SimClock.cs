@@ -71,6 +71,14 @@ namespace RivetSim.Core.Clock
             return DeltaS;
         }
 
+        /// <summary>按指定仿真时间推进（快速验证用，不乘倍速；暂停时不推进），返回本次仿真步长（秒）。</summary>
+        public float AdvanceSim(float simDeltaS)
+        {
+            DeltaS = IsPaused || simDeltaS <= 0f ? 0f : simDeltaS;
+            TimeS += DeltaS;
+            return DeltaS;
+        }
+
         /// <summary>设置倍速；不在可选列表内时返回 false 且不改变。</summary>
         public bool TrySetSpeed(float speed)
         {

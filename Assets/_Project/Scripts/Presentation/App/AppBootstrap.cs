@@ -15,8 +15,9 @@ namespace RivetSim.Presentation.App
     /// <summary>
     /// 主场景唯一入口（M3 建立，ADR-015；M4 加入机械臂与检测，ADR-016）：加载配置、在充电位运行时生成 AGV（ADR-009）、
     /// 组装仿真时钟 / 安全监视 / 地图 / 导航服务 / 机械臂与检测服务（<see cref="RobotRuntime"/>），初始化可视化与遥控，
-    /// 并运行演示流程（<see cref="NavigationDemoRoutine"/>，在目标工位停靠后执行单工位检测）。M5 在此接入 MissionOrchestrator。
-    /// 场景引用由 MainSceneBuilder 写入。
+    /// 并按 CFG_SimSettings.missionEntry 运行：Mission（默认，M5）为 SOP 完整工序 <see cref="MissionRoutine"/>；
+    /// SubsystemDemo 为 M3 / M4 的子系统演示 <see cref="NavigationDemoRoutine"/>（仅调试，不再维护）。
+    /// 场景引用由 MainSceneBuilder 写入；设备指示灯（<see cref="DeviceIndicator"/>）在启动时查找并订阅。
     /// </summary>
     public sealed class AppBootstrap : MonoBehaviour
     {
@@ -46,7 +47,7 @@ namespace RivetSim.Presentation.App
         [SerializeField] private WristCameraFrustumView cameraFrustum;
         [SerializeField] private ProbeContactView contactView;
 
-        [Header("演示（M3 导航 + M4 单工位检测）")]
+        [Header("演示（倍速用于两种入口；目标工位仅用于 SubsystemDemo）")]
         [SerializeField, Tooltip("进入 Play 模式后自动运行演示")] private bool autoRunDemo = true;
         [SerializeField, Tooltip("演示倍速（须在 CFG_SimSettings 的倍速列表内）")] private float demoSpeedMultiplier = 4f;
         [SerializeField, Tooltip("演示目标区域序号（从 0 起）")] private int demoRegionIndex;
@@ -56,6 +57,7 @@ namespace RivetSim.Presentation.App
         private AgvController _chassis;
         private LiftColumnController _lift;
         private CancellationTokenSource _cancellation;
+        private MissionRoutine _mission;
 
         /// <summary>编辑器生成器写入配置。</summary>
         public void ConfigureConfigs(SimSettings settings, SceneLayoutConfig layout, AgvConfig agv, ArmConfig arm, NavigationConfig nav, InspectionConfig inspection)
@@ -137,6 +139,11 @@ namespace RivetSim.Presentation.App
                 if (overlayView != null) overlayView.SetPhase("遥控模式");
                 return;
             }
+            if (simSettings.missionEntry == MissionEntry.Mission)
+            {
+                await RunMissionAsync();
+                return;
+            }
             InspectionStation station = FindStation();
             if (station == null) return;
             try
@@ -156,6 +163,30 @@ namespace RivetSim.Presentation.App
             if (teleopInput != null) teleopInput.TeleopEnabled = true;
         }
 
+        private async Awaitable RunMissionAsync()
+        {
+            _mission = new MissionRoutine(_runtime, rivetRegistry, simSettings, sceneLayout, agvConfig, armConfig, navigationConfig, inspectionConfig,
+                overlayView, inspectionOverlay);
+            foreach (DeviceIndicator indicator in FindObjectsByType<DeviceIndicator>(FindObjectsSortMode.None)) indicator.Initialize(_runtime.Bus);
+            gameObject.AddComponent<FaultHotkeys>().Initialize(_mission.Conditions);
+            if (overlayView != null) overlayView.SetHint("F5 识别失败 · F6 力超限 · F7 采集无效 · 空格急停 · V 显示 / 隐藏可视化");
+            if (MissionLaunchOptions.FastForward) _runtime.FastForwardSimSecondsPerFrame = simSettings.fastVerifySimSecondsPerFrame;
+            if (MissionLaunchOptions.Faults.Count > 0) _mission.ScheduleFaults(MissionLaunchOptions.Faults);
+            MissionLaunchOptions.Started?.Invoke(_runtime, _mission);
+            MissionRunReport report = null;
+            try
+            {
+                report = await _mission.RunAsync(_cancellation.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                SimLog.Info(LogCategory.System, "工序已中止");
+                return;
+            }
+            MissionLaunchOptions.Completed?.Invoke(report);
+            if (teleopInput != null) teleopInput.TeleopEnabled = true;
+        }
+
         private void Update() => _runtime?.Update(Time.deltaTime);
 
         private void OnDestroy()
@@ -163,6 +194,8 @@ namespace RivetSim.Presentation.App
             _cancellation?.Cancel();
             _cancellation?.Dispose();
             _cancellation = null;
+            _mission?.Dispose();
+            _mission = null;
             _runtime?.Dispose();
         }
 

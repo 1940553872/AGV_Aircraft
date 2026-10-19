@@ -104,6 +104,8 @@ namespace RivetSim.Editor.Generators
 
         /// <summary>腕部相机视场锥（URP Unlit，M4）。</summary>
         public const string VisCameraFrustum = "M_Vis_CameraFrustum";
+        /// <summary>设备发光外壳（M5，DeviceIndicator 用 MaterialPropertyBlock 切换颜色）。</summary>
+        public const string DeviceGlow = "M_DeviceGlow";
 
         private const string HazardTextureName = "T_HazardStripe";
         private const int HazardTexturePx = 64;
@@ -178,7 +180,7 @@ namespace RivetSim.Editor.Generators
                 BuildHazardMaterials();
                 BuildVisualizationMaterials();
                 AssetDatabase.SaveAssets();
-                SimLog.Info(LogCategory.System, $"材质库已生成：{Specs.Length + 2 + 5} 个材质。");
+                SimLog.Info(LogCategory.System, $"材质库已生成：{Specs.Length + 2 + 11} 个材质。");
             }
             finally
             {
@@ -282,6 +284,9 @@ namespace RivetSim.Editor.Generators
             ApplyUnlit(EnsureUnlitMaterial(VisResultDefect), Hex(0xFF5D5D), false);
             ApplyUnlit(EnsureUnlitMaterial(VisResultInvalid), Hex(0x8FA3B8), false);
             ApplyUnlit(EnsureUnlitMaterial(VisCameraFrustum), Hex(0x2EC4E6), false);
+            Color glow = Hex(0xFF9F1C);
+            glow.a = 0.45f;
+            ApplyUnlit(EnsureUnlitMaterial(DeviceGlow), glow, true);
         }
 
         /// <summary>读取或创建 URP/Unlit 材质。</summary>

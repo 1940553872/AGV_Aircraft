@@ -113,6 +113,7 @@ namespace RivetSim.Editor.Generators
 
             GeneratorUtility.SetLayerRecursive(root, SimLayers.ObstacleIndex);
             GeneratorUtility.SavePrefab(root, DeskPrefabPath);
+            DeviceIndicatorGenerator.ApplyToDemoStation();
         }
 
         private static void BuildBigScreen(SceneLayoutConfig layout)
