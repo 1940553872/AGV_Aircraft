@@ -25,6 +25,7 @@ RivetSim 是一个基于 **Unity 6（URP）** 的教学演示仿真。场景是�
 - [配置参数](#配置参数)
 - [编辑器菜单（生成 / 验证 / 构建）](#编辑器菜单生成--验证--构建)
 - [二次开发指南](#二次开发指南)
+- [AI 协作开发环境（可选）](#ai-协作开发环境可选)
 - [测试](#测试)
 - [文档索引](#文档索引)
 - [已知限制与后续规划](#已知限制与后续规划)
@@ -60,7 +61,7 @@ RivetSim 是一个基于 **Unity 6（URP）** 的教学演示仿真。场景是�
 | 主要包 | Input System 1.19（只启用新输入系统）、AI Navigation 2.0.11、glTFast 6.20.0、Newtonsoft Json 3.2.1、Test Framework 1.6.0 |
 | 平台 | Windows 10 / 11 x64（已验证）。项目没有平台特定代码，但其他平台未测试 |
 
-> `Packages/manifest.json` 里的 `com.unity.pipeline`（0.8.0-exp.1）是给 Unity CLI / AI 自动化用的实验包，运行仿真不需要它。如果你的环境解析不了这个包，可以把它从 manifest 中删掉。
+> `Packages/manifest.json` 里的 `com.unity.pipeline`（0.8.0-exp.1）是让 Unity CLI / AI 助手控制编辑器的桥接包，运行仿真本身不需要它。配置方法见 [AI 协作开发环境（可选）](#ai-协作开发环境可选)；不用 AI 协作、并且这个包解析失败时，可以把它从 manifest 中删掉。
 
 ### 方式 A：在编辑器中运行（推荐，可二次开发）
 
@@ -294,6 +295,94 @@ RivetSim.Tests.EditMode → Core, Simulation
 3. 超出当前范围的想法记到 `Docs/PROGRESS.md` 的“待办”。
 
 本项目是在 AI 协作（Claude Code）下按里程碑 M0～M8 开发的。`CLAUDE.md`、`Docs/HANDOFF.md`、`Docs/PromptTemplates.md` 记录了协作规则、会话交接和提示词模板。继续用 AI 协作开发时，新会话先读 `Docs/HANDOFF.md`。
+
+---
+
+## AI 协作开发环境（可选）
+
+本项目的场景、预制体和验证流程，都是由 Claude Code 通过 **Unity CLI** 控制正在运行的 Unity 编辑器完成的，不手工编辑场景文件。想用同样的方式继续开发，按下面 5 步配置。只在编辑器里手动开发的话，可以跳过本节。
+
+### 1. 安装 Unity CLI
+
+在 Windows PowerShell 中执行（目前是 beta 通道）：
+
+```powershell
+$env:UNITY_CLI_CHANNEL='beta'; irm https://public-cdn.cloud.unity3d.com/hub/prod/cli/install.ps1 | iex
+```
+
+装好后**新开一个终端**，再验证（本项目开发时用的是 `1.0.0-beta.13`）：
+
+```bash
+unity --version
+```
+
+如果新终端里仍然找不到 `unity`，可以用完整路径 `%LOCALAPPDATA%\Unity\bin\unity.exe` 调用。
+
+### 2. 在 Unity 工程中安装 Pipeline 包（`com.unity.pipeline`）
+
+这个包运行在编辑器内，CLI 通过它向编辑器发送命令。它来自 Unity 官方 UPM 注册表，要求 Unity 6.0 及以上。
+
+- **本项目**：`Packages/manifest.json` 里已经声明了这个包，用 Unity 打开工程时会自动解析，不需要额外操作。
+- **其他工程，或需要重新安装 / 升级时**：
+
+```bash
+unity pipeline install --project-path "D:/path/to/AGV_Aircraft"
+```
+
+想安装指定版本，加参数 `--package-version 0.8.0-exp.1`；想强制改写成最新版，加 `--force`。
+
+### 3. 确认编辑器已连上
+
+用 Unity 打开工程，然后执行：
+
+```bash
+unity status
+```
+
+列表里出现本工程、状态为 `ready`，就表示连接成功。再执行 `unity command`，会列出编辑器提供的全部命令。可以试着用一条命令跑一次完整流程验证：
+
+```bash
+unity command --timeout 300 menu "RivetSim/Verify/Run M8"
+```
+
+### 4. 在 Claude Code 中安装 Unity 插件
+
+Unity 官方插件提供了 Unity CLI、UI Toolkit、URP 等技能。在 Claude Code 会话中输入以下两条斜杠命令：
+
+```text
+/plugin marketplace add Unity-Technologies/unity-agent-plugin
+/plugin install unity@unity-agent-plugin
+```
+
+也可以在终端里用 `claude` 命令安装，安装后要重启 Claude Code，或在会话中执行 `/reload-plugins` 才生效：
+
+```bash
+claude plugin marketplace add Unity-Technologies/unity-agent-plugin
+```
+
+```bash
+claude plugin install unity@unity-agent-plugin
+```
+
+装好后，在 Claude Code 里输入 `/unity:` 就能看到这些技能，`/plugin` 列表里也会显示 `unity` 已启用。
+
+### 5. （可选）把编辑器注册为 MCP 服务器
+
+如果希望 Claude 把编辑器命令当作 MCP 工具直接调用，而不是通过终端执行 `unity command`，可以执行：
+
+```bash
+unity mcp configure claude-code --project-path "D:/path/to/AGV_Aircraft"
+```
+
+用 `--dry-run` 可以先预览会写入的配置，`unity mcp configure --list` 可以查看所有支持的客户端及其配置文件路径。不配 MCP 也完全可以：Claude Code 直接在终端里调用 `unity command` 就能工作，本项目一直是这样用的。
+
+### 协作约定与常见问题
+
+- Claude Code 每次会话都会自动读取 [CLAUDE.md](CLAUDE.md)（强制规则：程序集依赖、编码规范、只通过编辑器生成资产等）。新会话开场先读 [Docs/HANDOFF.md](Docs/HANDOFF.md)，再按 [Docs/PromptTemplates.md](Docs/PromptTemplates.md) 中的模板布置任务。
+- **`unity status` 连不上**：多半是工程有编译错误，编辑器进了安全模式（Safe Mode），Pipeline 包没有加载。先执行 `unity pipeline list` 确认，修好编译错误后重启 Unity。
+- **编辑器失去焦点后 Play 不推进**：在 Play 模式中执行 `unity command eval --code 'UnityEngine.Application.runInBackground = true;'`。这条命令只在本次运行中生效，不改项目设置。
+- **PowerShell 会剥掉 `eval --code` 里的双引号**：在 Git Bash 中调用，或把 C# 写进文件，再用 `unity command eval_file --file <路径>` 执行。
+- **`eval` 在主线程上限时 5 s**：长任务请改用编辑器菜单 + 报告文件（例如 `Verify/Run M8` 把结果写进 `Docs/Reports/M8.md`）。
 
 ---
 
