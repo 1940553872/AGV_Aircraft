@@ -1,0 +1,233 @@
+/* HUD（M6）：Architecture §7 配色，基于 1920×1080。 */
+
+.hud-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Regular.asset");
+    color: rgb(230, 238, 247);
+    font-size: 16px;
+}
+
+.hud-main {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.hud-top {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 14px;
+    flex-direction: row;
+    align-items: flex-start;
+}
+
+.hud-panel {
+    background-color: rgba(21, 34, 50, 0.9);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+
+.hud-group {
+    flex-direction: row;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.hud-row {
+    flex-direction: row;
+}
+
+.hud-spacer {
+    flex-grow: 1;
+}
+
+.hud-group-title {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    margin: 0 6px 0 2px;
+    padding: 0;
+}
+
+.hud-btn {
+    font-size: 16px;
+    height: 34px;
+    min-width: 54px;
+    margin: 0 3px;
+    padding: 0 10px;
+    border-width: 1px;
+    border-radius: 4px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(14, 22, 33);
+    color: rgb(230, 238, 247);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Regular.asset");
+}
+
+.hud-btn:hover {
+    border-color: rgb(46, 196, 230);
+}
+
+.hud-btn:active {
+    background-color: rgb(38, 58, 82);
+}
+
+.hud-btn:disabled {
+    opacity: 0.35;
+}
+
+.hud-btn--wide {
+    min-width: 72px;
+}
+
+.hud-btn--active {
+    background-color: rgb(46, 196, 230);
+    border-color: rgb(46, 196, 230);
+    color: rgb(14, 22, 33);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+}
+
+.hud-btn--paused {
+    background-color: rgb(255, 159, 28);
+    border-color: rgb(255, 159, 28);
+    color: rgb(14, 22, 33);
+}
+
+.hud-status {
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 260px;
+    max-width: 420px;
+}
+
+.hud-time {
+    font-size: 20px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    padding: 0;
+    margin: 0;
+}
+
+.hud-phase {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    padding: 0;
+    margin: 0;
+    white-space: normal;
+}
+
+.hud-faults {
+    position: absolute;
+    right: 16px;
+    top: 90px;
+    width: 190px;
+}
+
+.hud-faults-title {
+    margin-bottom: 6px;
+}
+
+.hud-btn--fault {
+    margin: 3px 0;
+    border-color: rgb(255, 93, 93);
+    color: rgb(255, 93, 93);
+}
+
+.hud-btn--fault:hover {
+    background-color: rgba(255, 93, 93, 0.15);
+}
+
+.hud-btn--armed {
+    background-color: rgb(255, 93, 93);
+    color: rgb(14, 22, 33);
+}
+
+.hud-fault-status {
+    font-size: 13px;
+    color: rgb(255, 200, 87);
+    white-space: normal;
+    margin-top: 4px;
+    padding: 0;
+}
+
+.hud-hints {
+    position: absolute;
+    left: 16px;
+    bottom: 12px;
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    background-color: rgba(14, 22, 33, 0.75);
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+
+.hud-credit {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    max-width: 560px;
+    font-size: 12px;
+    color: rgb(143, 163, 184);
+    background-color: rgba(14, 22, 33, 0.75);
+    border-radius: 4px;
+    padding: 3px 8px;
+    white-space: normal;
+    -unity-text-align: middle-right;
+}
+
+/* —— t(1,8) 初值点选提示 —— */
+.hud-pose-scrim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(14, 22, 33, 0.55);
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+
+.hud-pose {
+    width: 900px;
+    padding: 20px 24px;
+    background-color: rgb(21, 34, 50);
+    border-width: 2px;
+    border-color: rgb(255, 200, 87);
+    border-radius: 8px;
+}
+
+.hud-pose-title {
+    font-size: 26px;
+    color: rgb(255, 200, 87);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin-bottom: 6px;
+}
+
+.hud-pose-text {
+    font-size: 18px;
+    color: rgb(230, 238, 247);
+    white-space: normal;
+    margin-bottom: 10px;
+}
+
+.hud-pose-map {
+    height: 500px;
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(14, 22, 33);
+}
+
+.hud-pose-countdown {
+    font-size: 18px;
+    color: rgb(143, 163, 184);
+    margin-top: 8px;
+    -unity-text-align: middle-right;
+}

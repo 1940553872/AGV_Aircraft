@@ -14,11 +14,20 @@ namespace RivetSim.Presentation.Input
         /// <summary>编辑器生成器写入引用。</summary>
         public void Configure(GameObject root) => visualizationRoot = root;
 
+        /// <summary>可视化是否显示。</summary>
+        public bool IsVisible => visualizationRoot != null && visualizationRoot.activeSelf;
+
+        /// <summary>切换显示（V 键与 HUD 按钮共用）。</summary>
+        public void Toggle()
+        {
+            if (visualizationRoot != null) visualizationRoot.SetActive(!visualizationRoot.activeSelf);
+        }
+
         private void Update()
         {
             Keyboard keyboard = Keyboard.current;
-            if (keyboard == null || visualizationRoot == null || !keyboard.vKey.wasPressedThisFrame) return;
-            visualizationRoot.SetActive(!visualizationRoot.activeSelf);
+            if (keyboard == null || !keyboard.vKey.wasPressedThisFrame) return;
+            Toggle();
         }
     }
 }

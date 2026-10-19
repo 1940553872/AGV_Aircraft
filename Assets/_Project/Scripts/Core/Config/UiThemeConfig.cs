@@ -72,5 +72,60 @@ namespace RivetSim.Core.Config
 
         [Tooltip("底栏日志显示条数")]
         public int logVisibleCount = 6;
+
+        [Header("单元动效（M6）")]
+        [Tooltip("Running 单元呼吸光周期，单位 s")]
+        public float runningBreathPeriodS = 1.6f;
+
+        [Tooltip("Running 单元呼吸光最低不透明度")]
+        [Range(0f, 1f)]
+        public float runningBreathMinAlpha = 0.45f;
+
+        [Tooltip("Running 单元左上角进度条往返周期，单位 s（单元无预计时长，显示为循环进度）")]
+        public float runningProgressPeriodS = 1.5f;
+
+        [Tooltip("Triggered 单元闪烁次数")]
+        public int triggeredFlashCount = 2;
+
+        [Tooltip("Triggered 单元闪烁总时长，单位 s（之后按实际状态显示）")]
+        public float triggeredFlashDurationS = 1.2f;
+
+        [Tooltip("回路箭头被走到后的高亮时长，单位 s（实际时间）")]
+        public float loopHighlightS = 3f;
+
+        [Tooltip("虚线边框的线段长与间隔，单位 px")]
+        public Vector2 dashPatternPx = new Vector2(8f, 5f);
+
+        [Header("小地图（M6）")]
+        [Tooltip("栅格贴图刷新间隔，单位 s（实际时间）")]
+        public float miniMapRefreshIntervalS = 0.5f;
+
+        [Tooltip("AGV 位姿变化超过该像素才重绘小地图叠加层，单位 px")]
+        public float miniMapRepaintThresholdPx = 0.5f;
+
+        [Header("相机（M6）")]
+        [Tooltip("机位切换平滑时长，单位 s（实际时间）")]
+        public float cameraBlendS = 0.8f;
+
+        [Tooltip("自动演示阶段切换时显示演示台的时长，单位 s（实际时间）")]
+        public float demoStationHoldS = 2f;
+
+        [Tooltip("只在阶段切换导致机位变化时显示演示台（避免逐钉循环 T4～T6 频繁切到演示台）")]
+        public bool demoStationOnPresetChangeOnly = true;
+
+        [Tooltip("末端特写：相机到探头 TCP 的水平距离（位于 AGV 一侧），单位 m")]
+        public float closeupDistanceM = 1.4f;
+
+        [Tooltip("末端特写：相机高于探头 TCP 的高度，单位 m")]
+        public float closeupHeightM = 0.5f;
+
+        [Tooltip("末端特写：相机方位相对“探头 → AGV”方向的偏转，单位 °（斜侧视角，避免机械臂挡住探头）")]
+        public float closeupYawOffsetDeg = 35f;
+
+        [Tooltip("跟随 AGV：注视点高于 AGV 原点的高度，单位 m")]
+        public float followLookHeightM = 0.6f;
+
+        [Tooltip("自动演示时各阶段（p1～p6 顺序）使用的机位编号：1 总览、2 跟随 AGV、3 末端特写、4 演示台")]
+        public int[] phaseCameraPresets = { 2, 2, 3, 3, 3, 3 };
     }
 }

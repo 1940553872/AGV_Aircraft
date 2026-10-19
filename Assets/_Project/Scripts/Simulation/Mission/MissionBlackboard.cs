@@ -40,6 +40,12 @@ namespace RivetSim.Simulation.Mission
         /// <summary>本颗开始（首次进入 T4 的执行器取用）的仿真时间，单位 s。</summary>
         public double RivetStartS { get; private set; }
 
+        /// <summary>本颗不计入单钉节拍的时长，单位 s（M6：工位最后一颗的收臂与降柱）。</summary>
+        public double CycleExcludedS { get; set; }
+
+        /// <summary>本颗单钉节拍，单位 s：从本颗开始到 nowS，扣除 <see cref="CycleExcludedS"/>。</summary>
+        public float RivetCycleTimeS(double nowS) => (float)(nowS - RivetStartS - CycleExcludedS);
+
         // —— 阶段级（T5 重试时清零）——
         /// <summary>S5 判读得到、待 S8 保存的记录。</summary>
         public InspectionRecord PendingRecord { get; set; }
@@ -113,6 +119,7 @@ namespace RivetSim.Simulation.Mission
                 ResourceLockHeld = false;
                 NearFieldLimit = false;
                 RivetStartS = nowS;
+                CycleExcludedS = 0d;
                 RecordSaved = false;
                 CommittedRecord = null;
                 ConclusionReady = false;

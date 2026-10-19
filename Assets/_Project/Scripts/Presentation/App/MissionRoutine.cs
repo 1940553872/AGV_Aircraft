@@ -55,6 +55,9 @@ namespace RivetSim.Presentation.App
         /// <summary>检测区登记表。</summary>
         public RivetRegistry Registry => _registry;
 
+        /// <summary>t(1,8) 操作员初值通道（M6，HUD 小地图点选写回）。</summary>
+        public OperatorPoseChannel OperatorPose { get; private set; }
+
         /// <summary>组装：加载任务矩阵 JSON、注册 S1～S8 执行器并核对键名。</summary>
         public MissionRoutine(RobotRuntime runtime, RivetRegistry registry, SimSettings settings, SceneLayoutConfig layout, AgvConfig agv,
             ArmConfig arm, NavigationConfig nav, InspectionConfig inspection, NavOverlayView overlay, InspectionOverlayView inspectionOverlay)
@@ -85,6 +88,7 @@ namespace RivetSim.Presentation.App
             var services = new MissionServices(runtime.Navigation, runtime.Chassis, runtime.Lift, runtime.Arm,
                 runtime.Inspection, runtime.Contact, runtime.Safety, registry, settings, agv, arm, inspection, nav,
                 Conditions, Evaluator, _board, () => runtime.Clock.TimeS, settings.randomSeed + 5);
+            OperatorPose = services.OperatorPose;
             var executors = new ExecutorRegistry();
             MissionExecutorCatalog.RegisterAll(executors, services);
             Orchestrator = new MissionOrchestrator(data, executors, Conditions, new RegistryMissionPlan(registry), runtime.Bus, () => runtime.Clock.TimeS)

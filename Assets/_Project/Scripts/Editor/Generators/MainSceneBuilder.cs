@@ -230,10 +230,12 @@ namespace RivetSim.Editor.Generators
             Transform regions = roots["Zone_Work"].Find(RivetZoneGenerator.RootName);
             bootstrap.ConfigureScene(GeneratorUtility.LoadPrefab(AgvGenerator.AgvPrefabPath), roots["Robot"], keepOut,
                 regions != null ? regions.GetComponent<RivetRegistry>() : null);
-            NavigationSceneSetup.Views views = NavigationSceneSetup.Build(roots["Visualization"], roots["UI"], bootstrapObject, mainCamera);
+            // M6：HUD 与演示屏取代 NavOverlay / InspectionOverlay（类保留，主场景不再挂载）。
+            NavigationSceneSetup.Views views = NavigationSceneSetup.Build(roots["Visualization"], roots["UI"], bootstrapObject, mainCamera, false);
             bootstrap.ConfigureViews(views.Map, views.KeepOut, views.Lidar, views.Path, views.Overlay, views.Teleop);
-            NavigationSceneSetup.InspectionViews inspection = NavigationSceneSetup.BuildInspectionViews(roots["Visualization"], roots["UI"]);
+            NavigationSceneSetup.InspectionViews inspection = NavigationSceneSetup.BuildInspectionViews(roots["Visualization"], roots["UI"], false);
             bootstrap.ConfigureInspectionViews(inspection.Overlay, inspection.Rings, inspection.Frustum, inspection.Contact);
+            DemoUiGenerator.BuildMain(roots, bootstrap, mainCamera);
         }
 
         private static Camera BuildCameras(Transform root, SceneLayoutConfig layout)

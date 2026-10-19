@@ -96,9 +96,13 @@ namespace RivetSim.Simulation.Mission.Executors
             if (!cursor.IsLastRivetInStation)
                 return ExecutorResult.Done($"回退 {(after - before) * 1000f:0} mm，距表面 {after * 1000f:0} mm");
 
+            // 收臂与降柱属于换站准备，不计入单钉节拍（M6）。
+            double stowStartS = s.TimeS();
             ArmMotionResult stow = await inspection.StowAsync(ct);
             if (!stow.Success) return ExecutorResult.Fail(stow.FailureReason);
-            if (!await s.Lift.LowerToBottomAsync(ct)) return ExecutorResult.Fail("升降柱未降到最低");
+            bool lowered = await s.Lift.LowerToBottomAsync(ct);
+            s.Board.CycleExcludedS += s.TimeS() - stowStartS;
+            if (!lowered) return ExecutorResult.Fail("升降柱未降到最低");
             return ExecutorResult.Done($"回退 {(after - before) * 1000f:0} mm；工位最后一颗：收臂，升降柱降到最低");
         }
     }

@@ -1,0 +1,748 @@
+/* 演示电脑屏幕（M6）：Architecture §7 视觉规范，基于 1920×1080。
+   背景 #0E1621 / 面板 #152232 / 分隔线 #263A52；正文 #E6EEF7 / 次要 #8FA3B8 / 待命灰 #566577；
+   强调 #2EC4E6；正在执行 #FF9F1C；完成 #3DD68C / 条件激活 #FFC857 / 失败 #FF5D5D。 */
+
+.dc-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(14, 22, 33);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Regular.asset");
+    color: rgb(230, 238, 247);
+    font-size: 16px;
+}
+
+/* —— 顶栏 —— */
+.dc-topbar {
+    height: 64px;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 24px;
+    background-color: rgb(21, 34, 50);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(38, 58, 82);
+    flex-shrink: 0;
+}
+
+.dc-title {
+    font-size: 28px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    -unity-text-align: middle-left;
+}
+
+.dc-topbar-spacer {
+    flex-grow: 1;
+}
+
+.dc-chip {
+    font-size: 18px;
+    margin-left: 12px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(14, 22, 33);
+    color: rgb(230, 238, 247);
+    -unity-text-align: middle-center;
+}
+
+.dc-chip--mono {
+    min-width: 120px;
+}
+
+.dc-chip--hint {
+    font-size: 14px;
+    color: rgb(14, 22, 33);
+    background-color: rgb(46, 196, 230);
+    border-color: rgb(46, 196, 230);
+    display: none;
+}
+
+.dc-chip--accent {
+    color: rgb(46, 196, 230);
+    border-color: rgb(46, 196, 230);
+}
+
+/* —— 主体 —— */
+.dc-body {
+    flex-grow: 1;
+    flex-direction: row;
+    padding: 12px 16px 8px 16px;
+    overflow: hidden;
+}
+
+.dc-left {
+    width: 62%;
+    padding-right: 12px;
+    overflow: hidden;
+}
+
+.dc-right {
+    width: 38%;
+    overflow: hidden;
+}
+
+.dc-matrix-wrap {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
+.dc-matrix {
+    flex-grow: 1;
+}
+
+.dc-loops-host {
+    width: 116px;
+    flex-shrink: 0;
+}
+
+.loop-arrows {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.loop-label {
+    position: absolute;
+    font-size: 16px;
+    color: rgba(46, 196, 230, 0.6);
+    translate: 0 -50%;
+    padding: 0;
+    margin: 0;
+}
+
+.loop-label--active {
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+}
+
+/* —— 矩阵表头 —— */
+.mx-row {
+    flex-direction: row;
+    flex-grow: 1;
+    flex-basis: 0;
+    min-height: 0;
+}
+
+.mx-header-row {
+    flex-grow: 0;
+    flex-basis: auto;
+    height: 68px;
+}
+
+.mx-corner,
+.mx-col-header,
+.mx-row-header {
+    margin: 3px;
+    border-radius: 4px;
+    background-color: rgb(21, 34, 50);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    justify-content: center;
+    align-items: center;
+}
+
+.mx-corner {
+    width: 112px;
+    flex-shrink: 0;
+}
+
+.mx-col-header {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.mx-row-header {
+    width: 112px;
+    flex-shrink: 0;
+}
+
+.mx-head-code {
+    font-size: 18px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    padding: 0;
+    margin: 0;
+}
+
+.mx-head-name {
+    font-size: 18px;
+    color: rgb(230, 238, 247);
+    padding: 0;
+    margin: 0;
+}
+
+.mx-corner-text {
+    font-size: 16px;
+    margin: 0;
+    padding: 0;
+    color: rgb(143, 163, 184);
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.mx-row-header--current {
+    border-color: rgb(46, 196, 230);
+    background-color: rgba(46, 196, 230, 0.12);
+}
+
+/* —— 单元 —— */
+.cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 3px;
+    padding: 6px 6px 4px 8px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(21, 34, 50);
+    overflow: hidden;
+    justify-content: center;
+}
+
+.cell-glow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 159, 28, 0.14);
+    opacity: 0;
+}
+
+.cell-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 4px;
+    width: 0;
+    background-color: rgb(255, 159, 28);
+    display: none;
+}
+
+.cell-id {
+    position: absolute;
+    left: 6px;
+    top: 4px;
+    font-size: 13px;
+    color: rgb(143, 163, 184);
+    padding: 0;
+    margin: 0;
+}
+
+.cell-text {
+    font-size: 16px;
+    color: rgb(230, 238, 247);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    margin-top: 10px;
+    padding: 0;
+}
+
+.cell-done-badge {
+    position: absolute;
+    right: 5px;
+    top: 2px;
+    font-size: 16px;
+    color: rgb(61, 214, 140);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    padding: 0;
+    margin: 0;
+    display: none;
+}
+
+.cell-trigger-badge {
+    position: absolute;
+    right: 4px;
+    bottom: 3px;
+    font-size: 12px;
+    color: rgb(14, 22, 33);
+    background-color: rgb(255, 200, 87);
+    border-radius: 3px;
+    padding: 0 4px;
+    margin: 0;
+    display: none;
+}
+
+.cell--example .cell-id {
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    color: rgb(230, 238, 247);
+}
+
+.cell--kind-standby .cell-text {
+    color: rgb(86, 101, 119);
+}
+
+.cell--kind-conditional {
+    border-width: 0;
+}
+
+/* Idle：普通边框，正文色（默认）。 */
+
+.cell--standby .cell-text {
+    color: rgb(86, 101, 119);
+}
+
+.cell--armed .cell-text {
+    color: rgb(143, 163, 184);
+}
+
+.cell--running {
+    border-width: 4px;
+    border-color: rgb(255, 159, 28);
+    padding: 3px 3px 1px 5px;
+    background-color: rgb(38, 33, 26);
+}
+
+.cell--running .cell-text {
+    color: rgb(255, 255, 255);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+}
+
+.cell--running .cell-progress {
+    display: flex;
+}
+
+.cell--done {
+    border-width: 1px;
+    border-color: rgb(61, 214, 140);
+}
+
+.cell--done .cell-done-badge {
+    display: flex;
+}
+
+.cell--skipped {
+    opacity: 0.38;
+}
+
+.cell--triggered {
+    background-color: rgba(255, 200, 87, 0.1);
+}
+
+.cell--triggered .cell-text {
+    color: rgb(255, 200, 87);
+}
+
+.cell--failed {
+    border-width: 2px;
+    border-color: rgb(255, 93, 93);
+    background-color: rgba(255, 93, 93, 0.1);
+}
+
+.cell--failed .cell-text {
+    color: rgb(255, 93, 93);
+}
+
+/* —— 图例 —— */
+.dc-legend {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    flex-shrink: 0;
+}
+
+.lg-item {
+    flex-direction: row;
+    align-items: center;
+    margin-right: 22px;
+}
+
+.lg-swatch {
+    width: 34px;
+    height: 20px;
+    margin-right: 6px;
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(21, 34, 50);
+}
+
+.lg-swatch--exampleBold {
+    border-width: 4px;
+    border-color: rgb(255, 159, 28);
+}
+
+.lg-swatch--dashed {
+    border-width: 0;
+}
+
+.lg-swatch--grayText {
+    justify-content: center;
+}
+
+.lg-swatch--done {
+    border-color: rgb(61, 214, 140);
+}
+
+.lg-swatch--failed {
+    border-width: 2px;
+    border-color: rgb(255, 93, 93);
+}
+
+.lg-swatch-text {
+    font-size: 12px;
+    color: rgb(86, 101, 119);
+    -unity-text-align: middle-center;
+    padding: 0;
+    margin: 0;
+}
+
+.lg-text {
+    font-size: 16px;
+    color: rgb(143, 163, 184);
+    padding: 0;
+    margin: 0;
+}
+
+.dc-loopnote {
+    font-size: 16px;
+    color: rgb(143, 163, 184);
+    margin-top: 4px;
+    padding: 0;
+    white-space: normal;
+    flex-shrink: 0;
+}
+
+/* —— 右侧卡片 —— */
+.dc-card {
+    background-color: rgb(21, 34, 50);
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+}
+
+.dc-phase-card {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    border-left-width: 6px;
+    border-left-color: rgb(46, 196, 230);
+}
+
+.dc-phase-code {
+    font-size: 40px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin-right: 16px;
+    padding: 0;
+    min-width: 72px;
+    -unity-text-align: middle-center;
+}
+
+.dc-phase-text {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.dc-phase-name {
+    font-size: 24px;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    padding: 0;
+    margin: 0;
+}
+
+.dc-phase-detail {
+    font-size: 18px;
+    color: rgb(143, 163, 184);
+    padding: 0;
+    margin: 0;
+    white-space: normal;
+}
+
+.dc-section-title {
+    font-size: 18px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin: 0 0 6px 0;
+    padding: 0;
+}
+
+.dc-explain-card {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.ex-line {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+
+.ex-tag {
+    font-size: 16px;
+    width: 108px;
+    flex-shrink: 0;
+    padding: 1px 0;
+    margin: 2px 8px 0 0;
+    border-radius: 3px;
+    -unity-text-align: middle-center;
+    color: rgb(14, 22, 33);
+    background-color: rgb(143, 163, 184);
+}
+
+.ex-text {
+    font-size: 18px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    white-space: normal;
+    padding: 0;
+    margin: 0;
+}
+
+.ex-line--running .ex-tag {
+    background-color: rgb(255, 159, 28);
+}
+
+.ex-line--triggered .ex-tag {
+    background-color: rgb(255, 200, 87);
+}
+
+.ex-line--done .ex-tag {
+    background-color: rgb(61, 214, 140);
+}
+
+.ex-line--failed .ex-tag {
+    background-color: rgb(255, 93, 93);
+}
+
+.ex-line--done .ex-text {
+    color: rgb(143, 163, 184);
+}
+
+.dc-cond-title {
+    font-size: 18px;
+    color: rgb(255, 200, 87);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    margin: 8px 0 4px 0;
+    padding: 0;
+    display: none;
+}
+
+.cd-line {
+    flex-direction: row;
+    align-items: flex-start;
+    margin-bottom: 3px;
+}
+
+.cd-status {
+    font-size: 18px;
+    width: 26px;
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    color: rgb(86, 101, 119);
+}
+
+.cd-id {
+    font-size: 18px;
+    width: 46px;
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+    color: rgb(143, 163, 184);
+}
+
+.cd-text {
+    font-size: 16px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    white-space: normal;
+    padding: 1px 0 0 0;
+    margin: 0;
+    color: rgb(143, 163, 184);
+}
+
+.cd-value {
+    font-size: 16px;
+    flex-shrink: 0;
+    padding: 1px 0 0 8px;
+    margin: 0;
+    color: rgb(143, 163, 184);
+}
+
+.cd-line--pass .cd-status,
+.cd-line--pass .cd-value {
+    color: rgb(61, 214, 140);
+}
+
+.cd-line--fail .cd-status,
+.cd-line--fail .cd-value {
+    color: rgb(255, 93, 93);
+}
+
+.cd-line--pass .cd-text,
+.cd-line--fail .cd-text {
+    color: rgb(230, 238, 247);
+}
+
+.dc-bottom-row {
+    flex-direction: row;
+    height: 270px;
+    flex-shrink: 0;
+}
+
+.dc-map-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 10px;
+    margin-bottom: 0;
+}
+
+.dc-ascan-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-bottom: 0;
+}
+
+.dc-minimap-host {
+    flex-grow: 1;
+}
+
+.minimap {
+    flex-grow: 1;
+    background-color: rgb(14, 22, 33);
+}
+
+.dc-ascan-host {
+    flex-grow: 1;
+    background-color: rgb(14, 22, 33);
+}
+
+.dc-ascan-graph {
+    flex-grow: 1;
+}
+
+.dc-verdict {
+    font-size: 16px;
+    margin-top: 4px;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dc-verdict--pass {
+    color: rgb(61, 214, 140);
+}
+
+.dc-verdict--suspect {
+    color: rgb(255, 200, 87);
+}
+
+.dc-verdict--defect {
+    color: rgb(255, 93, 93);
+}
+
+.dc-verdict--invalid {
+    color: rgb(143, 163, 184);
+}
+
+/* —— 底栏日志 —— */
+.dc-log {
+    height: 136px;
+    flex-shrink: 0;
+    padding: 8px 24px;
+    background-color: rgb(21, 34, 50);
+    border-top-width: 1px;
+    border-top-color: rgb(38, 58, 82);
+    overflow: hidden;
+}
+
+.lg-line {
+    font-size: 14px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: rgb(143, 163, 184);
+}
+
+.lg-line--mission {
+    color: rgb(46, 196, 230);
+}
+
+.lg-line--nav {
+    color: rgb(230, 238, 247);
+}
+
+.lg-line--arm {
+    color: rgb(200, 180, 255);
+}
+
+.lg-line--ut {
+    color: rgb(61, 214, 140);
+}
+
+.lg-line--safety {
+    color: rgb(255, 159, 28);
+}
+
+.lg-line--warning {
+    color: rgb(255, 200, 87);
+}
+
+.lg-line--error {
+    color: rgb(255, 93, 93);
+}
+
+/* —— 单元说明卡（全屏时点击单元） —— */
+.dc-detail-scrim {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(14, 22, 33, 0.6);
+    justify-content: center;
+    align-items: center;
+    display: none;
+}
+
+.dc-detail {
+    width: 760px;
+    padding: 24px 28px;
+    background-color: rgb(21, 34, 50);
+    border-width: 2px;
+    border-color: rgb(46, 196, 230);
+    border-radius: 8px;
+}
+
+.dc-detail-title {
+    font-size: 28px;
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.dc-detail-meta {
+    font-size: 18px;
+    color: rgb(143, 163, 184);
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.dc-detail-explain {
+    font-size: 20px;
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.dc-detail-hint {
+    font-size: 14px;
+    color: rgb(86, 101, 119);
+    -unity-text-align: middle-right;
+}

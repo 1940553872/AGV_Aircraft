@@ -1,35 +1,48 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，M5 验收通过（main = cf617c2 + 本次文档提交）。下一个：M6 演示界面。
+更新：2026-10-19，M6 演示界面已实现，待验收。下一个：M7 联调与观感打磨。
 
-## 现有接口（执行器直接调用，不要重写）
-- RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`（Verify 用）。
-- RivetInspectionService：T3 `MoveToObserveAsync` / `RegisterDatumAsync` / `RemeasureDatumAsync`；T4 `MoveToPredictedAsync` / `MeasureRivetCenterAsync` / `CorrectToMeasuredAsync`；
-  T5 `ApproachContactAsync` / `AcquireAsync`（→ `LastAcquisition`）/ `JudgeLastAcquisition` / `CommitRecord`；T6 `RetreatToDistanceAsync`；`StowAsync`；M4 组合方法保留。
-- 入口：AppBootstrap 按 `CFG_SimSettings.missionEntry`：Mission（默认）→ `MissionRoutine`；SubsystemDemo → 旧 NavigationDemoRoutine（不再维护）。
-- MissionRoutine：建图 → `MissionOrchestrator.RunAsync` → 返回充电位（前方 1.5 m + 倒车）→ CSV（persistentDataPath/Reports）。属性 `Conditions`、`Orchestrator`、`Trace`、`Evaluator`、`Registry`。
-- MissionOrchestrator（Simulation/Mission）：按 JSON 阶段 / runWhen / trigger / retryPhase / loops 执行；`Cursor`、`Matrix`（TaskMatrixRuntime）、`Validate()`、`RivetUnrecovered` 钩子。
-- 执行器：`Simulation/Mission/Executors/` 下 Nav / Vision / Arm / Acq / Ut / Safety / Sched / Data 八个注册类，`MissionExecutorCatalog.RegisterAll`；共享状态 `MissionBlackboard`（工位级 / 铆钉级 / 阶段级自动清零）。
-- 阶段内依赖：`PhaseDependencyTable`（代码常量，Architecture §5.1 有说明）。
-- 事件（Core/Mission）：`CellStateChangedEvent`（cell / actor / phase / 状态 / 区域工位铆钉 / 时间 / 说明）、`ConditionCheckedEvent`（cellId、conditionId、passed、value、valueText）、`PhaseEnteredEvent`（含 Attempt）、`LoopTakenEvent`。
-- 故障注入：`ConditionBus.Inject(FaultKind)`（F5 识别失败 / F6 力超限 / F7 采集无效；M6 HUD 按钮调用同一接口），只布设一次性物理故障，真实触发来自仿真结果。
-- 设备发光：`DeviceIndicator`（Presentation/Visualization）在 PF_AGV（a1～a7）与 PF_DemoStation（a8）上，由 `DeviceIndicatorGenerator` 生成，AppBootstrap 启动时 `FindObjectsByType` 后订阅。
-- 验证：`RivetSim/Verify/Run Mission (Fast)`（`MissionVerifyRunner`）→ Docs/Reports/M5.md；截图时刻暂停并写 SessionState `RivetSim.M5Verify.Stage`（shot1 / shot2），外部 capture 后 eval `MissionVerifyRunner.Resume()` / `Finish()`。
+## 现有接口（直接调用，不要重写）
+- RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController（`Rig.Tcp`）、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`。
+- MissionRoutine：建图 → `MissionOrchestrator.RunAsync` → 返回充电位 → CSV。属性 `Conditions`、`Orchestrator`（`Matrix` / `Cursor`）、`OperatorPose`、`Trace`、`Evaluator`、`Registry`。
+- 事件（Core/Mission）：`CellStateChangedEvent`、`ConditionCheckedEvent`、`PhaseEnteredEvent`、`LoopTakenEvent`；Simulation/Inspection：`RivetInspectedEvent`。演示界面只订阅这些事件。
+- 故障注入：`ConditionBus.Inject(FaultKind)`（HUD 三个按钮与 F5 / F6 / F7 共用），`FaultInjected` 事件。
+- t(1,8)：`OperatorPoseChannel`（`MissionServices.OperatorPose`）：执行器 `Open` → 界面 `Submit(PlanarPose)` 或 `AutoProvide` 超时由模拟操作员给出 → 写 `MissionBlackboard.InitialPose`。
+- 单钉节拍：`MissionBlackboard.RivetCycleTimeS(now)` = 本颗用时 − `CycleExcludedS`（工位末颗收臂与降柱）。
+
+## M6 演示界面（Presentation）
+- `DemoConsoleView`（UI_DemoConsole.uxml/.uss）：顶栏、6×8 矩阵（`TaskCellElement`，状态 USS 类 `cell--<state>`）、`LoopArrowElement`、图例、阶段卡、执行情况说明 + 条件行、`MiniMapElement`、A 扫、底栏日志。
+  平时用 `UI_PanelSettings_Console`（targetTexture = T_DemoConsoleRT，屏幕输入被屏蔽）；`SetFullscreen(true)` 换到 `UI_PanelSettings_ConsoleFullscreen`，可点单元弹说明卡（`ShowDetail`）。
+  事件处理只改模型与脏标记，LateUpdate 刷新；空闲帧几乎不分配。
+- `HudView`（UI_Hud.uxml/.uss）：模式、倍速（`SimClock.SpeedOptions`）、暂停、下一步、故障按钮、机位、可视化、全屏、t(1,8) 点选提示（`ShowPosePrompt` / `PosePicked`）、致谢角标（全屏时隐藏）。只发事件。
+- `DemoUiHub`（App）：把 HUD / `DemoHotkeys` 连到 `DemoModeController`、`ConditionBus`、`CameraRig`、`VisualizationToggleInput`、演示屏全屏与初值通道。`NextHandler` 可替换（沙盒 = 推进假数据）。
+- `DemoModeController`：Auto / Step（PhaseEntered 时暂停时钟，Next 继续）/ Manual（仅工序未运行时）；实现 `IDemoStatusSource`；`BindOperatorPose` 设置 `AutoProvide = (Mode == Auto)`。
+- `CameraRig`（主相机）：CamAnchor_1～4；自动机位按 `CFG_UiTheme.phaseCameraPresets`，机位变化时先显示演示台 `demoStationHoldS`（实际时间）。
+- 小地图源：`RuntimeMiniMapSource`（栅格贴图按 0.5 s 刷新、PathPlannedEvent、底盘位姿）；沙盒 `FakeMiniMapSource`。
+- 入口：`AppBootstrap.SetUpDemoUi()`（工序开始时）；`AppBootstrap.Active` / `Rig` / `Hub` 供验证工具读取。Sandbox_UI：`SandboxUiBootstrap` + `FakeMissionFeed`（39 步，覆盖 8 种状态与两种回路）。
+
+## 编辑器
+- 生成：`RivetSim/Generate/Demo UI Assets`（RT、M_DemoScreen、3 份 PanelSettings）；DemoStation 屏幕用 M_DemoScreen；MainSceneBuilder 末尾 `DemoUiGenerator.BuildMain`；SandboxSceneBuilder 的 Sandbox_UI 调 `BuildSandbox`。
+- 验证：`RivetSim/Verify/Run Demo UI`（`DemoUiVerifyRunner`）→ Docs/Reports/M6.md。阶段写 SessionState `RivetSim.M6Verify.Stage`：shot_matrix → to_main → main → shot_monitor / shot_hud / shot_pose；截图后 eval `DemoUiVerifyRunner.Resume()`。
+  编辑器失去焦点时 to_main 不会自动继续：eval `DemoUiVerifyRunner.LaunchMain()`。
+- M5 验证 `RivetSim/Verify/Run Mission (Fast)` 仍可用。
 
 ## 关键约定
 - 轴向与布局：ADR-008；模型机 1:1.5、厂房、升降柱与联锁：ADR-010；其余见 ADR-012、ADR-015、ADR-016。
-- 参考时长（仿真，种子 42）：建图 316.5 s；矩阵流程 1076.5 s；返回 85.0 s；合计 1478 s（4 倍速约 6.2 min）。
+- 参考时长（仿真，种子 42）：建图 316.5 s；矩阵流程约 1067～1076 s；返回 85.0 s；合计约 1470 s。
 - 日志格式 `[T5][S4] t(5,4) 接触采集 C2～C8 开始 / 完成`；计数触发记 Info，故障 / 事件触发记 Warning。
-- 纯视觉物体名称前缀 `SimLayers.VisualOnlyPrefix`，外廓量测与间隙检查跳过。
-- SimLog 订阅在进入 Play（SubsystemRegistration）时被清空，编辑器工具须在流程开始后订阅。
+- SimLog 订阅在进入 Play 时被清空，编辑器工具须在流程开始后订阅；沙盒 `SimLog.SimTimeProvider` 由 SandboxUiBootstrap 设置。
 - 主场景物体数 983（Generate All 后）。
-- 导航引入点：起点已在终点前方（沿目标朝向）时不加，直接到终点后原地转向（M5 验收后修复返回充电位停歪）；返回充电位停车误差约 −1.4 / −7.7 mm。
+- USS 颜色按 Architecture §7 写死在 UI_*.uss；Painter2D（虚线、回路、小地图）用 CFG_UiTheme 颜色。
+- 子元素绘制在父元素内容之上：叠加 Painter2D 内容要放在独立子元素（见 MiniMapElement）。
+- 快速流程下编辑器帧率很高，相机或动画等待要按实际时间，不按帧数。
 - 任务矩阵 label 不改；t(6,1) 仅工位最后一颗执行；C1～C12 只上报不阻断。
 
 ## 遗留问题
-- 工位末颗“单钉节拍”含收臂降柱（约 40 s）。
+- 操作员初值只写黑板与日志，导航仍用真值位姿；点选只给位置（朝向沿用当前估计）。
 - C4 / C8 各有个别 ✗ 未逐颗定位原因。
-- 识别失败为教学简化，操作员初值只写日志。
+- 第一次 Sandbox_UI 运行出现 2 条字体资产导入警告（动态图集新增字形），是否复现未确认。
 
 ## 下一步
-- M6：演示界面订阅上述事件；t(1,8) 改为小地图点选；HUD 故障按钮。
+- 用户验收 M6（截图 Docs/Screenshots/M6/1～4、报告 Docs/Reports/M6.md）。
+- M7：演示台近景机位与补光、显示器可读性、小地图标记、自动 / 分步演示联调、后处理与性能。

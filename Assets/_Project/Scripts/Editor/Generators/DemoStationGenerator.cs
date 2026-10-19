@@ -9,7 +9,7 @@ namespace RivetSim.Editor.Generators
     /// <summary>
     /// 演示台生成器：演示台、主机（S8 数据设备）、双显示器、键鼠、座椅，以及独立的大屏预制体。
     /// 尺寸取自 CFG_SceneLayout 演示区参数。演示台根节点在桌面中心的地面投影，本地 +Z 为显示器屏幕朝向（操作员一侧）。
-    /// 屏幕网格命名为 Screen_*，M6 替换为 RenderTexture 材质。
+    /// 屏幕网格命名为 Screen_*，使用 M6 演示屏 RenderTexture 材质（DemoUiGenerator.EnsureScreenMaterial）。
     /// </summary>
     public static class DemoStationGenerator
     {
@@ -56,7 +56,7 @@ namespace RivetSim.Editor.Generators
             Material deskMat = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.Desk);
             Material top = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.DeskTop);
             Material bezel = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.Bezel);
-            Material screen = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.ScreenOff);
+            Material screen = DemoUiGenerator.EnsureScreenMaterial();
             Material dark = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotDark);
             Material accent = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotAccent);
             Material indicator = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.IndicatorOff);
@@ -119,7 +119,7 @@ namespace RivetSim.Editor.Generators
         private static void BuildBigScreen(SceneLayoutConfig layout)
         {
             Material bezel = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.Bezel);
-            Material screen = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.ScreenOff);
+            Material screen = DemoUiGenerator.EnsureScreenMaterial();
             Material dark = MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RobotDark);
 
             var root = new GameObject("PF_BigScreen");

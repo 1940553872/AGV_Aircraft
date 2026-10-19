@@ -18,7 +18,7 @@ namespace RivetSim.Editor.Generators
     /// <summary>
     /// 沙盒场景生成器：Sandbox_Robot（M4 机械臂与检测开发场地：地面、矮围墙、1.8 m 窄通道、A320 机身段（PF_FuselageSection，
     /// 摆放方式与整机一致）及其两侧各一个工位（R1-S1 / R2-S1，铆钉与真值缺陷与主场景一致）、机身段虚拟禁行区、停在 R1-S1 的 AGV、
-    /// 检测演示入口与可视化；M3 导航演示与 M2 升降柱联锁演示保留但停用）与 Sandbox_UI（空场景 + UIDocument）。重复执行覆盖上次结果。
+    /// 检测演示入口与可视化；M3 导航演示与 M2 升降柱联锁演示保留但停用）与 Sandbox_UI（M6 演示屏 + HUD，假数据驱动）。重复执行覆盖上次结果。
     /// </summary>
     public static class SandboxSceneBuilder
     {
@@ -179,13 +179,12 @@ namespace RivetSim.Editor.Generators
         private static void BuildUiSandbox()
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            Transform system = GeneratorUtility.CreateRoot(scene, "_System");
             Transform cameras = GeneratorUtility.CreateRoot(scene, "Cameras");
             Transform ui = GeneratorUtility.CreateRoot(scene, "UI");
             SceneLightingSetup.CreateCamera(cameras, "Main Camera", new Vector3(0f, 1f, -10f), new Vector3(0f, 1f, 0f), 60f, true);
-
-            Transform document = GeneratorUtility.CreateNode("UIDocument", ui, Vector3.zero);
-            var uiDocument = document.gameObject.AddComponent<UIDocument>();
-            uiDocument.panelSettings = EnsurePanelSettings();
+            // M6：演示屏（全屏）+ HUD，由 FakeMissionFeed 假数据驱动。
+            DemoUiGenerator.BuildSandbox(system, ui);
 
             Save(scene, ProjectPaths.SandboxUiScene);
         }

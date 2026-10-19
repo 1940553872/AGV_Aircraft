@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
+using RivetSim.Presentation.CameraControl;
 using RivetSim.Presentation.Input;
 using RivetSim.Presentation.UI;
 using RivetSim.Presentation.Visualization;
@@ -18,6 +19,8 @@ namespace RivetSim.Presentation.App
     /// 并按 CFG_SimSettings.missionEntry 运行：Mission（默认，M5）为 SOP 完整工序 <see cref="MissionRoutine"/>；
     /// SubsystemDemo 为 M3 / M4 的子系统演示 <see cref="NavigationDemoRoutine"/>（仅调试，不再维护）。
     /// 场景引用由 MainSceneBuilder 写入；设备指示灯（<see cref="DeviceIndicator"/>）在启动时查找并订阅。
+    /// M6：演示屏（<see cref="DemoConsoleView"/>，渲染到演示台显示器与大屏）、HUD、CameraRig 与演示模式由 <see cref="DemoUiHub"/> 连线，
+    /// 取代 M3 / M4 的 NavOverlayView 与 InspectionOverlayView（类保留，主场景不再挂载）。
     /// </summary>
     public sealed class AppBootstrap : MonoBehaviour
     {
@@ -47,6 +50,13 @@ namespace RivetSim.Presentation.App
         [SerializeField] private WristCameraFrustumView cameraFrustum;
         [SerializeField] private ProbeContactView contactView;
 
+        [Header("演示界面（M6）")]
+        [SerializeField] private UiThemeConfig uiTheme;
+        [SerializeField] private DemoConsoleView demoConsole;
+        [SerializeField] private HudView hud;
+        [SerializeField] private CameraRig cameraRig;
+        [SerializeField] private VisualizationToggleInput visualizationToggle;
+
         [Header("演示（倍速用于两种入口；目标工位仅用于 SubsystemDemo）")]
         [SerializeField, Tooltip("进入 Play 模式后自动运行演示")] private bool autoRunDemo = true;
         [SerializeField, Tooltip("演示倍速（须在 CFG_SimSettings 的倍速列表内）")] private float demoSpeedMultiplier = 4f;
@@ -58,6 +68,35 @@ namespace RivetSim.Presentation.App
         private LiftColumnController _lift;
         private CancellationTokenSource _cancellation;
         private MissionRoutine _mission;
+        private DemoModeController _demoMode;
+        private RuntimeMiniMapSource _miniMap;
+        private DemoUiHub _hub;
+        private bool _missionRunning;
+
+        /// <summary>当前主场景入口（验证工具读取）。</summary>
+        public static AppBootstrap Active { get; private set; }
+
+        /// <summary>演示屏。</summary>
+        public DemoConsoleView DemoConsole => demoConsole;
+
+        /// <summary>HUD。</summary>
+        public HudView Hud => hud;
+
+        /// <summary>相机机位。</summary>
+        public CameraRig Rig => cameraRig;
+
+        /// <summary>界面连线（工序开始后可用）。</summary>
+        public DemoUiHub Hub => _hub;
+
+        /// <summary>编辑器生成器写入演示界面引用（M6）。</summary>
+        public void ConfigureDemoUi(UiThemeConfig theme, DemoConsoleView console, HudView hudView, CameraRig rig, VisualizationToggleInput visualization)
+        {
+            uiTheme = theme;
+            demoConsole = console;
+            hud = hudView;
+            cameraRig = rig;
+            visualizationToggle = visualization;
+        }
 
         /// <summary>编辑器生成器写入配置。</summary>
         public void ConfigureConfigs(SimSettings settings, SceneLayoutConfig layout, AgvConfig agv, ArmConfig arm, NavigationConfig nav, InspectionConfig inspection)
@@ -102,6 +141,7 @@ namespace RivetSim.Presentation.App
 
         private void Awake()
         {
+            Active = this;
             PlanarPose spawn = sceneLayout.chargingDockPose;
             GameObject agv = Instantiate(agvPrefab, spawn.WorldPosition, spawn.WorldRotation, robotRoot);
             agv.name = "AGV";
@@ -170,10 +210,12 @@ namespace RivetSim.Presentation.App
             foreach (DeviceIndicator indicator in FindObjectsByType<DeviceIndicator>(FindObjectsSortMode.None)) indicator.Initialize(_runtime.Bus);
             gameObject.AddComponent<FaultHotkeys>().Initialize(_mission.Conditions);
             if (overlayView != null) overlayView.SetHint("F5 识别失败 · F6 力超限 · F7 采集无效 · 空格急停 · V 显示 / 隐藏可视化");
+            SetUpDemoUi();
             if (MissionLaunchOptions.FastForward) _runtime.FastForwardSimSecondsPerFrame = simSettings.fastVerifySimSecondsPerFrame;
             if (MissionLaunchOptions.Faults.Count > 0) _mission.ScheduleFaults(MissionLaunchOptions.Faults);
             MissionLaunchOptions.Started?.Invoke(_runtime, _mission);
             MissionRunReport report = null;
+            _missionRunning = true;
             try
             {
                 report = await _mission.RunAsync(_cancellation.Token);
@@ -183,17 +225,56 @@ namespace RivetSim.Presentation.App
                 SimLog.Info(LogCategory.System, "工序已中止");
                 return;
             }
+            finally
+            {
+                _missionRunning = false;
+            }
             MissionLaunchOptions.Completed?.Invoke(report);
             if (teleopInput != null) teleopInput.TeleopEnabled = true;
         }
 
-        private void Update() => _runtime?.Update(Time.deltaTime);
+        // M6 演示界面：演示模式、小地图数据源、演示屏、HUD、相机与快捷键。
+        private void SetUpDemoUi()
+        {
+            if (_mission.Orchestrator == null || uiTheme == null) return;
+            var matrix = _mission.Orchestrator.Matrix;
+            RivetRegistry registry = _mission.Registry;
+            _demoMode = new DemoModeController(_runtime.Clock, _runtime.Bus, simSettings.defaultDemoMode)
+            {
+                CanEnterManual = () => !_missionRunning,
+                SetTeleop = enabled => { if (teleopInput != null) teleopInput.TeleopEnabled = enabled; },
+                RegionCountSource = () => registry != null ? registry.Regions.Count : 0,
+                StationCountSource = r => registry != null && r >= 0 && r < registry.Regions.Count ? registry.Regions[r].Stations.Count : 0,
+                RivetCountSource = () => _mission.Orchestrator.Cursor.RivetCount,
+            };
+            _demoMode.BindOperatorPose(_mission.OperatorPose);
+            _miniMap = new RuntimeMiniMapSource(_runtime.Map, _chassis, _runtime.Bus, uiTheme.miniMapRefreshIntervalS);
+            if (demoConsole != null)
+                demoConsole.Initialize(_runtime.Bus, matrix.Data, matrix.GetState, _demoMode, _miniMap, inspectionConfig, uiTheme);
+            if (cameraRig != null)
+                cameraRig.Initialize(uiTheme, _runtime.Bus, matrix.Data, _chassis.transform, _runtime.Arm.Rig.Tcp, sceneLayout.startPose);
+            if (hud == null || demoConsole == null) return;
+            hud.Initialize(_demoMode, _runtime.Clock.SpeedOptions, _miniMap, uiTheme);
+            var hotkeys = gameObject.AddComponent<DemoHotkeys>();
+            _hub = new DemoUiHub(_demoMode, _runtime.Bus, matrix.Data, hud, demoConsole, cameraRig, _mission.Conditions, _mission.OperatorPose,
+                visualizationToggle, hotkeys, _miniMap);
+        }
+
+        private void Update()
+        {
+            _runtime?.Update(Time.deltaTime);
+            _miniMap?.Refresh(Time.unscaledDeltaTime);
+        }
 
         private void OnDestroy()
         {
             _cancellation?.Cancel();
             _cancellation?.Dispose();
             _cancellation = null;
+            _hub?.Dispose();
+            _demoMode?.Dispose();
+            _miniMap?.Dispose();
+            if (Active == this) Active = null;
             _mission?.Dispose();
             _mission = null;
             _runtime?.Dispose();

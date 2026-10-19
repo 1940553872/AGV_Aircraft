@@ -1,0 +1,60 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/UI/UI_DemoConsole.uss" />
+    <ui:VisualElement name="dc-root" class="dc-root">
+        <ui:VisualElement name="dc-topbar" class="dc-topbar" picking-mode="Ignore">
+            <ui:Label name="dc-title" class="dc-title" text="AGV 飞机铆钉超声检测 · SOP 任务矩阵" picking-mode="Ignore" />
+            <ui:VisualElement class="dc-topbar-spacer" picking-mode="Ignore" />
+            <ui:Label name="dc-fullscreen-hint" class="dc-chip dc-chip--hint" text="Tab 返回场景 · 点击单元查看说明" picking-mode="Ignore" />
+            <ui:Label name="dc-mode" class="dc-chip" text="自动演示" picking-mode="Ignore" />
+            <ui:Label name="dc-speed" class="dc-chip" text="×1" picking-mode="Ignore" />
+            <ui:Label name="dc-time" class="dc-chip dc-chip--mono" text="00:00:00" picking-mode="Ignore" />
+            <ui:Label name="dc-progress" class="dc-chip dc-chip--accent" text="区域 —/— · 工位 —/— · 铆钉 —/—" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:VisualElement name="dc-body" class="dc-body" picking-mode="Ignore">
+            <ui:VisualElement name="dc-left" class="dc-left" picking-mode="Ignore">
+                <ui:VisualElement name="dc-matrix-wrap" class="dc-matrix-wrap" picking-mode="Ignore">
+                    <ui:VisualElement name="dc-matrix" class="dc-matrix" picking-mode="Ignore" />
+                    <ui:VisualElement name="dc-loops-host" class="dc-loops-host" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement name="dc-legend" class="dc-legend" picking-mode="Ignore" />
+                <ui:Label name="dc-loopnote" class="dc-loopnote" text="" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:VisualElement name="dc-right" class="dc-right" picking-mode="Ignore">
+                <ui:VisualElement name="dc-phase-card" class="dc-card dc-phase-card" picking-mode="Ignore">
+                    <ui:Label name="dc-phase-code" class="dc-phase-code" text="—" picking-mode="Ignore" />
+                    <ui:VisualElement class="dc-phase-text" picking-mode="Ignore">
+                        <ui:Label name="dc-phase-name" class="dc-phase-name" text="等待开始" picking-mode="Ignore" />
+                        <ui:Label name="dc-phase-detail" class="dc-phase-detail" text="—" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="dc-explain-card" class="dc-card dc-explain-card" picking-mode="Ignore">
+                    <ui:Label class="dc-section-title" text="当前执行情况说明" picking-mode="Ignore" />
+                    <ui:VisualElement name="dc-explain" class="dc-explain" picking-mode="Ignore" />
+                    <ui:Label name="dc-cond-title" class="dc-cond-title" text="" picking-mode="Ignore" />
+                    <ui:VisualElement name="dc-conditions" class="dc-conditions" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement class="dc-bottom-row" picking-mode="Ignore">
+                    <ui:VisualElement class="dc-card dc-map-card" picking-mode="Ignore">
+                        <ui:Label class="dc-section-title" text="小地图（栅格 · 路径 · AGV）" picking-mode="Ignore" />
+                        <ui:VisualElement name="dc-minimap-host" class="dc-minimap-host" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="dc-card dc-ascan-card" picking-mode="Ignore">
+                        <ui:Label class="dc-section-title" text="A 扫波形（教学简化模型）" picking-mode="Ignore" />
+                        <ui:VisualElement name="dc-ascan-host" class="dc-ascan-host" picking-mode="Ignore" />
+                        <ui:Label name="dc-verdict" class="dc-verdict" text="判读：—" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="dc-log" class="dc-log" picking-mode="Ignore" />
+        <ui:VisualElement name="dc-detail-scrim" class="dc-detail-scrim">
+            <ui:VisualElement name="dc-detail" class="dc-detail">
+                <ui:Label name="dc-detail-title" class="dc-detail-title" text="" />
+                <ui:Label name="dc-detail-meta" class="dc-detail-meta" text="" />
+                <ui:Label name="dc-detail-explain" class="dc-detail-explain" text="" />
+                <ui:Label name="dc-detail-extra" class="dc-detail-meta" text="" />
+                <ui:Label class="dc-detail-hint" text="点击任意处关闭" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

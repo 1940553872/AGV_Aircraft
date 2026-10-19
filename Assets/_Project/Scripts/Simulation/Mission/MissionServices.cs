@@ -63,6 +63,9 @@ namespace RivetSim.Simulation.Mission
         /// <summary>执行器共享状态。</summary>
         public MissionBlackboard Board { get; }
 
+        /// <summary>操作员初值通道（M6，t(1,8) 小地图点选）。</summary>
+        public OperatorPoseChannel OperatorPose { get; } = new OperatorPoseChannel();
+
         /// <summary>仿真时间来源，单位 s。</summary>
         public Func<double> TimeS { get; }
 

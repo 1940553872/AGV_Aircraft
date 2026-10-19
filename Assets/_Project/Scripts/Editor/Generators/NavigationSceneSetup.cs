@@ -75,7 +75,7 @@ namespace RivetSim.Editor.Generators
         }
 
         /// <summary>在 visualizationRoot / uiRoot 下生成 M4 检测可视化与检测叠加信息（Visualization 层，V 开关）。</summary>
-        public static InspectionViews BuildInspectionViews(Transform visualizationRoot, Transform uiRoot)
+        public static InspectionViews BuildInspectionViews(Transform visualizationRoot, Transform uiRoot, bool withOverlay = true)
         {
             Transform ringsNode = GeneratorUtility.CreateNode("RivetResultRings", visualizationRoot, Vector3.zero);
             var rings = ringsNode.gameObject.AddComponent<RivetResultRingView>();
@@ -89,6 +89,7 @@ namespace RivetSim.Editor.Generators
             var contact = contactLine.gameObject.AddComponent<ProbeContactView>();
             GeneratorUtility.SetLayerRecursive(visualizationRoot.gameObject, SimLayers.VisualizationIndex);
 
+            if (!withOverlay) return new InspectionViews(null, rings, frustum, contact);
             Transform overlayNode = GeneratorUtility.CreateNode("InspectionOverlay", uiRoot, Vector3.zero);
             var document = overlayNode.gameObject.AddComponent<UIDocument>();
             document.panelSettings = SandboxSceneBuilder.EnsurePanelSettings();
@@ -98,7 +99,7 @@ namespace RivetSim.Editor.Generators
         }
 
         /// <summary>在 visualizationRoot / uiRoot 下生成可视化与叠加信息，遥控与 V 开关挂在 entry 上。</summary>
-        public static Views Build(Transform visualizationRoot, Transform uiRoot, GameObject entry, Camera camera)
+        public static Views Build(Transform visualizationRoot, Transform uiRoot, GameObject entry, Camera camera, bool withOverlay = true)
         {
             OccupancyGridOverlay map = CreateOverlay<OccupancyGridOverlay>("MapOverlay", visualizationRoot, MaterialLibraryBuilder.VisMapOverlay);
             KeepOutOverlay keepOut = CreateOverlay<KeepOutOverlay>("KeepOutOverlay", visualizationRoot, MaterialLibraryBuilder.VisKeepOut);
@@ -110,12 +111,16 @@ namespace RivetSim.Editor.Generators
                 CreateLine("GoalArrow", pathNode, MaterialLibraryBuilder.VisGoal, ArrowWidthM));
             GeneratorUtility.SetLayerRecursive(visualizationRoot.gameObject, SimLayers.VisualizationIndex);
 
-            Transform overlayNode = GeneratorUtility.CreateNode("NavOverlay", uiRoot, Vector3.zero);
-            var document = overlayNode.gameObject.AddComponent<UIDocument>();
-            document.panelSettings = SandboxSceneBuilder.EnsurePanelSettings();
-            document.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ProjectPaths.NavOverlayUxml);
-            var overlay = overlayNode.gameObject.AddComponent<NavOverlayView>();
-            overlay.Configure(camera);
+            NavOverlayView overlay = null;
+            if (withOverlay)
+            {
+                Transform overlayNode = GeneratorUtility.CreateNode("NavOverlay", uiRoot, Vector3.zero);
+                var document = overlayNode.gameObject.AddComponent<UIDocument>();
+                document.panelSettings = SandboxSceneBuilder.EnsurePanelSettings();
+                document.visualTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ProjectPaths.NavOverlayUxml);
+                overlay = overlayNode.gameObject.AddComponent<NavOverlayView>();
+                overlay.Configure(camera);
+            }
 
             var teleop = entry.AddComponent<AgvTeleopInput>();
             entry.AddComponent<VisualizationToggleInput>().Configure(visualizationRoot.gameObject);

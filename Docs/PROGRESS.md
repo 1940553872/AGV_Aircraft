@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M6 演示界面 —— 未开始（M5 SOP 流程编排已于 2026-10-19 验收）
+M6 演示界面 —— 已实现，待验收（2026-10-19）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -32,33 +32,27 @@ M6 演示界面 —— 未开始（M5 SOP 流程编排已于 2026-10-19 验收�
 
 ## 最近一次会话
 - 日期：2026-10-19
-- 完成：M5 SOP 流程编排（在 Main 中开发，MissionOrchestrator 取代 NavigationDemoRoutine；文档提交 4c0418b“docs: 省额度工作流程”）。已定决策 1～10 与计划待决问题按默认执行：
-  1. retryPhase 用完仍失败：本颗记为“无效”、单元标 Failed，直接进入 T6，流程继续；
-  2. 每颗 T4～T6 的纯逻辑单元也按 0.6 s；
-  3. 识别失败注入点：区域 2 的 T1 整机识别，激活 t(1,8)；
-  4. 设备节点缺失时生成器报错，不建占位；
-  5. 加 F5 / F6 / F7 热键。
-  - Core：`Core/Mission`（`CellState`、`CellStateChangedEvent`、`ConditionCheckedEvent`、`PhaseEnteredEvent`、`LoopTakenEvent`）、`MissionEntry`；`SimSettings` 新增入口枚举、模拟操作员（3 s、位置噪声 0.05 m、航向 1°）、故障注入（力超限压缩 4 mm、耦合系数 0.3）、快速验证步长 0.25 s；`SimClock.AdvanceSim`；`SimLayers.VisualOnlyPrefix`
-  - Simulation/Mission（新）：`MissionOrchestrator`、`TaskMatrixRuntime`、`ExecutorRegistry`、`ITaskExecutor`、`DelegateExecutor`、`PhaseDependencyTable`、`ConditionBus`、`ConditionEvaluator`、`MissionBlackboard`、`MissionServices`、`MissionCursor`、`IMissionPlan`、`RegistryMissionPlan`、`ScheduledFaultInjector`、`FaultInjectionPoint`、`MissionTrace` 等；`Executors/` 下 S1～S8 共 8 个注册类覆盖 37 个键名
-  - Simulation/Inspection：`RivetInspectionService` 拆分 T3（观察位姿 / 基准注册 / 基准复测）、T4（规划 / 钉心复测 / 视觉修正）、T5（接触 / 采集 / 判读 / 保存）、T6（回退到指定距离），M4 组合方法保留；新增 `AcquisitionSample`、`InspectionCsvExporter`；`ContactModel.CouplingFaultFactor`
-  - Presentation：`MissionRoutine`（建图 → 矩阵流程 → 返回充电位 → CSV）、`MissionRunReport`、`MissionLaunchOptions`、`DeviceIndicator`（MaterialPropertyBlock）、`FaultHotkeys`；`AppBootstrap` 按入口枚举分支；`RobotRuntime` 快速推进
-  - Editor：`DeviceIndicatorGenerator`（`RivetSim/Generate/Device Indicators`，AGV 7 个设备 62 个外壳、演示台 1 个设备 2 个外壳；AgvGenerator / DemoStationGenerator 末尾自动调用）、`MaterialLibraryBuilder` 新增 M_DeviceGlow、`MissionVerifyRunner`（`RivetSim/Verify/Run Mission (Fast)`）
-  - Tests：`MissionOrchestratorTests` 8 项（循环与换站、状态序列、力超限重试、重试用尽、每 10 颗计数、键名核对、依赖表、阈值解析）
-  - Docs：Architecture §5.1 补依赖说明 4 行；报告 Docs/Reports/M5.md、M5_inspection.csv
-- 结果（种子 42，详见 Docs/Reports/M5.md）：
-  - 2 区域 × 2 工位 × 12 颗 = 48 颗全部完成；仿真总用时 1481.0 s（建图 316.5 + 矩阵流程 1081.8 + 返回 82.8），4 倍速约 6.2 min；快速验证真实用时约 60 s（等效约 25 倍速）
-  - 检出 5 / 5、漏检 0、误报 0、无效 0；阶段执行 156 次（含 2 次重试）；执行器键名 37 个，缺失 0
-  - 三种故障各一次均激活对应虚线单元并恢复：t(1,8) 3 s 后给出初值（偏差 67 mm / −0.7°）；t(5,6) 超限 86 N 后受控退出、T5 重试 1/1 成功；t(5,7) 耦合 0.30 无效、重贴后 T5 重试 1/2 成功；t(6,2) 每个工位第 10 颗后复测一次
-  - 条件判定 583 次、未满足 4 次：C4 一次（0.67 mm，未定位原因，推测为钉心复测噪声）、C6 一次（采集无效故障，预期）、C8 两次（厚度误差 0.20 mm，未逐颗定位）
-- 自检：编译 0 错误 0 警告；EditMode 112/112 通过；Generate All 后主场景 983 个物体（M4 981 + 演示台电脑 2 个发光外壳），设备发光生成器重复执行结果不变；Main Play 0 错误，警告均为故障注入、条件 ✗ 与单元失败的预期日志；场景无未保存改动，已退出 Play 模式
-- 截图（Docs/Screenshots/M5/）：01 T5 进行中（R1-S1 第 6 颗力控接触，S3 机械臂与升降柱发橙光）；02 流程结束后结果环（缺陷最多的工位，红 = 缺陷、绿 = 合格）
+- 完成：M6 演示界面（先在 Sandbox_UI 用假数据完成，再接入 Main）。已定决策 1～12 与计划待决问题 Q1～Q4 按默认执行（遥控仅在工序未运行时可切换；不新增 Presentation 测试；新参数放进 CFG_UiTheme；两台显示器与大屏共用一张 RT）。
+  - Simulation（已说明的接口改动）：`OperatorPoseChannel`（t(1,8) 打开通道等待小地图点选，`AutoProvide` 时超时由模拟操作员给出）挂在 `MissionServices.OperatorPose`；`MissionBlackboard.CycleExcludedS` / `RivetCycleTimeS`，`arm.retractHold` 把工位末颗的收臂与降柱时间计入扣除
+  - Core：`UiThemeConfig` 新增单元动效、小地图、相机参数（呼吸 1.6 s、Triggered 闪烁 2 次 / 1.2 s、回路高亮 3 s、小地图刷新 0.5 s、机位过渡 0.8 s、演示台停留 2 s 且仅在机位变化时、末端特写 1.4 m / 0.5 m / 35°、阶段机位 2,2,3,3,3,3）
+  - Presentation/UI：`DemoConsoleView`（UI_DemoConsole.uxml/.uss）、`TaskCellElement`、`DashedBorderElement`、`LoopArrowElement`、`MiniMapElement`、`HudView`（UI_Hud.uxml/.uss，含 t(1,8) 点选提示与致谢角标）、`IDemoStatusSource`、`IMiniMapSource`、`UiPerfProbe`
+  - Presentation/App：`DemoModeController`（自动 / 分步 / 遥控、倍速、分步按阶段暂停）、`DemoUiHub`（HUD / 快捷键 → 模式 / ConditionBus / CameraRig / 全屏 / 初值通道）、`RuntimeMiniMapSource`、`FakeMissionFeed` + `FakeMiniMapSource`、`SandboxUiBootstrap`；`AppBootstrap.SetUpDemoUi`；`MissionRoutine.OperatorPose`
+  - Presentation：`CameraControl/CameraRig`（CamAnchor_1～4；跟随 AGV 保持锚点 2 相对起始位姿的偏移；末端特写位于探头 AGV 一侧）；`Input/DemoHotkeys`（1～4、0、Tab、P、N）；`VisualizationToggleInput.Toggle`
+  - Editor：`DemoUiGenerator`（`RivetSim/Generate/Demo UI Assets`：T_DemoConsoleRT 1920×1080、M_DemoScreen、三份 PanelSettings；主场景 / Sandbox_UI 挂载）；DemoStation 屏幕改用 M_DemoScreen；Main 不再挂 NavOverlay / InspectionOverlay（类保留）；`DemoUiVerifyRunner`（`RivetSim/Verify/Run Demo UI`）
+  - Tests：`OperatorPoseChannelTests` 4 项（含单钉节拍扣除）
+- 结果（Docs/Reports/M6.md）：
+  - Sandbox_UI 假数据 39 步：8/8 种状态都显示过且样式核对 8/8 通过；回路“下一颗”“换站”均高亮；t(1,8) 小地图点选写回通道
+  - 1920×1080 与 2560×1440 下演示屏 391 个元素、HUD 40 个元素均无溢出（A 扫判读一行按设计省略号截断）
+  - 界面开销：空闲帧平均 0.03 次 GC 分配 / 帧（242 帧中 2 帧，时间标签每秒刷新）；事件处理平均 1.5～4.4 µs、最长 0.53 ms
+  - Main 快速流程（T1 识别失败 1 次）：完成，仿真 1468.6 s；演示屏与仿真单元状态 7462 帧 × 48 单元持续不一致 0 次；t(1,8) 提示弹出、自动演示 3 s 后模拟操作员给出初值；单钉节拍非末颗平均 12.5 s、各工位末颗 12.3 s（已扣除收臂降柱）
+- 自检：编译 0 错误 0 警告；EditMode 116/116 通过；Generate All 后主场景 983 个物体（+DemoConsole / Hud，−NavOverlay / InspectionOverlay）；Main / Sandbox_UI Play 0 错误，警告为故障注入与条件 ✗ 的预期日志；已退出 Play 模式
+- 截图（Docs/Screenshots/M6/）：1_matrix_fullscreen（全屏矩阵：T5 多个 Running、t(5,7) 采集无效触发闪烁、t(1,8) “已触发”角标、C2～C8 逐条 ✓ / ✗，C5 ✗）；2_scene_monitor（演示台机位：两台显示器与大屏显示演示屏）；3_hud（HUD + 自动机位末端特写）；4_pose_prompt（t(1,8) 小地图点选提示，真实栅格地图 + AGV）
 - 遗留问题：
-  - 工位最后一颗的“单钉节拍”含收臂与降柱（约 40 s），叠加层平均节拍因此偏大
-  - C1～C12 判定结果只上报、不阻断流程；C4 / C8 的 ✗ 尚未逐颗定位原因（M6 演示屏显示时一并核对）
-  - 整机识别为教学简化：不做轮廓匹配，只在注入时失败；操作员初值仅写日志，不影响定位（导航用真值位姿）
-- 2026-10-19 用户验收通过。
-- 验收后修复（2026-10-19，用户发现）：返回充电位停在停车框外（实测纵向 −695 mm）。原因：`NavigationService.TryPlan` 在终点后方加引入点，AGV 从终点前方驶来时路径要越过终点再折返，终点段按“终点在车头方向的投影”判定到达，停在了引入点。修复：起点已在终点前方（沿目标朝向）时不加引入点，直接到终点后原地转向；`MissionRoutine` 记录停车误差，超出到点容差时报警告。复测停车误差纵向 −1.4 mm、横向 −7.7 mm、偏航 +0.30°；48/48 颗、检出 5/5、误报 0 不变；总用时 1478.0 s；EditMode 112/112。同区域换站（从工位 1 倒车后去工位 2 预停靠位姿）属同一几何情况，此前靠 T2 对接前的距离检查补导航掩盖，现已一并修复。截图 03_Charger_Parked.png
-- 下次第一步：执行 PromptTemplates.md 的 M6（演示界面），订阅 CellStateChangedEvent / ConditionCheckedEvent / LoopTakenEvent，HUD 故障按钮调用 `ConditionBus.Inject`
+  - 操作员初值写入 `MissionBlackboard.InitialPose` 并写日志，但导航仍用真值位姿（教学简化）；点选只给位置，朝向沿用当前估计
+  - C4 / C8 的个别 ✗ 仍未逐颗定位原因（演示屏已逐条显示数值）
+  - 验证菜单从 Sandbox_UI 切到 Main 时，编辑器失去焦点会让 delayCall 不执行，需要 eval `DemoUiVerifyRunner.LaunchMain()` 继续
+  - 第一次运行 Sandbox_UI 验证时 Console 出现 2 条字体资产 “Importer generated inconsistent result” 导入警告（推测为动态图集运行时新增 ✓ / ✗ 等字形），之后的运行是否复现未单独确认
+- 下次第一步：用户验收 M6；之后执行 M7（联调与观感打磨）
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:1.5、厂房 64 × 44 × 12 m、AGV 1.20 × 0.80 × 0.45 m 加升降柱（见 ADR-010）、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -87,7 +81,9 @@ M6 演示界面 —— 未开始（M5 SOP 流程编排已于 2026-10-19 验收�
 - [x] M5：返回充电位复用 M3 的“导航到充电位前方 1.5 m + 直线倒车”
 - [x] M5：T3～T6 执行器直接包 `RivetInspectionService` 的方法；ConditionBus 订阅 `ContactForceExceededEvent`（力超限）与判读为“无效”的记录（采集无效）；`InspectionRecordStore` 导出 CSV
 - [x] M5：“每 10 颗基准复测”改用 `RivetInspectionService.RemeasureDatumAsync`（从铆钉位姿经观察姿态复测）
-- [ ] M6：演示屏 A 扫复用 `AScanGraphElement`；沙盒去掉 M3 导航叠加面板，由 HUD 取代
+- [x] M6：演示屏 A 扫复用 `AScanGraphElement`；沙盒去掉 M3 导航叠加面板，由 HUD 取代
 - [ ] M7：演示区补光 / 主光方向调整，提升演示台近景亮度
-- [ ] M6：t(1,8) 改为小地图点选初值（M5 由模拟操作员 3 s 后给出）；演示屏逐条显示 ConditionCheckedEvent 的 ✓ / ✗
-- [ ] M6：单钉节拍统计排除工位末颗的收臂与降柱时间
+- [x] M6：t(1,8) 改为小地图点选初值（M5 由模拟操作员 3 s 后给出）；演示屏逐条显示 ConditionCheckedEvent 的 ✓ / ✗
+- [x] M6：单钉节拍统计排除工位末颗的收臂与降柱时间
+- [ ] M7：演示台机位（CamAnchor_4）更近、显示器画面更易读；小地图 AGV 标记放大
+- [ ] v2：t(1,8) 点选支持拖拽给朝向，并让初值参与定位（目前只写黑板与日志）

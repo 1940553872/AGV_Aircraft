@@ -38,6 +38,15 @@ namespace RivetSim.Editor.Tools
         /// <summary>M4 检测叠加信息 UXML。</summary>
         public const string InspectionOverlayUxml = ProjectRoot + "/UI/UI_InspectionOverlay.uxml";
 
+        /// <summary>M6 演示屏 UXML。</summary>
+        public const string DemoConsoleUxml = ProjectRoot + "/UI/UI_DemoConsole.uxml";
+
+        /// <summary>M6 HUD UXML。</summary>
+        public const string HudUxml = ProjectRoot + "/UI/UI_Hud.uxml";
+
+        /// <summary>界面主题配置。</summary>
+        public const string UiThemeAsset = ConfigFolder + "/CFG_UiTheme.asset";
+
         /// <summary>生成网格目录。</summary>
         public const string GeneratedModelsFolder = ProjectRoot + "/Art/Models/Generated";
 

@@ -1,0 +1,55 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/UI/UI_Hud.uss" />
+    <ui:VisualElement name="hud-root" class="hud-root" picking-mode="Ignore">
+        <ui:VisualElement name="hud-main" class="hud-main" picking-mode="Ignore">
+            <ui:VisualElement name="hud-top" class="hud-top" picking-mode="Ignore">
+                <ui:VisualElement class="hud-panel hud-group" picking-mode="Ignore">
+                    <ui:Label class="hud-group-title" text="模式" picking-mode="Ignore" />
+                    <ui:Button name="hud-mode-auto" class="hud-btn" text="自动" />
+                    <ui:Button name="hud-mode-step" class="hud-btn" text="分步" />
+                    <ui:Button name="hud-mode-manual" class="hud-btn" text="遥控" />
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-panel hud-group" picking-mode="Ignore">
+                    <ui:Label class="hud-group-title" text="倍速" picking-mode="Ignore" />
+                    <ui:VisualElement name="hud-speeds" class="hud-row" picking-mode="Ignore" />
+                    <ui:Button name="hud-pause" class="hud-btn hud-btn--wide" text="暂停" />
+                    <ui:Button name="hud-next" class="hud-btn hud-btn--wide" text="下一步" />
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-panel hud-group hud-status" picking-mode="Ignore">
+                    <ui:Label name="hud-time" class="hud-time" text="00:00:00" picking-mode="Ignore" />
+                    <ui:Label name="hud-phase" class="hud-phase" text="—" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-spacer" picking-mode="Ignore" />
+                <ui:VisualElement class="hud-panel hud-group" picking-mode="Ignore">
+                    <ui:Label class="hud-group-title" text="机位" picking-mode="Ignore" />
+                    <ui:Button name="hud-cam-1" class="hud-btn" text="1 总览" />
+                    <ui:Button name="hud-cam-2" class="hud-btn" text="2 跟随" />
+                    <ui:Button name="hud-cam-3" class="hud-btn" text="3 特写" />
+                    <ui:Button name="hud-cam-4" class="hud-btn" text="4 演示台" />
+                    <ui:Button name="hud-cam-auto" class="hud-btn" text="0 自动" />
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-panel hud-group" picking-mode="Ignore">
+                    <ui:Button name="hud-vis" class="hud-btn" text="V 可视化" />
+                    <ui:Button name="hud-fullscreen" class="hud-btn" text="Tab 矩阵全屏" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="hud-faults" class="hud-panel hud-faults" picking-mode="Ignore">
+                <ui:Label class="hud-group-title hud-faults-title" text="故障注入（一次性）" picking-mode="Ignore" />
+                <ui:Button name="hud-fault-recognition" class="hud-btn hud-btn--fault" text="F5 识别失败" />
+                <ui:Button name="hud-fault-force" class="hud-btn hud-btn--fault" text="F6 力超限" />
+                <ui:Button name="hud-fault-acq" class="hud-btn hud-btn--fault" text="F7 采集无效" />
+                <ui:Label name="hud-fault-status" class="hud-fault-status" text="" picking-mode="Ignore" />
+            </ui:VisualElement>
+            <ui:Label name="hud-hints" class="hud-hints" text="1～4 机位 · 0 自动机位 · Tab 矩阵全屏 · P 暂停 · N 下一步 · F5 / F6 / F7 故障注入 · V 可视化 · 空格急停 · WASD 遥控（遥控模式）" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:Label name="hud-credit" class="hud-credit" text="“Airbus A320-200” by Dlourine (https://sketchfab.com/fDlruosne), licensed under CC BY 4.0, scaled and simplified for this simulation." picking-mode="Ignore" />
+        <ui:VisualElement name="hud-pose-scrim" class="hud-pose-scrim">
+            <ui:VisualElement name="hud-pose" class="hud-pose">
+                <ui:Label class="hud-pose-title" text="t(1,8) 整机识别失败 · 请给出 AGV 初值" />
+                <ui:Label class="hud-pose-text" text="在小地图上点击 AGV 的实际位置（朝向沿用当前估计，教学简化模型）。点选后 S1 按初值重新定位并继续全局导航。" />
+                <ui:VisualElement name="hud-pose-map" class="hud-pose-map" />
+                <ui:Label name="hud-pose-countdown" class="hud-pose-countdown" text="" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

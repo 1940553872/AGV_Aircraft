@@ -32,3 +32,20 @@ MonoBehaviour:
   screenResolutionPx: {x: 1920, y: 1080}
   matrixWidthRatio: 0.62
   logVisibleCount: 6
+  runningBreathPeriodS: 1.6
+  runningBreathMinAlpha: 0.45
+  runningProgressPeriodS: 1.5
+  triggeredFlashCount: 2
+  triggeredFlashDurationS: 1.2
+  loopHighlightS: 3
+  dashPatternPx: {x: 8, y: 5}
+  miniMapRefreshIntervalS: 0.5
+  miniMapRepaintThresholdPx: 0.5
+  cameraBlendS: 0.8
+  demoStationHoldS: 2
+  demoStationOnPresetChangeOnly: 1
+  closeupDistanceM: 1.4
+  closeupHeightM: 0.5
+  closeupYawOffsetDeg: 35
+  followLookHeightM: 0.6
+  phaseCameraPresets: 020000000200000003000000030000000300000003000000

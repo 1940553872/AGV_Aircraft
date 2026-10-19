@@ -8,7 +8,7 @@ using UnityEngine;
 namespace RivetSim.Simulation.Mission.Executors
 {
     /// <summary>
-    /// S8 数据执行器（data.*）：操作员初值（t(1,8)，M5 由模拟操作员给出）、记录轨迹、保存注册 / 图像位姿 / 超声结果、提交记录。
+    /// S8 数据执行器（data.*）：操作员初值（t(1,8)，M6 由操作员在小地图点选，自动演示超时后由模拟操作员给出）、记录轨迹、保存注册 / 图像位姿 / 超声结果、提交记录。
     /// </summary>
     public static class DataExecutors
     {
@@ -31,16 +31,38 @@ namespace RivetSim.Simulation.Mission.Executors
                 Rivet rivet = s.Rivet(a.Cursor);
                 InspectionRecord r = s.Board.CommittedRecord;
                 if (r == null) return ExecutorResult.Skip("本颗没有记录");
-                r.CycleTimeS = (float)(s.TimeS() - s.Board.RivetStartS);
+                r.CycleTimeS = s.Board.RivetCycleTimeS(s.TimeS());
                 return ExecutorResult.Done($"{rivet.RivetId} 记录已提交（{RivetInspectionService.Label(r.Verdict)}，单钉节拍 {r.CycleTimeS:0.0} s）");
             });
         }
 
-        // 模拟操作员（M6 改为小地图点选）：等待后给出真值位姿 + 小噪声。
+        // 操作员初值（M6）：打开通道等待小地图点选；自动演示时超时由模拟操作员给出真值位姿 + 小噪声。
         private static async Awaitable<ExecutorResult> ManualInitialPoseAsync(MissionServices s, CancellationToken ct)
         {
-            SimLog.Info(LogCategory.Mission, $"[模拟操作员] 请在小地图上点选 AGV 初值……（{s.Settings.simulatedOperatorDelayS:0} s 后自动给出）");
-            await s.WaitSimAsync(s.Settings.simulatedOperatorDelayS, ct);
+            OperatorPoseChannel channel = s.OperatorPose;
+            float delayS = s.Settings.simulatedOperatorDelayS;
+            SimLog.Info(LogCategory.Mission, channel.AutoProvide
+                ? $"[操作员] 请在小地图上点选 AGV 初值……（{delayS:0} s 内未点选则由模拟操作员给出）"
+                : "[操作员] 请在小地图上点选 AGV 初值……");
+            channel.Open(s.TimeS(), delayS);
+            try
+            {
+                await s.WaitUntilAsync(() => channel.IsResolved(s.TimeS()), ct);
+                if (channel.TryTake(out PlanarPose picked))
+                {
+                    PlanarPose actual = s.Chassis.Pose;
+                    s.Board.InitialPose = picked;
+                    s.Board.InitialPoseProvided = true;
+                    string pickedText = $"初值 ({picked.positionM.x:0.00}, {picked.positionM.y:0.00}) m、{picked.yawDeg:0.0}°（小地图点选），与真值偏差 " +
+                                        $"{(picked.positionM - actual.positionM).magnitude * 1000f:0} mm / {Mathf.DeltaAngle(actual.yawDeg, picked.yawDeg):0.0}°";
+                    SimLog.Info(LogCategory.Mission, $"[操作员] {pickedText}");
+                    return ExecutorResult.Done(pickedText);
+                }
+            }
+            finally
+            {
+                channel.Close();
+            }
             PlanarPose truth = s.Chassis.Pose;
             var noise = new Vector2(Gaussian(s.Random), Gaussian(s.Random)) * s.Settings.simulatedOperatorPositionNoiseM;
             var pose = new PlanarPose(truth.positionM + noise, truth.yawDeg + Gaussian(s.Random) * s.Settings.simulatedOperatorYawNoiseDeg);
