@@ -86,3 +86,12 @@ Architecture §4 规定 `Robot` 根节点在运行时生成 AGV。M1 为了布�
 - 教学简化模型参数（用户确认，写入 CFG_Arm / CFG_Inspection）：见 Architecture §6.1。实现说明：判读用的包络为整流后一周期滑动平均 × π/2，对 σ ≈ 0.06 µs 的窄脉冲约为峰值的 90%（如一次底面波 0.8 显示为 71%～74%），阈值按满屏高度比例直接比较；闸门 B 只认包络的局部峰，避免把底面回波前沿判为缺陷。接触力逐子步（0.01 s、5 mm/s）判定，停止时 10.0～10.9 N（直线跟踪的残余误差使个别颗超出一步）。
 - 场景：沙盒用 `FuselageSectionBuilder` 从 A320 机身外壳截取主起落架后 2.6～7.1 m 的整圈三角形（5,868 个），保存为 Art/Models/Generated/A320_FuselageSection.asset 与 PF_FuselageSection，按整机根节点位姿摆放；`RivetZoneGenerator.Build(work, aircraft, 工位过滤)` 只生成 R1-S1 / R2-S1，铆钉与真值缺陷与主场景一致。M3 导航演示保留但停用，禁行区改由机身段栅格化；默认入口 `SandboxInspectionDemo`（AGV 已在 R1-S1 停靠位）。主场景在 M3 演示的 R1-S1 停靠后执行单工位检测，并增加联锁演示 2（机械臂离开运输姿态时解锁被拒绝）。
 - 结构：M3 的 `NavigationRuntime` 改名为 `RobotRuntime`（加机械臂、接触力、检测服务，子步顺序 导航 → 底盘 → 升降柱 → 机械臂 → 激光）；新增 Simulation/Inspection 目录与 Presentation/UI 目录（命名空间 RivetSim.Simulation.Inspection / RivetSim.Presentation.UI，程序集不变）。CFG_Agv 新增 `transportHeightMaxM`（§6.1 已有的 1.35 m，用于校核）。
+
+## ADR-017 M8 v1.1 小更新：倍速保护、副屏、机位防遮挡、随机故障、矩阵文字（2026-10-19）
+- 模板第 1～10 项（无第 8 项，按编号笔误处理）及计划待决问题均按默认方案执行（用户确认）。
+- 倍速 ×8：仿真仍按 0.01 s 固定子步推进，倍速只改每帧子步数；风险只在帧率，由 `SpeedGuard` 按窗口统计帧率，低于 `CFG_SimSettings.speedGuardMinFps` 自动降到 ×4 并在 HUD 提示。
+- 右屏“检测结果与设备状态”与左屏复用同一 UI_DemoConsole.uxml（第二页 dc-status-page），独立 RenderTexture；大屏切换采用替换屏幕材质，不新建第二套 UI。
+- 电量与通讯延迟为显示用的教学简化模型 `TeachingPowerCommModel`（参数在 CFG_Agv），不属于 CLAUDE.md 所说 v1 不做的“电源 / 通讯链路建模”，不影响流程。
+- 故障改为 `RandomFaultScheduler` 按种子自动注入（每类每轮一次），删除 HUD 故障面板与 F5～F7；`ConditionBus.Inject` 保留为内部接口。
+- 任务矩阵显示文字按用户提供的 M8_label_update.json 替换（用户授权修改 label），原文保留在 `labelOriginal` / `nameOriginal`；润色 explain 11 处，清单见 Docs/Reference/SOP_TaskMatrix_v1.md。
+- 场景提亮只改 CFG 与材质参数（前后对照见 Docs/Reports/M8.md §8）；演示屏材质基础色按 2^−EV 抵消曝光补偿，保证屏幕文字亮度不变。

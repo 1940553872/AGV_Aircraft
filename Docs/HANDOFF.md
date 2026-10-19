@@ -1,57 +1,56 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，M7 验收通过，v1 交付（main = 2981c10 + 本次文档提交）。下一个：独立程序构建（需单独指令）或 v2。
+更新：2026-10-19，M8 v1.1 小更新验收通过（main = 6430569 + 本次文档提交）。下一个：独立程序构建（需单独指令）或 v2。
 
 ## 现有接口（直接调用，不要重写）
 - RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController（`Rig.Tcp`）、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`。
 - MissionRoutine：建图 → `MissionOrchestrator.RunAsync` → 返回充电位 → CSV。属性 `Conditions`、`Orchestrator`（`Matrix` / `Cursor`）、`OperatorPose`、`Trace`、`Evaluator`、`Registry`。
-- 事件（Core/Mission）：`CellStateChangedEvent`、`ConditionCheckedEvent`、`PhaseEnteredEvent`、`LoopTakenEvent`；Simulation/Inspection：`RivetInspectedEvent`。演示界面只订阅这些事件。
-- 故障注入：`ConditionBus.Inject(FaultKind)`（HUD 三个按钮与 F5 / F6 / F7 共用），`FaultInjected` 事件。
-- t(1,8)：`OperatorPoseChannel`（`MissionServices.OperatorPose`）：执行器 `Open` → 界面 `Submit(PlanarPose)` 或 `AutoProvide` 超时由模拟操作员给出 → 写 `MissionBlackboard.InitialPose`。
-- 单钉节拍：`MissionBlackboard.RivetCycleTimeS(now)` = 本颗用时 − `CycleExcludedS`（工位末颗收臂与降柱）。
+- 事件（Core/Mission）：`CellStateChangedEvent`、`ConditionCheckedEvent`、`PhaseEnteredEvent`、`LoopTakenEvent`；Simulation/Inspection：`RivetInspectedEvent`。演示界面只订阅这些事件与只读接口。
+- 故障：`ConditionBus.Inject(FaultKind)` 只作内部接口（验证工具用，HUD 按钮与 F5～F7 已删）；`ConditionBus.AnomalyRaised(FaultKind, reason)` → HUD 3 s 提示“系统检测到异常：…，正在自动处理”。
+- `RandomFaultScheduler.CreatePlan(IMissionPlan, seed, probability)`（Simulation/Mission）：每类故障每轮一次，种子 = `randomSeed + randomFaultSeedOffset`（CFG_SimSettings：`randomFaultsEnabled` / `randomFaultProbability` / `randomFaultSeedOffset`）；AppBootstrap `ScheduleRandomFaults()` 调用。
+- t(1,8)：`OperatorPoseChannel`：`Open` → `Submit(PlanarPose)` 或 `AutoProvide` 超时由模拟操作员给出（Auto 模式自动给出）→ `MissionBlackboard.InitialPose`。
+- 单钉节拍：`MissionBlackboard.RivetCycleTimeS(now)` = 本颗用时 − `CycleExcludedS`。
+- 倍速：`SimClock.SpeedOptions` 来自 `CFG_SimSettings.speedOptions`（0.5 / 1 / 2 / 4 / 8），HUD 下拉框；`SpeedGuard(clock, settings).Tick(realDt, substeps, fastForward)` 按窗口统计帧率，×8 下低于 `speedGuardMinFps` 降到 ×4，`Triggered` 事件给 HUD 提示。
+- 设备状态：`IDeviceStatusSource`（Presentation/UI：位姿、速度、升降柱、机械臂状态、联锁、电量、通讯延迟）← `RuntimeDeviceStatusSource`；电量 / 延迟来自 `TeachingPowerCommModel`（Simulation/Robot，教学简化模型，参数在 CFG_Agv）。
+- 机位防遮挡：`IRivetFocusSource.TryGetFocus(out point, out normal)` ← `MissionRivetFocusSource`；CameraRig 从 T3 起按铆钉外法向取景（同高、±35° 等候选角），每 0.2 s（实际时间）SphereCast + 车体 / 机械臂有向包围盒检查，被挡切换并平滑过渡。
+- 间隙：`VehicleClearanceMeter(vehicleRoot, excludeRoot, layerMask, searchMaxM).Measure(out nearest)`（车体包围盒表面采样到机身）；机械臂仍用 `ArmClearance`。
 
-## M6 演示界面（Presentation）
-- `DemoConsoleView`（UI_DemoConsole.uxml/.uss）：顶栏、6×8 矩阵（`TaskCellElement`，状态 USS 类 `cell--<state>`）、`LoopArrowElement`、图例、阶段卡、执行情况说明 + 条件行、`MiniMapElement`、A 扫、底栏日志。
-  平时用 `UI_PanelSettings_Console`（targetTexture = T_DemoConsoleRT，屏幕输入被屏蔽）；`SetFullscreen(true)` 换到 `UI_PanelSettings_ConsoleFullscreen`，可点单元弹说明卡（`ShowDetail`）。
-  事件处理只改模型与脏标记，LateUpdate 刷新；空闲帧几乎不分配。
-- `HudView`（UI_Hud.uxml/.uss）：模式、倍速（`SimClock.SpeedOptions`）、暂停、下一步、故障按钮、机位、可视化、全屏、t(1,8) 点选提示（`ShowPosePrompt` / `PosePicked`）、致谢角标（全屏时隐藏）。只发事件。
-- `DemoUiHub`（App）：把 HUD / `DemoHotkeys` 连到 `DemoModeController`、`ConditionBus`、`CameraRig`、`VisualizationToggleInput`、演示屏全屏与初值通道。`NextHandler` 可替换（沙盒 = 推进假数据）。
-- `DemoModeController`：Auto / Step（PhaseEntered 时暂停时钟，Next 继续）/ Manual（仅工序未运行时）；实现 `IDemoStatusSource`；`BindOperatorPose` 设置 `AutoProvide = (Mode == Auto)`。
-- `CameraRig`（主相机）：CamAnchor_1～4；自动机位按 `CFG_UiTheme.phaseCameraPresets`，机位变化时先显示演示台 `demoStationHoldS`（实际时间）。
-- 小地图源：`RuntimeMiniMapSource`（栅格贴图按 0.5 s 刷新、PathPlannedEvent、底盘位姿）；沙盒 `FakeMiniMapSource`。
-- 入口：`AppBootstrap.SetUpDemoUi()`（工序开始时）；`AppBootstrap.Active` / `Rig` / `Hub` 供验证工具读取。Sandbox_UI：`SandboxUiBootstrap` + `FakeMissionFeed`（39 步，覆盖 8 种状态与两种回路）。
+## 演示界面（Presentation）
+- `DemoConsoleView`（UI_DemoConsole.uxml/.uss）：顶栏、6×8 矩阵（`TaskCellElement`，USS 类 `cell--<state>`）、`LoopArrowElement`、阶段卡、执行说明 + 条件行、`MiniMapElement`、A 扫、日志；第二页 dc-status-page = `InspectionStatusView`（不合格铆钉列表与统计 + AGV 状态），`ToggleView()` 切换。
+- RT：左屏 / 大屏 T_DemoConsoleRT（M_DemoScreen，UI_PanelSettings_Console）；右屏 T_DemoStatusRT（M_DemoScreenStatus，UI_PanelSettings_ConsoleStatus）；全屏 UI_PanelSettings_ConsoleFullscreen（可点单元弹说明卡）。
+- `DemoUiHub`：HUD / `DemoHotkeys` → `DemoModeController`、`CameraRig`、可视化、全屏、初值通道；B 键或 HUD 按钮：全屏时切页，否则换大屏材质（`IsBigScreenStatus`、`BigScreenViewHandler`）。
+- `HudView`：模式、倍速下拉、暂停、下一步、机位、可视化、全屏、视图切换、t(1,8) 点选提示、异常提示、致谢角标。
+- `DemoModeController`：Auto / Step / Manual；`CameraRig`：CamAnchor_1～4，自动机位按 `CFG_UiTheme.phaseCameraPresets`。
+- 小地图源：`RuntimeMiniMapSource`（栅格 0.5 s 刷新、路径、底盘位姿、禁行区、工位、充电位、铆钉结果点）；沙盒 `FakeMiniMapSource`。颜色在 CFG_UiTheme（未知 #0B121B、空闲 #2C4663）。
+- 入口：`AppBootstrap.SetUpDemoUi()`；`AppBootstrap.Active` / `Rig` / `Hub` 供验证工具读取。Sandbox_UI：`SandboxUiBootstrap` + `FakeMissionFeed`。
 
-## M7 观感与验证
-- 画面参数：`CFG_RenderLook`（`RenderLookConfig`）→ `SceneLightingSetup`（Sun、环境光、VP_Main、PC_RPAsset 阴影、`DemoLights` 补光）；改完重跑 Generate Main。
-- CamAnchor_4 位姿、小地图 AGV 标记：`CFG_UiTheme.demoCameraOffsetM / demoCameraLookOffsetM / miniMapAgvMarkerSizePx`。大屏 5.70 × 3.21 m（CFG_SceneLayout）。
-- 默认倍速只来自 `CFG_SimSettings.defaultSpeedMultiplier`（2 倍）；主场景 AppBootstrap 不再有倍速字段。
-- GC 探针：`Core.Diagnostics.GcProbe`（`Enabled` 默认 false；`Begin/End(ProbeModule)` 不可嵌套）。已打点：Lidar2D.Scan、LidarPointCloudView、OccupancyGridOverlay、RuntimeMiniMapSource.Refresh、MiniMapElement 绘制。
-- 验证：`RivetSim/Verify/Run M7 Demo`（`M7DemoVerifyRunner`）：自动演示（布局检查 → 4 个真实倍速观察窗口 + 截图，其余快进）→ 分步演示（快进，自动按“下一步”）→ Docs/Reports/M7.md（保留标记 `<!-- 以下为人工整理…-->` 之后的内容）。约 2.5 min。
-- 布局检查共用 `UiLayoutCheck`（Begin / Check / End）。
+## 观感参数
+- `CFG_RenderLook` → `SceneLightingSetup`（Sun 1.9、环境光、曝光 +0.3 EV、Bloom 阈值 1.3、演示台补光 22）；墙面 M_Wall 贴图定标到 `wallTargetColor` #E0E3E8，屋顶内侧 M_Roof_Inner #D9DDE2；演示屏材质基础色 ≈ 0.81 抵消曝光。改完重跑 Generate Main。
+- 演示台：`CFG_SceneLayout.monitorScale` 1.4、桌面 2.00 × 0.80 × 0.80 m、屏幕中心 1.22 m；桌子 Poly Haven Oak Veneer 01（CC0）。
+- `RivetSim/Config/Apply M8 Values`（`M8ConfigMigration`）把 M8 参数写入现有 CFG 资产（Create Default Configs 只补缺不覆盖）。
+- GC 探针 `Core.Diagnostics.GcProbe`（默认关闭）。
 
-## 编辑器
-- 生成：`RivetSim/Generate/Demo UI Assets`（RT、M_DemoScreen、3 份 PanelSettings）；DemoStation 屏幕用 M_DemoScreen；MainSceneBuilder 末尾 `DemoUiGenerator.BuildMain`；SandboxSceneBuilder 的 Sandbox_UI 调 `BuildSandbox`。
-- 验证：`RivetSim/Verify/Run Demo UI`（`DemoUiVerifyRunner`）→ Docs/Reports/M6.md。阶段写 SessionState `RivetSim.M6Verify.Stage`：shot_matrix → to_main → main → shot_monitor / shot_hud / shot_pose；截图后 eval `DemoUiVerifyRunner.Resume()`。
-  编辑器失去焦点时 to_main 不会自动继续：eval `DemoUiVerifyRunner.LaunchMain()`。
-- M5 验证 `RivetSim/Verify/Run Mission (Fast)` 仍可用。
+## 编辑器与验证
+- 生成：`RivetSim/Generate/Demo UI Assets`（RT、屏幕材质、4 份 PanelSettings）；MainSceneBuilder 末尾 `DemoUiGenerator.BuildMain`。
+- 验证：`RivetSim/Verify/Run M8`（`M8VerifyRunner`，快进完整流程 + 随机故障 + ×8 窗口 + 强制降速检查 + 间隙 + 布局 + 遮挡 + 截图）→ Docs/Reports/M8.md，约 2 min。M7 `Run M7 Demo`、M6 `Run Demo UI`、M5 `Run Mission (Fast)` 仍可用。
+- 布局检查共用 `UiLayoutCheck`（Begin / Check / End）。ThirdPartyImporter 跳过内容相同的文件（忽略换行差异）。
 
 ## 关键约定
-- 轴向与布局：ADR-008；模型机 1:1.5、厂房、升降柱与联锁：ADR-010；其余见 ADR-012、ADR-015、ADR-016。
-- 参考时长（仿真，种子 42）：建图 316.5 s；矩阵流程约 1067～1076 s；返回 85.0 s；合计约 1470 s。
-- 日志格式 `[T5][S4] t(5,4) 接触采集 C2～C8 开始 / 完成`；计数触发记 Info，故障 / 事件触发记 Warning。
-- SimLog 订阅在进入 Play 时被清空，编辑器工具须在流程开始后订阅；沙盒 `SimLog.SimTimeProvider` 由 SandboxUiBootstrap 设置。
-- 主场景物体数 986（Generate All 后，M7）。
-- USS 颜色按 Architecture §7 写死在 UI_*.uss；Painter2D（虚线、回路、小地图）用 CFG_UiTheme 颜色。
-- 子元素绘制在父元素内容之上：叠加 Painter2D 内容要放在独立子元素（见 MiniMapElement）。
-- 快速流程下编辑器帧率很高，相机或动画等待要按实际时间，不按帧数。
-- 任务矩阵 label 不改；t(6,1) 仅工位最后一颗执行；C1～C12 只上报不阻断。
+- 轴向与布局 ADR-008；模型机 1:1.5、厂房、升降柱与联锁 ADR-010；其余 ADR-012、015、016、017。
+- 参考时长（仿真，种子 42）：建图 316.3 s；矩阵流程约 1074 s（含 3 次随机故障）；返回 85.0 s；合计约 1476 s。
+- 日志格式 `[T5][S4] t(5,4) … 开始 / 完成`；故障 / 事件与条件 ✗ 记 Warning（Console 警告属正常）。
+- SimLog 订阅在进入 Play 时被清空，编辑器工具须在流程开始后订阅。
+- 主场景物体数 987（Generate All 后，M8）；EditMode 测试 125 个。
+- 矩阵显示文字为 M8 优化版（`label` / `name`），参考图原文在 `labelOriginal` / `nameOriginal`（Docs/Reference/SOP_TaskMatrix_v1.md）；label 再改须用户同意。
+- USS 颜色写死在 UI_*.uss；Painter2D 用 CFG_UiTheme 颜色；叠加绘制放独立子元素。
+- 快速流程下帧率很高，相机或动画等待按实际时间，不按帧数。
 
 ## 遗留问题
-- 操作员初值只写黑板与日志，导航仍用真值位姿；点选只给位置（朝向沿用当前估计）。
-- C4 / C8 各有个别 ✗ 未逐颗定位原因。
-- 第一次 Sandbox_UI 运行出现 2 条字体资产导入警告（动态图集新增字形），是否复现未确认。
-- Editor 中各观察窗口都有单帧约 19 FPS 的偶发尖峰（平均 366 FPS），未在独立程序中复测。
+- 操作员初值只写黑板与日志，导航仍用真值位姿；点选只给位置。
+- C4 / C6 / C8 有个别 ✗（M8 583 次检查中 4 次），未逐颗定位原因。
+- 机械臂末端连杆到机身最小 148 mm、探头末端 73 mm；v1 只检查不规划。
+- Editor 中偶发单帧尖峰；×8 平均 226 FPS 未在独立程序复测；未做独立程序构建。
 
 ## 下一步
-- v1 已验收。可选：Windows 独立程序构建到 Builds/v1/ 并在目标机复测帧率（模板 M7 第 5 项，需用户单独指令）。
-- v2 候选（详见 PROGRESS.md “v2 建议”）：初值参与定位与点选朝向、C4 / C8 逐颗定位、§6.1 参数按选型替换、§9 后续版本内容。
+- 可选：Windows 独立程序构建到 Builds/v1.1/ 并在目标机复测帧率与 ×8 倍速保护（需用户单独指令）。
+- v2 候选（PROGRESS.md “v2 建议”）：初值参与定位与点选朝向、C4 / C8 逐颗定位、§6.1 参数按选型替换、演示屏 RT 提到 2560×1440、§9 后续内容。
