@@ -1,6 +1,6 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，M5 实现完成、待用户验收。下一个：M6 演示界面。
+更新：2026-10-19，M5 验收通过（main = cf617c2 + 本次文档提交）。下一个：M6 演示界面。
 
 ## 现有接口（执行器直接调用，不要重写）
 - RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`（Verify 用）。
@@ -31,5 +31,4 @@
 - 识别失败为教学简化，操作员初值只写日志。
 
 ## 下一步
-- 用户验收 M5（截图 Docs/Screenshots/M5/01、02 与 Docs/Reports/M5.md）。
 - M6：演示界面订阅上述事件；t(1,8) 改为小地图点选；HUD 故障按钮。
