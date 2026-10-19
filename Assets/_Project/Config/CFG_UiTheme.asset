@@ -41,6 +41,7 @@ MonoBehaviour:
   dashPatternPx: {x: 8, y: 5}
   miniMapRefreshIntervalS: 0.5
   miniMapRepaintThresholdPx: 0.5
+  miniMapAgvMarkerSizePx: {x: 22, y: 14}
   cameraBlendS: 0.8
   demoStationHoldS: 2
   demoStationOnPresetChangeOnly: 1
@@ -48,4 +49,6 @@ MonoBehaviour:
   closeupHeightM: 0.5
   closeupYawOffsetDeg: 35
   followLookHeightM: 0.6
+  demoCameraOffsetM: {x: 0.5, y: 1.7, z: 2.6}
+  demoCameraLookOffsetM: {x: 0, y: 2.2, z: -3.3}
   phaseCameraPresets: 020000000200000003000000030000000300000003000000

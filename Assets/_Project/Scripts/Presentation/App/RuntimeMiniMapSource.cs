@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using RivetSim.Core.Config;
+using RivetSim.Core.Diagnostics;
 using RivetSim.Core.Events;
 using RivetSim.Presentation.UI;
 using RivetSim.Simulation.Navigation;
 using RivetSim.Simulation.Robot;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RivetSim.Presentation.App
@@ -21,7 +23,6 @@ namespace RivetSim.Presentation.App
 
         private readonly OccupancyGridMap _map;
         private readonly AgvController _chassis;
-        private readonly Color32[] _pixels;
         private readonly float _intervalS;
         private readonly IDisposable _subscription;
         private readonly List<Vector2> _path = new List<Vector2>();
@@ -50,7 +51,6 @@ namespace RivetSim.Presentation.App
             _chassis = chassis;
             _intervalS = refreshIntervalS;
             GridGeometry g = map.Geometry;
-            _pixels = new Color32[g.CellCount];
             GridTexture = new Texture2D(g.width, g.height, TextureFormat.RGBA32, false)
             {
                 name = "T_MiniMapRuntime",
@@ -69,13 +69,16 @@ namespace RivetSim.Presentation.App
             if (_sinceRefreshS < _intervalS || _map.Revision == _shownRevision) return;
             _sinceRefreshS = 0f;
             _shownRevision = _map.Revision;
-            for (int i = 0; i < _pixels.Length; i++)
+            GcProbe.Begin(ProbeModule.MiniMapSource);
+            // 直接写贴图像素缓冲（托管数组经 SetPixels32 / SetPixelData 上传会产生分配，M7 GC 探针实测）。
+            NativeArray<Color32> pixels = GridTexture.GetPixelData<Color32>(0);
+            for (int i = 0; i < pixels.Length; i++)
             {
                 OccupancyState s = _map.GetState(i);
-                _pixels[i] = s == OccupancyState.Occupied ? OccupiedColor : s == OccupancyState.Free ? FreeColor : UnknownColor;
+                pixels[i] = s == OccupancyState.Occupied ? OccupiedColor : s == OccupancyState.Free ? FreeColor : UnknownColor;
             }
-            GridTexture.SetPixels32(_pixels);
             GridTexture.Apply(false);
+            GcProbe.End(ProbeModule.MiniMapSource);
         }
 
         private void OnPath(PathPlannedEvent e)

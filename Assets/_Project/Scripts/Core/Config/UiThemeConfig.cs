@@ -103,6 +103,9 @@ namespace RivetSim.Core.Config
         [Tooltip("AGV 位姿变化超过该像素才重绘小地图叠加层，单位 px")]
         public float miniMapRepaintThresholdPx = 0.5f;
 
+        [Tooltip("小地图 AGV 标记尺寸（长 × 宽），单位 px（M7 放大）")]
+        public Vector2 miniMapAgvMarkerSizePx = new Vector2(22f, 14f);
+
         [Header("相机（M6）")]
         [Tooltip("机位切换平滑时长，单位 s（实际时间）")]
         public float cameraBlendS = 0.8f;
@@ -124,6 +127,12 @@ namespace RivetSim.Core.Config
 
         [Tooltip("跟随 AGV：注视点高于 AGV 原点的高度，单位 m")]
         public float followLookHeightM = 0.6f;
+
+        [Tooltip("CamAnchor_4 演示台机位：相机相对演示台位姿的位置（x 右、y 上、z 朝观众），单位 m（M7；大屏放大 3 倍后后移，使大屏与桌面显示器同时入画）")]
+        public Vector3 demoCameraOffsetM = new Vector3(0.5f, 1.7f, 2.6f);
+
+        [Tooltip("CamAnchor_4 演示台机位：注视点相对演示台位姿的位置，单位 m（对准大屏中部偏上）")]
+        public Vector3 demoCameraLookOffsetM = new Vector3(0f, 2.2f, -3.3f);
 
         [Tooltip("自动演示时各阶段（p1～p6 顺序）使用的机位编号：1 总览、2 跟随 AGV、3 末端特写、4 演示台")]
         public int[] phaseCameraPresets = { 2, 2, 3, 3, 3, 3 };

@@ -1,4 +1,5 @@
 using RivetSim.Core.Config;
+using RivetSim.Core.Diagnostics;
 using RivetSim.Simulation.Robot;
 using UnityEngine;
 
@@ -50,6 +51,13 @@ namespace RivetSim.Simulation.Navigation
 
         /// <summary>立即扫描一圈并写入地图。</summary>
         public void Scan()
+        {
+            GcProbe.Begin(ProbeModule.LidarScan);
+            ScanCore();
+            GcProbe.End(ProbeModule.LidarScan);
+        }
+
+        private void ScanCore()
         {
             PlanarPose pose = _chassis.Pose;
             Vector3 origin = pose.WorldPosition + pose.WorldRotation * config.lidarMount.positionM;

@@ -121,8 +121,8 @@ namespace RivetSim.Core.Config
         [Tooltip("是否放置大屏（可选）")]
         public bool bigScreenEnabled = true;
 
-        [Tooltip("大屏可视尺寸（宽 × 高），单位 m，约 86 英寸")]
-        public Vector2 bigScreenSizeM = new Vector2(1.90f, 1.07f);
+        [Tooltip("大屏可视尺寸（宽 × 高），单位 m（2026-10-19 用户要求由 86 英寸放大为 3 倍，约 258 英寸）")]
+        public Vector2 bigScreenSizeM = new Vector2(5.70f, 3.21f);
 
         [Tooltip("大屏底边离地高度，单位 m")]
         public float bigScreenBottomHeightM = 1.00f;

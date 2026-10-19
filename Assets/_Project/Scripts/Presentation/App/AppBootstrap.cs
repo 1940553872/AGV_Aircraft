@@ -57,9 +57,8 @@ namespace RivetSim.Presentation.App
         [SerializeField] private CameraRig cameraRig;
         [SerializeField] private VisualizationToggleInput visualizationToggle;
 
-        [Header("演示（倍速用于两种入口；目标工位仅用于 SubsystemDemo）")]
+        [Header("演示（倍速取 CFG_SimSettings.defaultSpeedMultiplier；目标工位仅用于 SubsystemDemo）")]
         [SerializeField, Tooltip("进入 Play 模式后自动运行演示")] private bool autoRunDemo = true;
-        [SerializeField, Tooltip("演示倍速（须在 CFG_SimSettings 的倍速列表内）")] private float demoSpeedMultiplier = 4f;
         [SerializeField, Tooltip("演示目标区域序号（从 0 起）")] private int demoRegionIndex;
         [SerializeField, Tooltip("演示目标工位序号（区域内，从 0 起）")] private int demoStationIndex;
 
@@ -153,7 +152,7 @@ namespace RivetSim.Presentation.App
             GridGeometry mapGeometry = GridGeometry.Covering(Vector2.zero, hall, navigationConfig.gridResolutionM);
             KeepOutMask keepOut = keepOutZone != null ? keepOutZone.ToMask() : null;
             _runtime = new RobotRuntime(simSettings, agvConfig, navigationConfig, armConfig, inspectionConfig, _chassis, _lift,
-                agv.GetComponentInChildren<ArmController>(), lidar, mapGeometry, keepOut, demoSpeedMultiplier, Time.fixedDeltaTime);
+                agv.GetComponentInChildren<ArmController>(), lidar, mapGeometry, keepOut, simSettings.defaultSpeedMultiplier, Time.fixedDeltaTime);
 
             // 序列化引用未赋值时是 Unity 的“假空”对象，须用 != null 判断，不能用 ?.。
             if (mapOverlay != null) mapOverlay.Initialize(_runtime.Map);

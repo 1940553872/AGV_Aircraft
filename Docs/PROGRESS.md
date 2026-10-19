@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-M7 联调与观感打磨 —— 未开始（M6 演示界面已于 2026-10-19 验收）
+**v1 交付**：M7 联调与观感打磨已完成，待用户验收（2026-10-19）。M0～M6 已验收
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -33,28 +33,35 @@ M7 联调与观感打磨 —— 未开始（M6 演示界面已于 2026-10-19 验
 
 ## 最近一次会话
 - 日期：2026-10-19
-- 完成：M6 演示界面（先在 Sandbox_UI 用假数据完成，再接入 Main）。已定决策 1～12 与计划待决问题 Q1～Q4 按默认执行（遥控仅在工序未运行时可切换；不新增 Presentation 测试；新参数放进 CFG_UiTheme；两台显示器与大屏共用一张 RT）。
-  - Simulation（已说明的接口改动）：`OperatorPoseChannel`（t(1,8) 打开通道等待小地图点选，`AutoProvide` 时超时由模拟操作员给出）挂在 `MissionServices.OperatorPose`；`MissionBlackboard.CycleExcludedS` / `RivetCycleTimeS`，`arm.retractHold` 把工位末颗的收臂与降柱时间计入扣除
-  - Core：`UiThemeConfig` 新增单元动效、小地图、相机参数（呼吸 1.6 s、Triggered 闪烁 2 次 / 1.2 s、回路高亮 3 s、小地图刷新 0.5 s、机位过渡 0.8 s、演示台停留 2 s 且仅在机位变化时、末端特写 1.4 m / 0.5 m / 35°、阶段机位 2,2,3,3,3,3）
-  - Presentation/UI：`DemoConsoleView`（UI_DemoConsole.uxml/.uss）、`TaskCellElement`、`DashedBorderElement`、`LoopArrowElement`、`MiniMapElement`、`HudView`（UI_Hud.uxml/.uss，含 t(1,8) 点选提示与致谢角标）、`IDemoStatusSource`、`IMiniMapSource`、`UiPerfProbe`
-  - Presentation/App：`DemoModeController`（自动 / 分步 / 遥控、倍速、分步按阶段暂停）、`DemoUiHub`（HUD / 快捷键 → 模式 / ConditionBus / CameraRig / 全屏 / 初值通道）、`RuntimeMiniMapSource`、`FakeMissionFeed` + `FakeMiniMapSource`、`SandboxUiBootstrap`；`AppBootstrap.SetUpDemoUi`；`MissionRoutine.OperatorPose`
-  - Presentation：`CameraControl/CameraRig`（CamAnchor_1～4；跟随 AGV 保持锚点 2 相对起始位姿的偏移；末端特写位于探头 AGV 一侧）；`Input/DemoHotkeys`（1～4、0、Tab、P、N）；`VisualizationToggleInput.Toggle`
-  - Editor：`DemoUiGenerator`（`RivetSim/Generate/Demo UI Assets`：T_DemoConsoleRT 1920×1080、M_DemoScreen、三份 PanelSettings；主场景 / Sandbox_UI 挂载）；DemoStation 屏幕改用 M_DemoScreen；Main 不再挂 NavOverlay / InspectionOverlay（类保留）；`DemoUiVerifyRunner`（`RivetSim/Verify/Run Demo UI`）
-  - Tests：`OperatorPoseChannelTests` 4 项（含单钉节拍扣除）
-- 结果（Docs/Reports/M6.md）：
-  - Sandbox_UI 假数据 39 步：8/8 种状态都显示过且样式核对 8/8 通过；回路“下一颗”“换站”均高亮；t(1,8) 小地图点选写回通道
-  - 1920×1080 与 2560×1440 下演示屏 391 个元素、HUD 40 个元素均无溢出（A 扫判读一行按设计省略号截断）
-  - 界面开销：空闲帧平均 0.03 次 GC 分配 / 帧（242 帧中 2 帧，时间标签每秒刷新）；事件处理平均 1.5～4.4 µs、最长 0.53 ms
-  - Main 快速流程（T1 识别失败 1 次）：完成，仿真 1468.6 s；演示屏与仿真单元状态 7462 帧 × 48 单元持续不一致 0 次；t(1,8) 提示弹出、自动演示 3 s 后模拟操作员给出初值；单钉节拍非末颗平均 12.5 s、各工位末颗 12.3 s（已扣除收臂降柱）
-- 自检：编译 0 错误 0 警告；EditMode 116/116 通过；Generate All 后主场景 983 个物体（+DemoConsole / Hud，−NavOverlay / InspectionOverlay）；Main / Sandbox_UI Play 0 错误，警告为故障注入与条件 ✗ 的预期日志；已退出 Play 模式
-- 截图（Docs/Screenshots/M6/）：1_matrix_fullscreen（全屏矩阵：T5 多个 Running、t(5,7) 采集无效触发闪烁、t(1,8) “已触发”角标、C2～C8 逐条 ✓ / ✗，C5 ✗）；2_scene_monitor（演示台机位：两台显示器与大屏显示演示屏）；3_hud（HUD + 自动机位末端特写）；4_pose_prompt（t(1,8) 小地图点选提示，真实栅格地图 + AGV）
-- 遗留问题：
-  - 操作员初值写入 `MissionBlackboard.InitialPose` 并写日志，但导航仍用真值位姿（教学简化）；点选只给位置，朝向沿用当前估计
-  - C4 / C8 的个别 ✗ 仍未逐颗定位原因（演示屏已逐条显示数值）
-  - 验证菜单从 Sandbox_UI 切到 Main 时，编辑器失去焦点会让 delayCall 不执行，需要 eval `DemoUiVerifyRunner.LaunchMain()` 继续
-  - 第一次运行 Sandbox_UI 验证时 Console 出现 2 条字体资产 “Importer generated inconsistent result” 导入警告（推测为动态图集运行时新增 ✓ / ✗ 等字形），之后的运行是否复现未单独确认
-- 2026-10-19 用户验收通过。
-- 下次第一步：执行 PromptTemplates.md 的 M7（联调与观感打磨）
+- 完成：M7 联调与观感打磨（v1 收尾）。已定决策 1～9 与计划待决问题 Q1～Q4 按默认执行；会话中用户追加：墙上大屏放大 3 倍
+  - Core：`RenderLookConfig`（CFG_RenderLook：主光 / 阴影 / 环境光 / 后处理 / 演示区补光）；`Diagnostics/GcProbe` + `ProbeModule`（模块级 GC.Alloc 计数，默认关闭）；SimSettings 默认倍速 2 倍并校验在 speedOptions 内；UiThemeConfig 新增小地图 AGV 标记尺寸、CamAnchor_4 位姿；SceneLayout 大屏 5.70 × 3.21 m
+  - Editor：`SceneLightingSetup` 改读配置并生成演示区补光、写 PC_RPAsset 阴影；`UiLayoutCheck`（从 M6 验证提取，M6 / M7 共用）；`GameViewResolution`；`M7DemoVerifyRunner`（`RivetSim/Verify/Run M7 Demo`）
+  - Presentation：删除 AppBootstrap 的场景字段 `demoSpeedMultiplier`（=4，曾覆盖配置）；小地图贴图改为直接写像素缓冲（消除每次刷新的分配）；分步模式下 t(1,8) 仍允许模拟操作员超时给初值；`DemoUiHub.Mode`
+  - Tests：`M7ConfigTests` 4 项
+- 结果（Docs/Reports/M7.md）：
+  - 自动演示（2 倍速）完成：仿真 1458.4 s，**真实 2 倍速约 12:09**；48 颗；完整时间线见报告 §1.1
+  - 分步演示完成：阶段进入 154 次 = 暂停 154 次，暂停期间仿真不推进；含 t(1,8) 识别失败，模拟操作员给出初值
+  - 1920×1080 / 2560×1440 下主场景演示屏 308 个元素、HUD 40 个元素无溢出
+  - 1080p 平均 366 FPS，1% 低帧 72～157 FPS（Editor 测量）；激光、栅格、小地图运行中 0 分配
+  - §6.1 仍为预估值的参数表见报告 §3
+- 自检：编译 0 错误 0 警告；EditMode 120/120 通过；Generate All 后主场景 986 个物体（+DemoLights 3 个）；Play 0 错误
+- 截图（Docs/Screenshots/M7/，1280×720）：M7_01_Overview（建图总览）、M7_02_FollowNav（跟随 AGV 导航）、M7_03_Closeup（末端特写接触采集）、M7_04_DemoStation（演示台与 3 倍大屏）
+- 下次第一步：等待 v1 验收；Windows 独立程序构建需用户单独指令（模板 M7 第 5 项）
+
+## v1 已知限制
+- 建图、A 扫、接触力、视觉均为教学简化模型；导航用真值位姿，无里程计漂移与扫描匹配。
+- t(1,8) 操作员初值只写黑板与日志，不参与定位；点选只给位置，朝向沿用当前估计。
+- C4 / C8 有个别 ✗（本次 576 次检查中 3 次），未逐颗定位原因；C1～C12 为固定示例文字与阈值，只上报不阻断。
+- 硬件与场地参数多为 §6.1 预估值（见 Docs/Reports/M7.md §3），未按实际选型标定。
+- 帧率在 Editor 中测得，单帧最低约 19 FPS 的偶发尖峰未在独立程序中复测；未做独立程序构建。
+- 第一次运行 Sandbox_UI 时出现过 2 条字体资产导入警告，之后未复现。
+
+## v2 建议
+- 操作员初值参与定位（作为扫描匹配初值），小地图点选支持拖拽给朝向。
+- 逐颗定位 C4 / C8 的 ✗：导出每颗的回波幅值与闸门读数，与真值缺陷对照，校准 A 扫模型。
+- Architecture §9：v2 硬件设计验证（底盘方案对比、质心与稳定裕度、电源与通讯链路）、本体驱动的任务矩阵生成与应急调度；v3 扫描匹配 SLAM、Hybrid A* / DWA、机械臂碰撞规避、更真实的 A 扫、ROS 2 桥接。
+- 按实际选型替换 §6.1 预估参数（AGV、雷达、相机、升降柱、探头与超声仪、实训场地）。
+- 独立程序构建与目标机性能复测；演示屏可选更高分辨率 RT 以配合大屏。
 
 ## 参数与流程约定（2026-10-17 确认）
 - 硬件与场地参数：v1 采用 Architecture §6.1 的预估值（模型机 A320 外形缩比 1:1.5、厂房 64 × 44 × 12 m、AGV 1.20 × 0.80 × 0.45 m 加升降柱（见 ADR-010）、UR5e、10 MHz 探头、接触力 10 N 等），后续按实际选型修改配置。
@@ -84,8 +91,9 @@ M7 联调与观感打磨 —— 未开始（M6 演示界面已于 2026-10-19 验
 - [x] M5：T3～T6 执行器直接包 `RivetInspectionService` 的方法；ConditionBus 订阅 `ContactForceExceededEvent`（力超限）与判读为“无效”的记录（采集无效）；`InspectionRecordStore` 导出 CSV
 - [x] M5：“每 10 颗基准复测”改用 `RivetInspectionService.RemeasureDatumAsync`（从铆钉位姿经观察姿态复测）
 - [x] M6：演示屏 A 扫复用 `AScanGraphElement`；沙盒去掉 M3 导航叠加面板，由 HUD 取代
-- [ ] M7：演示区补光 / 主光方向调整，提升演示台近景亮度
+- [x] M7：演示区补光 / 主光方向调整，提升演示台近景亮度（CFG_RenderLook）
 - [x] M6：t(1,8) 改为小地图点选初值（M5 由模拟操作员 3 s 后给出）；演示屏逐条显示 ConditionCheckedEvent 的 ✓ / ✗
 - [x] M6：单钉节拍统计排除工位末颗的收臂与降柱时间
-- [ ] M7：演示台机位（CamAnchor_4）更近、显示器画面更易读；小地图 AGV 标记放大
+- [x] M7：演示台机位（CamAnchor_4）更近、显示器画面更易读；小地图 AGV 标记放大（大屏放大 3 倍）
 - [ ] v2：t(1,8) 点选支持拖拽给朝向，并让初值参与定位（目前只写黑板与日志）
+- [ ] v2：演示屏 RenderTexture 提高到 2560×1440 或 4K，配合 258 英寸大屏

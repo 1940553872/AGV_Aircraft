@@ -1,3 +1,4 @@
+using RivetSim.Core.Config;
 using RivetSim.Editor.Tools;
 using UnityEditor;
 using UnityEngine;
@@ -8,43 +9,51 @@ namespace RivetSim.Editor.Generators
 {
     /// <summary>
     /// 场景灯光、环境光、后处理与相机的共用设置（Architecture §7 3D 观感：柔和阴影、ACES、轻微 Bloom 与 Vignette）。
+    /// 参数来自 CFG_RenderLook（M7），缺失时用配置类默认值。
     /// </summary>
     public static class SceneLightingSetup
     {
-        // 灯光与后处理外观参数。
-        private static readonly Vector3 SunEulerDeg = new Vector3(50f, -65f, 0f);
-        private const float SunIntensity = 1.6f;
-        private static readonly Color SunColor = new Color(1f, 0.97f, 0.92f);
-        private static readonly Color AmbientSky = new Color(0.74f, 0.79f, 0.85f);
-        private static readonly Color AmbientEquator = new Color(0.46f, 0.50f, 0.56f);
-        private static readonly Color AmbientGround = new Color(0.22f, 0.24f, 0.27f);
-        private static readonly Color CameraBackground = new Color(0.10f, 0.12f, 0.15f);
-        private const float BloomIntensity = 0.25f;
-        private const float BloomThreshold = 1.0f;
-        private const float VignetteIntensity = 0.22f;
-        private const float CameraFarClipM = 200f;
+        /// <summary>演示区补光节点名（幂等：随场景重建）。</summary>
+        public const string DemoLightsName = "DemoLights";
 
-        /// <summary>创建主方向光（柔和阴影）。</summary>
+        private static RenderLookConfig _defaults;
+
+        // 每次调用重新读取，场景重建时配置可能已重新加载。
+        private static RenderLookConfig Look
+        {
+            get
+            {
+                var look = AssetDatabase.LoadAssetAtPath<RenderLookConfig>(ProjectPaths.RenderLookAsset);
+                if (look != null) return look;
+                if (_defaults == null) _defaults = ScriptableObject.CreateInstance<RenderLookConfig>();
+                return _defaults;
+            }
+        }
+
+        /// <summary>创建主方向光（柔和阴影），并把阴影设置写入 PC_RPAsset。</summary>
         public static Light CreateSun(Transform parent)
         {
-            Transform t = GeneratorUtility.CreateNode("Sun", parent, Vector3.zero, Quaternion.Euler(SunEulerDeg));
+            RenderLookConfig look = Look;
+            Transform t = GeneratorUtility.CreateNode("Sun", parent, Vector3.zero, Quaternion.Euler(look.sunEulerDeg));
             var light = t.gameObject.AddComponent<Light>();
             light.type = LightType.Directional;
-            light.intensity = SunIntensity;
-            light.color = SunColor;
-            light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.85f;
+            light.intensity = look.sunIntensity;
+            light.color = look.sunColor;
+            light.shadows = look.softShadows ? LightShadows.Soft : LightShadows.Hard;
+            light.shadowStrength = look.sunShadowStrength;
+            ApplyShadowSettings(look);
             return light;
         }
 
         /// <summary>设置三色环境光，不使用天空盒。</summary>
         public static void ApplyAmbient()
         {
+            RenderLookConfig look = Look;
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = AmbientSky;
-            RenderSettings.ambientEquatorColor = AmbientEquator;
-            RenderSettings.ambientGroundColor = AmbientGround;
+            RenderSettings.ambientSkyColor = look.ambientSky;
+            RenderSettings.ambientEquatorColor = look.ambientEquator;
+            RenderSettings.ambientGroundColor = look.ambientGround;
             RenderSettings.fog = false;
         }
 
@@ -61,6 +70,7 @@ namespace RivetSim.Editor.Generators
         /// <summary>生成或重建 VP_Main（ACES 色调映射、轻微 Bloom、Vignette）。</summary>
         public static VolumeProfile EnsureVolumeProfile()
         {
+            RenderLookConfig look = Look;
             string path = ProjectPaths.MainVolumeProfile;
             var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(path);
             if (profile == null)
@@ -74,15 +84,47 @@ namespace RivetSim.Editor.Generators
             var tonemapping = AddComponent<Tonemapping>(profile);
             tonemapping.mode.Override(TonemappingMode.ACES);
             var bloom = AddComponent<Bloom>(profile);
-            bloom.intensity.Override(BloomIntensity);
-            bloom.threshold.Override(BloomThreshold);
+            bloom.intensity.Override(look.bloomIntensity);
+            bloom.threshold.Override(look.bloomThreshold);
+            bloom.scatter.Override(look.bloomScatter);
             var vignette = AddComponent<Vignette>(profile);
-            vignette.intensity.Override(VignetteIntensity);
-            vignette.smoothness.Override(0.4f);
+            vignette.intensity.Override(look.vignetteIntensity);
+            vignette.smoothness.Override(look.vignetteSmoothness);
 
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
             return profile;
+        }
+
+        /// <summary>
+        /// 演示区补光（M7）：演示台前上方一盏暖白聚光灯照亮桌面与显示器，后方一盏冷色点光照亮大屏与背景；均不投射阴影。
+        /// </summary>
+        public static void CreateDemoLights(Transform parent, PlanarPose deskPose)
+        {
+            RenderLookConfig look = Look;
+            Transform root = GeneratorUtility.CreateNode(DemoLightsName, parent, Vector3.zero);
+            Vector3 origin = deskPose.WorldPosition;
+            Quaternion rotation = deskPose.WorldRotation;
+
+            Vector3 keyPos = origin + rotation * look.demoKeyLightOffsetM;
+            Vector3 keyTarget = origin + rotation * look.demoKeyLightTargetM;
+            Transform keyNode = GeneratorUtility.CreateNode("DemoKeyLight", root, keyPos, Quaternion.LookRotation(keyTarget - keyPos, Vector3.up));
+            var key = keyNode.gameObject.AddComponent<Light>();
+            key.type = LightType.Spot;
+            key.intensity = look.demoKeyLightIntensity;
+            key.range = look.demoKeyLightRangeM;
+            key.spotAngle = look.demoKeyLightSpotAngleDeg;
+            key.innerSpotAngle = look.demoKeyLightSpotAngleDeg * 0.5f;
+            key.color = look.demoKeyLightColor;
+            key.shadows = LightShadows.None;
+
+            Transform fillNode = GeneratorUtility.CreateNode("DemoFillLight", root, origin + rotation * look.demoFillLightOffsetM);
+            var fill = fillNode.gameObject.AddComponent<Light>();
+            fill.type = LightType.Point;
+            fill.intensity = look.demoFillLightIntensity;
+            fill.range = look.demoFillLightRangeM;
+            fill.color = look.demoFillLightColor;
+            fill.shadows = LightShadows.None;
         }
 
         /// <summary>创建相机并朝向目标点；mainCamera 为 true 时打 MainCamera 标签。</summary>
@@ -103,14 +145,54 @@ namespace RivetSim.Editor.Generators
         /// <summary>设置相机背景、裁剪面、后处理与抗锯齿。</summary>
         public static void ConfigureCamera(Camera camera, float fieldOfViewDeg)
         {
+            RenderLookConfig look = Look;
             camera.fieldOfView = fieldOfViewDeg;
-            camera.farClipPlane = CameraFarClipM;
+            camera.farClipPlane = look.cameraFarClipM;
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = CameraBackground;
+            camera.backgroundColor = look.cameraBackground;
             UniversalAdditionalCameraData data = camera.GetUniversalAdditionalCameraData();
             data.renderPostProcessing = true;
             data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
             data.antialiasingQuality = AntialiasingQuality.High;
+        }
+
+        // 阴影距离、级联与柔和阴影写入 PC_RPAsset（经 SerializedObject，只在值变化时写盘）。
+        private static void ApplyShadowSettings(RenderLookConfig look)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(ProjectPaths.PcRenderPipelineAsset);
+            if (asset == null) return;
+            var so = new SerializedObject(asset);
+            bool changed = SetFloat(so, "m_ShadowDistance", look.shadowDistanceM);
+            changed |= SetInt(so, "m_ShadowCascadeCount", look.shadowCascadeCount);
+            changed |= SetInt(so, "m_SoftShadowsSupported", look.softShadows ? 1 : 0);
+            changed |= SetInt(so, "m_SoftShadowQuality", look.softShadowQuality);
+            if (!changed) return;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssetIfDirty(asset);
+        }
+
+        private static bool SetFloat(SerializedObject so, string name, float value)
+        {
+            SerializedProperty p = so.FindProperty(name);
+            if (p == null || Mathf.Approximately(p.floatValue, value)) return false;
+            p.floatValue = value;
+            return true;
+        }
+
+        private static bool SetInt(SerializedObject so, string name, int value)
+        {
+            SerializedProperty p = so.FindProperty(name);
+            if (p == null) return false;
+            if (p.propertyType == SerializedPropertyType.Boolean)
+            {
+                if (p.boolValue == (value != 0)) return false;
+                p.boolValue = value != 0;
+                return true;
+            }
+            if (p.intValue == value) return false;
+            p.intValue = value;
+            return true;
         }
 
         private static T AddComponent<T>(VolumeProfile profile) where T : VolumeComponent

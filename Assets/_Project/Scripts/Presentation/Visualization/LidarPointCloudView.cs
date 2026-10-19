@@ -1,3 +1,4 @@
+using RivetSim.Core.Diagnostics;
 using RivetSim.Simulation.Navigation;
 using UnityEngine;
 
@@ -43,6 +44,7 @@ namespace RivetSim.Presentation.Visualization
             LidarScan scan = _lidar != null ? _lidar.LatestScan : null;
             if (scan == null || scan.Sequence == _sequence) return;
             _sequence = scan.Sequence;
+            GcProbe.Begin(ProbeModule.LidarView);
             float h = scan.OriginM.y;
             float s = 0.5f * PointSizeM;
             for (int i = 0; i < scan.Hits.Length; i++)
@@ -59,7 +61,8 @@ namespace RivetSim.Presentation.Visualization
                 _vertices[v + 2] = new Vector3(p.x + s, h, p.y + s);
                 _vertices[v + 3] = new Vector3(p.x - s, h, p.y + s);
             }
-            _mesh.vertices = _vertices;
+            _mesh.SetVertices(_vertices);
+            GcProbe.End(ProbeModule.LidarView);
         }
 
         private void OnDestroy()

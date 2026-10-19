@@ -207,6 +207,7 @@ namespace RivetSim.Editor.Generators
             GameObject desk = GeneratorUtility.LoadPrefab(DemoStationGenerator.DeskPrefabPath);
             if (desk != null)
                 GeneratorUtility.InstantiatePrefab(desk, root, layout.demoDeskPose.WorldPosition, layout.demoDeskPose.WorldRotation, "DemoStation");
+            SceneLightingSetup.CreateDemoLights(root, layout.demoDeskPose);
             if (!layout.bigScreenEnabled) return;
             GameObject screen = GeneratorUtility.LoadPrefab(DemoStationGenerator.BigScreenPrefabPath);
             if (screen != null)
@@ -256,9 +257,11 @@ namespace RivetSim.Editor.Generators
                 layout.aircraftLengthM * EffectorLookZRatio);
             Vector3 effectorPos = effectorLook + new Vector3(-1.8f, 0.5f, 0.8f);
 
+            // 演示台机位（M7 拉近）：位置与注视点来自 CFG_UiTheme，兼顾桌面显示器与后方大屏。
+            var theme = GeneratorUtility.LoadConfig<UiThemeConfig>(ProjectPaths.UiThemeAsset);
             PlanarPose desk = layout.demoDeskPose;
-            Vector3 deskPos = desk.WorldPosition + desk.WorldRotation * new Vector3(0.4f, 1.6f, 2.4f);
-            Vector3 deskLook = desk.WorldPosition + desk.WorldRotation * new Vector3(0f, 1.0f, -0.6f);
+            Vector3 deskPos = desk.WorldPosition + desk.WorldRotation * (theme != null ? theme.demoCameraOffsetM : new Vector3(0.4f, 1.6f, 2.4f));
+            Vector3 deskLook = desk.WorldPosition + desk.WorldRotation * (theme != null ? theme.demoCameraLookOffsetM : new Vector3(0f, 1.0f, -0.6f));
 
             Anchor(root, "1_Overview", overviewPos, overviewLook);
             Anchor(root, "2_FollowAgv", followPos, followLook);

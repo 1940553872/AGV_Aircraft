@@ -19,8 +19,8 @@ namespace RivetSim.Core.Config
         [Tooltip("可选倍速（升序）")]
         public float[] speedOptions = { 0.5f, 1f, 2f, 4f };
 
-        [Tooltip("默认倍速，须在可选倍速内")]
-        public float defaultSpeedMultiplier = 1f;
+        [Tooltip("默认倍速，须在可选倍速内（M7 起默认 2 倍）")]
+        public float defaultSpeedMultiplier = 2f;
 
         [Tooltip("纯逻辑单元（安全许可、调度、数据）的标称执行时长，单位 s")]
         [Min(0f)]
@@ -63,5 +63,24 @@ namespace RivetSim.Core.Config
         [Header("任务矩阵")]
         [Tooltip("SOP 任务矩阵 JSON（Config/TaskMatrix/SOP_TaskMatrix_v1.json）")]
         public TextAsset taskMatrixJson;
+
+        /// <summary>默认倍速是否在可选倍速内。</summary>
+        public bool IsDefaultSpeedValid()
+        {
+            if (speedOptions == null) return false;
+            foreach (float option in speedOptions)
+                if (Mathf.Approximately(option, defaultSpeedMultiplier)) return true;
+            return false;
+        }
+
+        private void OnValidate()
+        {
+            // 默认倍速不在列表内时取最接近的可选倍速。
+            if (speedOptions == null || speedOptions.Length == 0 || IsDefaultSpeedValid()) return;
+            float best = speedOptions[0];
+            foreach (float option in speedOptions)
+                if (Mathf.Abs(option - defaultSpeedMultiplier) < Mathf.Abs(best - defaultSpeedMultiplier)) best = option;
+            defaultSpeedMultiplier = best;
+        }
     }
 }

@@ -537,7 +537,7 @@ namespace RivetSim.Presentation.UI
             mapHost.Clear();
             _miniMap = new MiniMapElement { pickingMode = PickingMode.Ignore };
             mapHost.Add(_miniMap);
-            if (_map != null) _miniMap.SetSource(_map, _theme.miniMapRepaintThresholdPx);
+            if (_map != null) _miniMap.SetSource(_map, _theme.miniMapRepaintThresholdPx, _theme.miniMapAgvMarkerSizePx);
             VisualElement ascanHost = root.Q("dc-ascan-host");
             ascanHost.Clear();
             _ascan = new AScanGraphElement();

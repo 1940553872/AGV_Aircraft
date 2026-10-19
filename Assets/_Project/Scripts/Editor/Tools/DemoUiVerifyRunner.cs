@@ -40,11 +40,9 @@ namespace RivetSim.Editor.Tools
         private const int HudShotPreset = 3;
         private const int IdleMeasureFrames = 120;
         private const float MatrixShotDelayS = 0.35f;
-        private const float Tolerance = 1.5f;
         private const string MatrixShotMarker = "T5 条件判定 C2～C8（含";
         private const string PoseMarker = "t(1,8) 等待操作员";
         // USS 中设了 overflow: hidden 的容器类（IResolvedStyle 不提供 overflow）。
-        private static readonly string[] ClipClasses = { "dc-body", "dc-left", "dc-right", "dc-explain-card", "dc-log", "cell" };
         private static readonly Vector2Int[] Resolutions = { new Vector2Int(1920, 1080), new Vector2Int(2560, 1440) };
         private static readonly Color Border = new Color32(0x26, 0x3A, 0x52, 0xFF);
         private static readonly Color StandbyGray = new Color32(0x56, 0x65, 0x77, 0xFF);
@@ -62,9 +60,6 @@ namespace RivetSim.Editor.Tools
         private static readonly Dictionary<CellState, bool> StylePass = new Dictionary<CellState, bool>();
         private static readonly List<string> LayoutRows = new List<string>();
         private static int _layoutIndex;
-        private static RenderTexture _layoutRt;
-        private static PanelSettings _layoutPanel;
-        private static RenderTexture _layoutPanelOriginal;
         private static string _condSnapshot = "";
         private static string _condSnapshotTitle = "";
         private static bool _posePromptSeen, _posePickAccepted;
@@ -237,7 +232,7 @@ namespace RivetSim.Editor.Tools
                 case "layout":
                     if (_layoutIndex < Resolutions.Length * 2)
                     {
-                        if (_layoutRt == null) BeginLayout(box, Resolutions[_layoutIndex / 2], _layoutIndex % 2 == 1);
+                        if (!UiLayoutCheck.IsActive) BeginLayout(box, Resolutions[_layoutIndex / 2], _layoutIndex % 2 == 1);
                         else
                         {
                             CheckLayout(box, Resolutions[_layoutIndex / 2], _layoutIndex % 2 == 1);
@@ -346,22 +341,15 @@ namespace RivetSim.Editor.Tools
 
         private static void BeginLayout(SandboxUiBootstrap box, Vector2Int size, bool hud)
         {
-            _layoutRt = new RenderTexture(size.x, size.y, 24);
             if (hud) box.Hub.SetFullscreen(false);
-            _layoutPanel = PanelOf(box, hud);
-            _layoutPanelOriginal = _layoutPanel.targetTexture;
-            _layoutPanel.targetTexture = _layoutRt;
+            UiLayoutCheck.Begin(PanelOf(box, hud), size);
         }
 
         private static void EndLayout(SandboxUiBootstrap box)
         {
             // 只还原本次改过的面板（演示屏贴图面板须保持指向 T_DemoConsoleRT）。
-            _layoutPanel.targetTexture = _layoutPanelOriginal;
-            _layoutPanel = null;
+            UiLayoutCheck.End();
             box.Hub.SetFullscreen(true);
-            _layoutRt.Release();
-            UnityEngine.Object.DestroyImmediate(_layoutRt);
-            _layoutRt = null;
         }
 
         private static PanelSettings PanelOf(SandboxUiBootstrap box, bool hud) =>
@@ -370,56 +358,8 @@ namespace RivetSim.Editor.Tools
         private static void CheckLayout(SandboxUiBootstrap box, Vector2Int size, bool hud)
         {
             VisualElement root = hud ? box.Hud.Root : box.Console.Root;
-            var issues = new List<string>();
-            int checkedCount = 0, truncated = 0;
-            Rect rootRect = root.worldBound;
-            foreach (VisualElement e in root.Query<VisualElement>().ToList())
-            {
-                if (!IsShown(e, root)) continue;
-                checkedCount++;
-                Rect b = e.worldBound;
-                if (b.width > 0f && (b.xMin < rootRect.xMin - Tolerance || b.yMin < rootRect.yMin - Tolerance ||
-                                     b.xMax > rootRect.xMax + Tolerance || b.yMax > rootRect.yMax + Tolerance))
-                    issues.Add($"{Describe(e)} 超出屏幕 {b}");
-                VisualElement clip = ClippingAncestor(e, root);
-                if (clip != null && b.height > 0f && b.yMax > clip.worldBound.yMax + Tolerance)
-                    issues.Add($"{Describe(e)} 被 {Describe(clip)} 裁切（底 {b.yMax:0} > {clip.worldBound.yMax:0}）");
-                if (e is Label label && !string.IsNullOrEmpty(label.text))
-                {
-                    bool ellipsis = label.resolvedStyle.whiteSpace == WhiteSpace.NoWrap && label.resolvedStyle.textOverflow == TextOverflow.Ellipsis;
-                    Rect c = label.contentRect;
-                    Vector2 need = label.resolvedStyle.whiteSpace == WhiteSpace.NoWrap
-                        ? label.MeasureTextSize(label.text, 0f, VisualElement.MeasureMode.Undefined, 0f, VisualElement.MeasureMode.Undefined)
-                        : label.MeasureTextSize(label.text, c.width, VisualElement.MeasureMode.Exactly, 0f, VisualElement.MeasureMode.Undefined);
-                    bool overflow = need.x > c.width + Tolerance || need.y > c.height + Tolerance;
-                    if (overflow && ellipsis) truncated++;
-                    else if (overflow) issues.Add($"{Describe(e)} 文字溢出（需 {need.x:0}×{need.y:0}，实 {c.width:0}×{c.height:0}）「{Short(label.text)}」");
-                }
-            }
-            string name = hud ? "HUD" : "演示屏";
-            LayoutRows.Add($"| {size.x}×{size.y} | {name} | {checkedCount} | {issues.Count} | {truncated} | {(issues.Count == 0 ? "无溢出" : string.Join("<br>", issues.Take(6)))} |");
+            LayoutRows.Add(UiLayoutCheck.Check(root, size, hud ? "HUD" : "演示屏", out _));
         }
-
-        private static bool IsShown(VisualElement e, VisualElement root)
-        {
-            for (VisualElement p = e; p != null; p = p.parent)
-            {
-                if (p.resolvedStyle.display == DisplayStyle.None || p.resolvedStyle.visibility == Visibility.Hidden) return false;
-                if (p == root) return true;
-            }
-            return true;
-        }
-
-        private static VisualElement ClippingAncestor(VisualElement e, VisualElement root)
-        {
-            for (VisualElement p = e.parent; p != null && p != root; p = p.parent)
-                if (ClipClasses.Any(p.ClassListContains)) return p;
-            return null;
-        }
-
-        private static string Describe(VisualElement e) => string.IsNullOrEmpty(e.name) ? $"{e.GetType().Name}.{e.GetClasses().FirstOrDefault()}" : e.name;
-
-        private static string Short(string s) => s.Length > 24 ? s.Substring(0, 24).Replace('\n', ' ') + "…" : s.Replace('\n', ' ');
 
         private static string BuildSandboxSection(FakeMissionFeed feed)
         {

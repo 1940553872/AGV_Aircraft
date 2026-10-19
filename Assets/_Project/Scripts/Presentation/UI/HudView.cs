@@ -190,7 +190,8 @@ namespace RivetSim.Presentation.UI
             _poseMap = new MiniMapElement();
             _poseMap.style.flexGrow = 1f;
             root.Q("hud-pose-map").Add(_poseMap);
-            if (_map != null) _poseMap.SetSource(_map, _theme != null ? _theme.miniMapRepaintThresholdPx : 0.5f);
+            if (_map != null) _poseMap.SetSource(_map, _theme != null ? _theme.miniMapRepaintThresholdPx : 0.5f,
+                _theme != null ? _theme.miniMapAgvMarkerSizePx : new Vector2(22f, 14f));
             _poseMap.Picked += p => PosePicked?.Invoke(p);
             _built = true;
             return true;

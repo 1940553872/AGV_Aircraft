@@ -12,14 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d268f4cd5c2088545a8d6ce6a3cfa425, type: 3}
   m_Name: CFG_SimSettings
   m_EditorClassIdentifier: 
-  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA75.1\u3001\xA76.1\u3002"
+  notes: "v1 \u9884\u4F30\u503C\uFF0C\u89C1 Docs/Architecture.md \xA75.1\u3001\xA76.1\u3002\nM7\uFF1A\u9ED8\u8BA4\u500D\u901F
+    2 \u500D\u3002"
   randomSeed: 42
   speedOptions:
   - 0.5
   - 1
   - 2
   - 4
-  defaultSpeedMultiplier: 1
+  defaultSpeedMultiplier: 2
   logicCellNominalDurationS: 0.6
   defaultDemoMode: 0
+  missionEntry: 0
+  simulatedOperatorDelayS: 3
+  simulatedOperatorPositionNoiseM: 0.05
+  simulatedOperatorYawNoiseDeg: 1
+  faultForceCompressionM: 0.004
+  faultCouplingFactor: 0.3
+  fastVerifySimSecondsPerFrame: 0.25
   taskMatrixJson: {fileID: 4900000, guid: b49ae87f1c3db8b44852d067c7a89574, type: 3}

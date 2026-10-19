@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RivetSim.Core.Config;
+using RivetSim.Core.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -17,8 +18,6 @@ namespace RivetSim.Presentation.UI
         private static readonly Color AgvColor = new Color32(0xFF, 0x9F, 0x1C, 0xFF);
         private static readonly Color PickColor = new Color32(0xFF, 0xC8, 0x57, 0xFF);
         private const float PathWidthPx = 2f;
-        private const float AgvLengthPx = 14f;
-        private const float AgvWidthPx = 9f;
         private const float PickRadiusPx = 7f;
 
         private readonly VisualElement _image;
@@ -32,6 +31,7 @@ namespace RivetSim.Presentation.UI
         private bool _hasPick;
         private Vector2 _pickWorldM;
         private float _repaintThresholdPx = 0.5f;
+        private Vector2 _agvMarkerSizePx = new Vector2(22f, 14f);
 
         /// <summary>是否允许点选。</summary>
         public bool PickEnabled { get; set; }
@@ -60,11 +60,12 @@ namespace RivetSim.Presentation.UI
             RegisterCallback<PointerDownEvent>(OnPointerDown);
         }
 
-        /// <summary>绑定数据源；repaintThresholdPx 为 AGV 位移重绘阈值，单位 px。</summary>
-        public void SetSource(IMiniMapSource source, float repaintThresholdPx)
+        /// <summary>绑定数据源；repaintThresholdPx 为 AGV 位移重绘阈值，agvMarkerSizePx 为 AGV 标记长 × 宽，单位 px。</summary>
+        public void SetSource(IMiniMapSource source, float repaintThresholdPx, Vector2 agvMarkerSizePx)
         {
             _source = source;
             _repaintThresholdPx = repaintThresholdPx;
+            _agvMarkerSizePx = agvMarkerSizePx;
             Relayout();
         }
 
@@ -149,6 +150,13 @@ namespace RivetSim.Presentation.UI
 
         private void Draw(MeshGenerationContext context)
         {
+            GcProbe.Begin(ProbeModule.MiniMapDraw);
+            DrawContent(context);
+            GcProbe.End(ProbeModule.MiniMapDraw);
+        }
+
+        private void DrawContent(MeshGenerationContext context)
+        {
             if (_source == null || _fit.width <= 0f) return;
             Painter2D p = context.painter2D;
             IReadOnlyList<Vector2> path = _source.PathPoints;
@@ -171,9 +179,9 @@ namespace RivetSim.Presentation.UI
             var side = new Vector2(-fwd.y, fwd.x);
             p.fillColor = AgvColor;
             p.BeginPath();
-            p.MoveTo(c + fwd * AgvLengthPx * 0.6f);
-            p.LineTo(c - fwd * AgvLengthPx * 0.4f + side * AgvWidthPx * 0.5f);
-            p.LineTo(c - fwd * AgvLengthPx * 0.4f - side * AgvWidthPx * 0.5f);
+            p.MoveTo(c + fwd * _agvMarkerSizePx.x * 0.6f);
+            p.LineTo(c - fwd * _agvMarkerSizePx.x * 0.4f + side * _agvMarkerSizePx.y * 0.5f);
+            p.LineTo(c - fwd * _agvMarkerSizePx.x * 0.4f - side * _agvMarkerSizePx.y * 0.5f);
             p.ClosePath();
             p.Fill();
 

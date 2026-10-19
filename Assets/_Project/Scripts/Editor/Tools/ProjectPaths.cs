@@ -47,6 +47,12 @@ namespace RivetSim.Editor.Tools
         /// <summary>界面主题配置。</summary>
         public const string UiThemeAsset = ConfigFolder + "/CFG_UiTheme.asset";
 
+        /// <summary>画面观感配置（M7）。</summary>
+        public const string RenderLookAsset = ConfigFolder + "/CFG_RenderLook.asset";
+
+        /// <summary>URP 资产（PC）。</summary>
+        public const string PcRenderPipelineAsset = "Assets/Settings/PC_RPAsset.asset";
+
         /// <summary>生成网格目录。</summary>
         public const string GeneratedModelsFolder = ProjectRoot + "/Art/Models/Generated";
 

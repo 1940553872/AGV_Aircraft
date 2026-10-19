@@ -53,11 +53,11 @@ namespace RivetSim.Presentation.App
             Mode = initial == DemoMode.Manual ? DemoMode.Auto : initial;
         }
 
-        /// <summary>绑定 t(1,8) 操作员初值通道（自动演示时允许超时自动给出）。</summary>
+        /// <summary>绑定 t(1,8) 操作员初值通道（自动与分步演示时允许超时由模拟操作员给出，M7）。</summary>
         public void BindOperatorPose(OperatorPoseChannel channel)
         {
             _operatorPose = channel;
-            if (_operatorPose != null) _operatorPose.AutoProvide = Mode == DemoMode.Auto;
+            if (_operatorPose != null) _operatorPose.AutoProvide = Mode != DemoMode.Manual;
         }
 
         /// <summary>切换模式；返回是否切换成功。</summary>
@@ -73,7 +73,7 @@ namespace RivetSim.Presentation.App
             Mode = mode;
             SetTeleop?.Invoke(mode == DemoMode.Manual);
             if (previous == DemoMode.Step && _clock.IsPaused) _clock.SetPaused(false);
-            if (_operatorPose != null) _operatorPose.AutoProvide = mode == DemoMode.Auto;
+            if (_operatorPose != null) _operatorPose.AutoProvide = mode != DemoMode.Manual;
             SimLog.Info(LogCategory.System, $"演示模式：{ModeText}");
             ModeChanged?.Invoke(mode);
             return true;

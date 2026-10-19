@@ -93,6 +93,7 @@ namespace RivetSim.Editor.Tools
             var inspection = EnsureConfig<InspectionConfig>("CFG_Inspection");
             EnsureConfig<UiThemeConfig>("CFG_UiTheme");
             EnsureConfig<NavigationConfig>("CFG_Navigation");
+            EnsureConfig<RenderLookConfig>("CFG_RenderLook");
 
             if (simSettings.taskMatrixJson == null)
             {
@@ -103,6 +104,7 @@ namespace RivetSim.Editor.Tools
             }
 
             FillMissingM4Values(agv, arm, inspection);
+            ApplyM7Defaults(simSettings);
             AssetDatabase.SaveAssets();
             SimLog.Info(LogCategory.System, "默认配置资产检查完成。");
         }
@@ -140,6 +142,18 @@ namespace RivetSim.Editor.Tools
             EditorUtility.SetDirty(agv);
             EditorUtility.SetDirty(arm);
             EditorUtility.SetDirty(inspection);
+        }
+
+        // M7：默认倍速由 1 倍改为 2 倍（只改仍为 M6 默认值 1 倍的资产，人工调过的值不覆盖）。
+        private const string M7SpeedNote = "M7：默认倍速 2 倍。";
+
+        private static void ApplyM7Defaults(SimSettings settings)
+        {
+            if (settings.notes.Contains(M7SpeedNote)) return;
+            if (Mathf.Approximately(settings.defaultSpeedMultiplier, 1f)) settings.defaultSpeedMultiplier = 2f;
+            settings.notes = settings.notes.TrimEnd() + "\n" + M7SpeedNote;
+            EditorUtility.SetDirty(settings);
+            SimLog.Info(LogCategory.System, $"CFG_SimSettings：默认倍速 {settings.defaultSpeedMultiplier:0.#} 倍");
         }
 
         private static T EnsureConfig<T>(string assetName) where T : ScriptableObject

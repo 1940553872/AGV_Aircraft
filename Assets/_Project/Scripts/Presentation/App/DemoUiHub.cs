@@ -30,6 +30,9 @@ namespace RivetSim.Presentation.App
         private readonly TaskMatrixData _data;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
+        /// <summary>演示模式控制器（验证工具用）。</summary>
+        public DemoModeController Mode => _mode;
+
         /// <summary>“下一步”的处理（默认 DemoModeController.Next；Sandbox_UI 改为推进假数据）。</summary>
         public Action NextHandler { get; set; }
 

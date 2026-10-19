@@ -1,3 +1,4 @@
+using RivetSim.Core.Diagnostics;
 using RivetSim.Simulation.Navigation;
 using Unity.Collections;
 using UnityEngine;
@@ -38,6 +39,7 @@ namespace RivetSim.Presentation.Visualization
             if (_map == null || _map.Revision == _revision) return;
             _revision = _map.Revision;
             if (!_map.ConsumeDirtyRect(out RectInt rect)) return;
+            GcProbe.Begin(ProbeModule.GridOverlay);
             GridGeometry g = _map.Geometry;
             NativeArray<Color32> pixels = _texture.GetPixelData<Color32>(0);
             for (int y = rect.yMin; y < rect.yMax; y++)
@@ -48,6 +50,7 @@ namespace RivetSim.Presentation.Visualization
                 pixels[i] = s == OccupancyState.Occupied ? OccupiedColor : s == OccupancyState.Free ? FreeColor : UnknownColor;
             }
             _texture.Apply(false);
+            GcProbe.End(ProbeModule.GridOverlay);
         }
 
         private void OnDestroy()
