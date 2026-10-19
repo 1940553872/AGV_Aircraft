@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace RivetSim.Core.TaskMatrix
@@ -22,8 +22,11 @@ namespace RivetSim.Core.TaskMatrix
         /// <summary>单元类型。</summary>
         [JsonProperty("kind")] public CellKind Kind { get; private set; }
 
-        /// <summary>显示文字（可含换行），以用户给定为准，不得改写。</summary>
+        /// <summary>显示文字（可含换行），以用户给定为准，不得擅自改写（v1.1 起按 M8_label_update.json 优化）。</summary>
         [JsonProperty("label")] public string Label { get; private set; }
+
+        /// <summary>v1 原始显示文字（v1.1 起显示文字优化，原文保留可追溯）；未改写时为空。</summary>
+        [JsonProperty("labelOriginal")] public string LabelOriginal { get; private set; }
 
         /// <summary>执行器键名，如 "nav.globalNavigate"；standby 单元为空。</summary>
         [JsonProperty("executor")] public string Executor { get; private set; }

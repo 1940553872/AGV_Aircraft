@@ -62,7 +62,11 @@ MonoBehaviour:
   utInstrumentBoxSizeM: {x: 0.3, y: 0.2, z: 0.1}
   safetyBoxSizeM: {x: 0.2, y: 0.15, z: 0.1}
   ipcBoxSizeM: {x: 0.25, y: 0.2, z: 0.08}
+  batteryInitialSocPct: 95
+  idlePowerW: 180
+  drivePowerW: 420
   batteryVoltageV: 48
   batteryCapacityAh: 40
   commLink: 0
   commLatencyS: 0.02
+  commLatencyJitterS: 0.004

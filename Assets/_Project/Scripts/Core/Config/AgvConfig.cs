@@ -132,7 +132,19 @@ namespace RivetSim.Core.Config
         [Tooltip("工控机（S7）")]
         public Vector3 ipcBoxSizeM = new Vector3(0.25f, 0.20f, 0.08f);
 
-        [Header("电池（占位，v1 线性放电显示）")]
+        [Header("电池（教学简化模型：按恒定功率线性放电，仅用于状态显示）")]
+        [Tooltip("开始时的电量，单位 %")]
+        [Range(0f, 100f)]
+        public float batteryInitialSocPct = 95f;
+
+        [Tooltip("静止时整机功耗（控制器、传感器、超声仪），单位 W")]
+        [Min(0f)]
+        public float idlePowerW = 180f;
+
+        [Tooltip("行驶时附加的驱动功耗，单位 W")]
+        [Min(0f)]
+        public float drivePowerW = 420f;
+
         [Tooltip("电池电压，单位 V")]
         public float batteryVoltageV = 48f;
 
@@ -145,5 +157,9 @@ namespace RivetSim.Core.Config
 
         [Tooltip("显示用固定延迟，单位 s")]
         public float commLatencyS = 0.020f;
+
+        [Tooltip("显示用延迟抖动幅度（教学简化模型，平滑噪声），单位 s")]
+        [Min(0f)]
+        public float commLatencyJitterS = 0.004f;
     }
 }

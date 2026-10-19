@@ -123,38 +123,64 @@
     white-space: normal;
 }
 
-.hud-faults {
+.hud-dropdown {
+    width: 92px;
+    height: 34px;
+    margin: 0 3px;
+    padding: 0;
+}
+
+.hud-dropdown > .unity-base-field__input {
+    height: 34px;
+    padding: 0 8px;
+    border-width: 1px;
+    border-radius: 4px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(14, 22, 33);
+    color: rgb(230, 238, 247);
+    font-size: 16px;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+}
+
+.hud-dropdown > .unity-base-field__input:hover {
+    border-color: rgb(46, 196, 230);
+}
+
+.hud-dropdown .unity-base-popup-field__text {
+    color: rgb(46, 196, 230);
+}
+
+.hud-alert {
     position: absolute;
-    right: 16px;
-    top: 90px;
-    width: 190px;
+    left: 25%;
+    right: 25%;
+    top: 92px;
+    padding: 10px 18px;
+    border-width: 2px;
+    border-radius: 8px;
+    border-color: rgb(255, 200, 87);
+    background-color: rgba(40, 30, 10, 0.92);
+    align-items: center;
+    display: none;
 }
 
-.hud-faults-title {
-    margin-bottom: 6px;
+.hud-alert--info {
+    border-color: rgb(46, 196, 230);
+    background-color: rgba(14, 30, 44, 0.92);
 }
 
-.hud-btn--fault {
-    margin: 3px 0;
-    border-color: rgb(255, 93, 93);
-    color: rgb(255, 93, 93);
-}
-
-.hud-btn--fault:hover {
-    background-color: rgba(255, 93, 93, 0.15);
-}
-
-.hud-btn--armed {
-    background-color: rgb(255, 93, 93);
-    color: rgb(14, 22, 33);
-}
-
-.hud-fault-status {
-    font-size: 13px;
+.hud-alert-text {
+    font-size: 22px;
     color: rgb(255, 200, 87);
     white-space: normal;
-    margin-top: 4px;
+    -unity-text-align: middle-center;
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
     padding: 0;
+    margin: 0;
+}
+
+.hud-alert--info .hud-alert-text {
+    color: rgb(46, 196, 230);
 }
 
 .hud-hints {

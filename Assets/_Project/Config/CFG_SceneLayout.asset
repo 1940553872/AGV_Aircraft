@@ -94,11 +94,12 @@ MonoBehaviour:
   entranceDoorWidthM: 3
   entranceDoorHeightM: 3.5
   demoAudienceDepthMinM: 4
-  demoDeskSizeM: {x: 1.6, y: 0.8, z: 0.75}
+  demoDeskSizeM: {x: 2, y: 0.8, z: 0.8}
   monitorCount: 2
   monitorDiagonalInch: 27
   monitorAspect: {x: 16, y: 9}
-  monitorCenterHeightM: 1.1
+  monitorCenterHeightM: 1.22
+  monitorScale: 1.4
   bigScreenEnabled: 1
   bigScreenSizeM: {x: 5.7, y: 3.21}
   bigScreenBottomHeightM: 1

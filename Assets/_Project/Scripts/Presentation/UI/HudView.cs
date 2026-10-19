@@ -1,32 +1,35 @@
 using System;
 using System.Collections.Generic;
 using RivetSim.Core.Config;
-using RivetSim.Simulation.Mission;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace RivetSim.Presentation.UI
 {
     /// <summary>
-    /// 屏幕 HUD（M6）：模式切换（自动 / 分步 / 遥控）、倍速（取 CFG_SimSettings.speedOptions）、暂停、下一步、
-    /// 故障注入按钮（识别失败 / 力超限 / 采集无效）、机位 1～4 与自动机位、可视化开关、矩阵全屏、快捷键提示与致谢角标；
-    /// t(1,8) 识别失败时弹出小地图点选提示。只发出请求事件，由入口转给 DemoModeController / ConditionBus / CameraRig。
+    /// 屏幕 HUD（M6）：模式切换（自动 / 分步 / 遥控）、倍速下拉框（M8，取 CFG_SimSettings.speedOptions）、暂停、下一步、
+    /// 机位 1～4 与自动机位、可视化开关、矩阵全屏、大屏视图切换（M8）、快捷键提示与致谢角标；
+    /// 异常提示条（M8：“系统检测到异常：…，正在自动处理”，按实际时间自动隐藏）；t(1,8) 识别失败时弹出小地图点选提示。
+    /// 只发出请求事件，由入口转给 DemoModeController / CameraRig 等。M8 起不再提供故障注入按钮。
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class HudView : MonoBehaviour
     {
         private const string ActiveClass = "hud-btn--active";
 
-        private readonly List<Button> _speedButtons = new List<Button>();
+        private const string AlertInfoClass = "hud-alert--info";
+
         private readonly List<float> _speeds = new List<float>();
+        private readonly List<string> _speedChoices = new List<string>();
         private IDemoStatusSource _status;
         private IMiniMapSource _map;
         private UiThemeConfig _theme;
-        private VisualElement _root, _main, _poseScrim;
-        private Button _modeAuto, _modeStep, _modeManual, _pause, _next, _vis, _fullscreen;
-        private Button _faultRecognition, _faultForce, _faultAcq;
+        private VisualElement _root, _main, _poseScrim, _alert;
+        private Button _modeAuto, _modeStep, _modeManual, _pause, _next, _vis, _fullscreen, _bigScreen;
+        private DropdownField _speed;
+        private float _alertUntil;
         private readonly Button[] _cams = new Button[5];
-        private Label _time, _phase, _faultStatus, _credit, _poseCountdown;
+        private Label _time, _phase, _alertText, _credit, _poseCountdown;
         private MiniMapElement _poseMap;
         private DemoMode _mode = DemoMode.Auto;
         private bool _built, _modeDirty = true;
@@ -52,8 +55,8 @@ namespace RivetSim.Presentation.UI
         /// <summary>请求“下一步”（分步模式推进到下一阶段）。</summary>
         public event Action NextRequested;
 
-        /// <summary>请求注入故障。</summary>
-        public event Action<FaultKind> FaultRequested;
+        /// <summary>请求切换大屏视图（任务矩阵 / 检测结果与设备状态）。</summary>
+        public event Action BigScreenViewToggled;
 
         /// <summary>请求机位（0 自动，1～4 预设）。</summary>
         public event Action<int> CameraRequested;
@@ -76,6 +79,12 @@ namespace RivetSim.Presentation.UI
         /// <summary>提示中的小地图（验证用）。</summary>
         public MiniMapElement PoseMap => _poseMap;
 
+        /// <summary>当前提示条文字（未显示时为空；验证用）。</summary>
+        public string AlertText => _alertUntil > Time.unscaledTime && _alertText != null ? _alertText.text : "";
+
+        /// <summary>倍速下拉框（验证用）。</summary>
+        public DropdownField SpeedDropdown => _speed;
+
         /// <summary>绑定状态源、倍速列表与小地图。</summary>
         public void Initialize(IDemoStatusSource status, IReadOnlyList<float> speedOptions, IMiniMapSource map, UiThemeConfig theme)
         {
@@ -83,7 +92,12 @@ namespace RivetSim.Presentation.UI
             _map = map;
             _theme = theme;
             _speeds.Clear();
-            foreach (float s in speedOptions) _speeds.Add(s);
+            _speedChoices.Clear();
+            foreach (float s in speedOptions)
+            {
+                _speeds.Add(s);
+                _speedChoices.Add($"×{s:0.##}");
+            }
         }
 
         /// <summary>当前模式（高亮按钮，分步模式才启用“下一步”）。</summary>
@@ -107,10 +121,20 @@ namespace RivetSim.Presentation.UI
             if (Bind()) _phase.text = text;
         }
 
-        /// <summary>故障注入状态文字。</summary>
-        public void SetFaultStatus(string text)
+        /// <summary>显示提示条 durationS 秒（实际时间）；info 为普通提示（青色），否则为异常提示（琥珀色）。</summary>
+        public void ShowAlert(string text, float durationS, bool info = false)
         {
-            if (Bind()) _faultStatus.text = text;
+            if (!Bind()) return;
+            _alertText.text = text;
+            _alert.EnableInClassList(AlertInfoClass, info);
+            _alert.style.display = DisplayStyle.Flex;
+            _alertUntil = Time.unscaledTime + durationS;
+        }
+
+        /// <summary>大屏当前视图（按钮文字）。</summary>
+        public void SetBigScreenView(bool status)
+        {
+            if (Bind()) _bigScreen.text = status ? "B 大屏：检测与设备" : "B 大屏：任务矩阵";
         }
 
         /// <summary>矩阵全屏时隐藏 HUD 主体与致谢角标（全屏时不显示模型；返回提示在演示屏顶栏）。</summary>
@@ -160,9 +184,7 @@ namespace RivetSim.Presentation.UI
             _next = Hook("hud-next", () => NextRequested?.Invoke());
             _vis = Hook("hud-vis", () => VisualizationToggled?.Invoke());
             _fullscreen = Hook("hud-fullscreen", () => FullscreenToggled?.Invoke());
-            _faultRecognition = Hook("hud-fault-recognition", () => FaultRequested?.Invoke(FaultKind.RecognitionFailed));
-            _faultForce = Hook("hud-fault-force", () => FaultRequested?.Invoke(FaultKind.ContactForceExceeded));
-            _faultAcq = Hook("hud-fault-acq", () => FaultRequested?.Invoke(FaultKind.AcquisitionInvalid));
+            _bigScreen = Hook("hud-bigscreen", () => BigScreenViewToggled?.Invoke());
             _cams[0] = Hook("hud-cam-auto", () => CameraRequested?.Invoke(0));
             for (int i = 1; i <= 4; i++)
             {
@@ -171,21 +193,15 @@ namespace RivetSim.Presentation.UI
             }
             _time = root.Q<Label>("hud-time");
             _phase = root.Q<Label>("hud-phase");
-            _faultStatus = root.Q<Label>("hud-fault-status");
+            _alert = root.Q("hud-alert");
+            _alertText = root.Q<Label>("hud-alert-text");
             _credit = root.Q<Label>("hud-credit");
             _poseCountdown = root.Q<Label>("hud-pose-countdown");
 
-            VisualElement speeds = root.Q("hud-speeds");
-            speeds.Clear();
-            _speedButtons.Clear();
-            foreach (float s in _speeds)
-            {
-                float speed = s;
-                var b = new Button(() => SpeedRequested?.Invoke(speed)) { text = $"×{s:0.##}" };
-                b.AddToClassList("hud-btn");
-                speeds.Add(b);
-                _speedButtons.Add(b);
-            }
+            _speed = root.Q<DropdownField>("hud-speed");
+            _speed.choices = _speedChoices;
+            _speed.focusable = false;
+            _speed.RegisterValueChangedCallback(OnSpeedChosen);
 
             _poseMap = new MiniMapElement();
             _poseMap.style.flexGrow = 1f;
@@ -195,6 +211,12 @@ namespace RivetSim.Presentation.UI
             _poseMap.Picked += p => PosePicked?.Invoke(p);
             _built = true;
             return true;
+        }
+
+        private void OnSpeedChosen(ChangeEvent<string> evt)
+        {
+            int index = _speedChoices.IndexOf(evt.newValue);
+            if (index >= 0) SpeedRequested?.Invoke(_speeds[index]);
         }
 
         private Button Hook(string name, Action click)
@@ -222,9 +244,15 @@ namespace RivetSim.Presentation.UI
                 {
                     _shownSpeed = _status.SpeedMultiplier;
                     _shownPaused = _status.IsPaused;
-                    for (int i = 0; i < _speedButtons.Count; i++) _speedButtons[i].EnableInClassList(ActiveClass, Mathf.Approximately(_speeds[i], _shownSpeed));
+                    for (int i = 0; i < _speeds.Count; i++)
+                        if (Mathf.Approximately(_speeds[i], _shownSpeed)) _speed.SetValueWithoutNotify(_speedChoices[i]);
                     _pause.text = _shownPaused ? "继续" : "暂停";
                     _pause.EnableInClassList("hud-btn--paused", _shownPaused);
+                }
+                if (_alertUntil > 0f && Time.unscaledTime >= _alertUntil)
+                {
+                    _alertUntil = 0f;
+                    _alert.style.display = DisplayStyle.None;
                 }
                 if (_poseOpen)
                 {

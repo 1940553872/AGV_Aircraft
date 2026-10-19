@@ -1,7 +1,7 @@
 namespace RivetSim.Simulation.Mission
 {
     /// <summary>
-    /// 可注入的故障（M5：键盘 F5 / F6 / F7 与 Verify 菜单；M6 的 HUD 按钮调用同一接口）。
+    /// 可注入的故障（M5 起 Verify 菜单；M8 起由随机故障调度器每轮自动注入，界面不再提供手动注入）。
     /// </summary>
     public enum FaultKind
     {

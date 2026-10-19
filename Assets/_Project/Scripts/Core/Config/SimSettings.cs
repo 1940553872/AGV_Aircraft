@@ -17,7 +17,7 @@ namespace RivetSim.Core.Config
         public int randomSeed = 42;
 
         [Tooltip("可选倍速（升序）")]
-        public float[] speedOptions = { 0.5f, 1f, 2f, 4f };
+        public float[] speedOptions = { 0.5f, 1f, 2f, 4f, 8f };
 
         [Tooltip("默认倍速，须在可选倍速内（M7 起默认 2 倍）")]
         public float defaultSpeedMultiplier = 2f;
@@ -46,7 +46,33 @@ namespace RivetSim.Core.Config
         [Min(0f)]
         public float simulatedOperatorYawNoiseDeg = 1f;
 
-        [Header("故障注入（M5，F5 / F6 / F7 与 Verify 菜单）")]
+        [Header("倍速保护（M8）")]
+        [Tooltip("高倍速（≥ speedGuardFromMultiplier）下实际帧率低于该值并持续 speedGuardWindowS 时自动降速，单位 FPS")]
+        [Min(1f)]
+        public float speedGuardMinFps = 20f;
+
+        [Tooltip("帧率统计窗口（实际时间），单位 s")]
+        [Min(0.1f)]
+        public float speedGuardWindowS = 3f;
+
+        [Tooltip("从该倍速起启用保护（M8 起为 ×8）")]
+        public float speedGuardFromMultiplier = 8f;
+
+        [Tooltip("保护触发后降到的倍速")]
+        public float speedGuardFallbackMultiplier = 4f;
+
+        [Header("随机故障（M8：自动演示中按种子自动注入）")]
+        [Tooltip("是否在每轮任务中自动注入随机故障（Verify 菜单给出固定注入点时不启用）")]
+        public bool randomFaultsEnabled = true;
+
+        [Tooltip("每类故障每轮发生的概率（默认 1 = 每类每轮必发生一次）")]
+        [Range(0f, 1f)]
+        public float randomFaultProbability = 1f;
+
+        [Tooltip("随机故障的种子偏移（与 randomSeed 相加，避免与缺陷分布共用随机序列）")]
+        public int randomFaultSeedOffset = 8;
+
+        [Header("故障注入（M5，Verify 菜单；M8 起由随机故障调度器调用）")]
         [Tooltip("力超限注入：接触表面比注册预测提前，使逼近起点即压缩该量，单位 m（超过浮动行程后按硬限位刚度计力）")]
         [Min(0f)]
         public float faultForceCompressionM = 0.004f;

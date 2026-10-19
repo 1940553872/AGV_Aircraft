@@ -11,7 +11,7 @@
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-panel hud-group" picking-mode="Ignore">
                     <ui:Label class="hud-group-title" text="倍速" picking-mode="Ignore" />
-                    <ui:VisualElement name="hud-speeds" class="hud-row" picking-mode="Ignore" />
+                    <ui:DropdownField name="hud-speed" class="hud-dropdown" />
                     <ui:Button name="hud-pause" class="hud-btn hud-btn--wide" text="暂停" />
                     <ui:Button name="hud-next" class="hud-btn hud-btn--wide" text="下一步" />
                 </ui:VisualElement>
@@ -31,16 +31,13 @@
                 <ui:VisualElement class="hud-panel hud-group" picking-mode="Ignore">
                     <ui:Button name="hud-vis" class="hud-btn" text="V 可视化" />
                     <ui:Button name="hud-fullscreen" class="hud-btn" text="Tab 矩阵全屏" />
+                    <ui:Button name="hud-bigscreen" class="hud-btn" text="B 大屏：任务矩阵" />
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="hud-faults" class="hud-panel hud-faults" picking-mode="Ignore">
-                <ui:Label class="hud-group-title hud-faults-title" text="故障注入（一次性）" picking-mode="Ignore" />
-                <ui:Button name="hud-fault-recognition" class="hud-btn hud-btn--fault" text="F5 识别失败" />
-                <ui:Button name="hud-fault-force" class="hud-btn hud-btn--fault" text="F6 力超限" />
-                <ui:Button name="hud-fault-acq" class="hud-btn hud-btn--fault" text="F7 采集无效" />
-                <ui:Label name="hud-fault-status" class="hud-fault-status" text="" picking-mode="Ignore" />
+            <ui:VisualElement name="hud-alert" class="hud-alert" picking-mode="Ignore">
+                <ui:Label name="hud-alert-text" class="hud-alert-text" text="" picking-mode="Ignore" />
             </ui:VisualElement>
-            <ui:Label name="hud-hints" class="hud-hints" text="1～4 机位 · 0 自动机位 · Tab 矩阵全屏 · P 暂停 · N 下一步 · F5 / F6 / F7 故障注入 · V 可视化 · 空格急停 · WASD 遥控（遥控模式）" picking-mode="Ignore" />
+            <ui:Label name="hud-hints" class="hud-hints" text="1～4 机位 · 0 自动机位 · Tab 矩阵全屏 · P 暂停 · N 下一步 · B 大屏视图 · V 可视化 · 空格急停 · WASD 遥控（遥控模式）" picking-mode="Ignore" />
         </ui:VisualElement>
         <ui:Label name="hud-credit" class="hud-credit" text="“Airbus A320-200” by Dlourine (https://sketchfab.com/fDlruosne), licensed under CC BY 4.0, scaled and simplified for this simulation." picking-mode="Ignore" />
         <ui:VisualElement name="hud-pose-scrim" class="hud-pose-scrim">

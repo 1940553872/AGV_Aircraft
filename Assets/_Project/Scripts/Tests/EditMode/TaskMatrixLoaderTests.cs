@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using RivetSim.Core.TaskMatrix;
@@ -181,6 +181,21 @@ namespace RivetSim.Tests.EditMode
             Assert.DoesNotThrow(() => result = TaskMatrixLoader.LoadFromJson("{ not json"));
             Assert.That(result.Success, Is.False);
             Assert.That(result.Data, Is.Null);
+        }
+
+        [Test]
+        public void LabelUpdate_V11_KeepsOriginalText()
+        {
+            TaskMatrixData data = _result.Data;
+            foreach (CellDef cell in data.Cells.Where(c => c.Kind != CellKind.Standby))
+            {
+                Assert.That(cell.LabelOriginal, Is.Not.Null.And.Not.Empty, cell.Id);
+                Assert.That(cell.Label, Is.Not.EqualTo(cell.LabelOriginal), cell.Id);
+            }
+            Assert.That(data.Phases.All(p => !string.IsNullOrEmpty(p.NameOriginal)), Is.True);
+            Assert.That(data.Actors.All(a => !string.IsNullOrEmpty(a.NameOriginal)), Is.True);
+            Assert.That(data.Phases.Single(p => p.Id == "p3").Name, Is.EqualTo("坐标标定"));
+            Assert.That(data.Cells.Single(c => c.Id == "t(5,4)").Label, Does.Contain("C2～C8"));
         }
     }
 }

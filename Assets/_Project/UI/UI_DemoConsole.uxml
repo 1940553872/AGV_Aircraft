@@ -4,7 +4,8 @@
         <ui:VisualElement name="dc-topbar" class="dc-topbar" picking-mode="Ignore">
             <ui:Label name="dc-title" class="dc-title" text="AGV 飞机铆钉超声检测 · SOP 任务矩阵" picking-mode="Ignore" />
             <ui:VisualElement class="dc-topbar-spacer" picking-mode="Ignore" />
-            <ui:Label name="dc-fullscreen-hint" class="dc-chip dc-chip--hint" text="Tab 返回场景 · 点击单元查看说明" picking-mode="Ignore" />
+            <ui:Button name="dc-view-toggle" class="dc-view-toggle" text="切换：检测结果与设备状态" />
+            <ui:Label name="dc-fullscreen-hint" class="dc-chip dc-chip--hint" text="Tab 返回场景 · B 切换视图 · 点击单元查看说明" picking-mode="Ignore" />
             <ui:Label name="dc-mode" class="dc-chip" text="自动演示" picking-mode="Ignore" />
             <ui:Label name="dc-speed" class="dc-chip" text="×1" picking-mode="Ignore" />
             <ui:Label name="dc-time" class="dc-chip dc-chip--mono" text="00:00:00" picking-mode="Ignore" />
@@ -35,7 +36,7 @@
                 </ui:VisualElement>
                 <ui:VisualElement class="dc-bottom-row" picking-mode="Ignore">
                     <ui:VisualElement class="dc-card dc-map-card" picking-mode="Ignore">
-                        <ui:Label class="dc-section-title" text="小地图（栅格 · 路径 · AGV）" picking-mode="Ignore" />
+                        <ui:Label class="dc-section-title" text="小地图（禁行区 · 工位 · 铆钉结果）" picking-mode="Ignore" />
                         <ui:VisualElement name="dc-minimap-host" class="dc-minimap-host" picking-mode="Ignore" />
                     </ui:VisualElement>
                     <ui:VisualElement class="dc-card dc-ascan-card" picking-mode="Ignore">
@@ -43,6 +44,26 @@
                         <ui:VisualElement name="dc-ascan-host" class="dc-ascan-host" picking-mode="Ignore" />
                         <ui:Label name="dc-verdict" class="dc-verdict" text="判读：—" picking-mode="Ignore" />
                     </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="dc-status-page" class="dc-status-page" picking-mode="Ignore">
+                <ui:VisualElement class="dc-card st-results-card" picking-mode="Ignore">
+                    <ui:VisualElement class="st-head" picking-mode="Ignore">
+                        <ui:Label class="dc-section-title st-title" text="不合格铆钉列表（疑似 / 缺陷 / 无效，最新在上）" picking-mode="Ignore" />
+                        <ui:VisualElement class="dc-topbar-spacer" picking-mode="Ignore" />
+                        <ui:Label name="st-count-total" class="st-stat" text="已检 0" picking-mode="Ignore" />
+                        <ui:Label name="st-count-pass" class="st-stat st-stat--pass" text="合格 0" picking-mode="Ignore" />
+                        <ui:Label name="st-count-fail" class="st-stat st-stat--fail" text="不合格 0" picking-mode="Ignore" />
+                        <ui:Label name="st-count-invalid" class="st-stat st-stat--invalid" text="无效 0" picking-mode="Ignore" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="st-table" class="st-table" picking-mode="Ignore" />
+                    <ui:Label name="st-empty" class="st-empty" text="暂无不合格铆钉" picking-mode="Ignore" />
+                    <ui:Label class="st-note" text="判读结论来自 A 扫闸门判读；缺陷类型列为仿真设定值，供教学对照（教学简化模型）。" picking-mode="Ignore" />
+                </ui:VisualElement>
+                <ui:VisualElement class="dc-card st-device-card" picking-mode="Ignore">
+                    <ui:Label class="dc-section-title" text="AGV 设备状态" picking-mode="Ignore" />
+                    <ui:VisualElement name="st-device" class="st-device" picking-mode="Ignore" />
+                    <ui:Label class="st-note" text="电量与通讯延迟为教学简化模型（恒功率线性放电、固定延迟加抖动）。" picking-mode="Ignore" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

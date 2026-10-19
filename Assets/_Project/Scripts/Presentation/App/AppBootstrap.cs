@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using RivetSim.Core.Config;
 using RivetSim.Core.Logging;
@@ -6,6 +7,7 @@ using RivetSim.Presentation.CameraControl;
 using RivetSim.Presentation.Input;
 using RivetSim.Presentation.UI;
 using RivetSim.Presentation.Visualization;
+using RivetSim.Simulation.Mission;
 using RivetSim.Simulation.Navigation;
 using RivetSim.Simulation.Robot;
 using RivetSim.Simulation.World;
@@ -57,6 +59,12 @@ namespace RivetSim.Presentation.App
         [SerializeField] private CameraRig cameraRig;
         [SerializeField] private VisualizationToggleInput visualizationToggle;
 
+        [Header("演示屏（M8：右屏状态视图与大屏视图切换）")]
+        [SerializeField, Tooltip("右屏“检测结果与设备状态”演示屏")] private DemoConsoleView statusConsole;
+        [SerializeField, Tooltip("大屏屏幕网格渲染器")] private Renderer bigScreenRenderer;
+        [SerializeField, Tooltip("大屏显示任务矩阵时的材质（M_DemoScreen）")] private Material bigScreenMatrixMaterial;
+        [SerializeField, Tooltip("大屏显示检测结果与设备状态时的材质（M_DemoScreenStatus）")] private Material bigScreenStatusMaterial;
+
         [Header("演示（倍速取 CFG_SimSettings.defaultSpeedMultiplier；目标工位仅用于 SubsystemDemo）")]
         [SerializeField, Tooltip("进入 Play 模式后自动运行演示")] private bool autoRunDemo = true;
         [SerializeField, Tooltip("演示目标区域序号（从 0 起）")] private int demoRegionIndex;
@@ -70,6 +78,8 @@ namespace RivetSim.Presentation.App
         private DemoModeController _demoMode;
         private RuntimeMiniMapSource _miniMap;
         private DemoUiHub _hub;
+        private SpeedGuard _speedGuard;
+        private KeepOutMask _keepOutMask;
         private bool _missionRunning;
 
         /// <summary>当前主场景入口（验证工具读取）。</summary>
@@ -87,6 +97,21 @@ namespace RivetSim.Presentation.App
         /// <summary>界面连线（工序开始后可用）。</summary>
         public DemoUiHub Hub => _hub;
 
+        /// <summary>右屏状态演示屏（M8）。</summary>
+        public DemoConsoleView StatusConsole => statusConsole;
+
+        /// <summary>大屏渲染器（M8，验证用）。</summary>
+        public Renderer BigScreenRenderer => bigScreenRenderer;
+
+        /// <summary>倍速保护（M8，工序开始后可用）。</summary>
+        public SpeedGuard Guard => _speedGuard;
+
+        /// <summary>本轮随机故障注入点（M8；Verify 给出固定注入点或关闭随机故障时为空）。</summary>
+        public IReadOnlyList<FaultInjectionPoint> RandomFaultPlan { get; private set; } = Array.Empty<FaultInjectionPoint>();
+
+        /// <summary>仿真运行时（验证用）。</summary>
+        public RobotRuntime Runtime => _runtime;
+
         /// <summary>编辑器生成器写入演示界面引用（M6）。</summary>
         public void ConfigureDemoUi(UiThemeConfig theme, DemoConsoleView console, HudView hudView, CameraRig rig, VisualizationToggleInput visualization)
         {
@@ -95,6 +120,15 @@ namespace RivetSim.Presentation.App
             hud = hudView;
             cameraRig = rig;
             visualizationToggle = visualization;
+        }
+
+        /// <summary>编辑器生成器写入演示屏引用（M8：右屏状态演示屏、大屏渲染器与两种材质）。</summary>
+        public void ConfigureDemoScreens(DemoConsoleView status, Renderer bigScreen, Material matrixMaterial, Material statusMaterial)
+        {
+            statusConsole = status;
+            bigScreenRenderer = bigScreen;
+            bigScreenMatrixMaterial = matrixMaterial;
+            bigScreenStatusMaterial = statusMaterial;
         }
 
         /// <summary>编辑器生成器写入配置。</summary>
@@ -151,6 +185,7 @@ namespace RivetSim.Presentation.App
             Vector2 hall = new Vector2(sceneLayout.hallSizeM.x, sceneLayout.hallSizeM.y);
             GridGeometry mapGeometry = GridGeometry.Covering(Vector2.zero, hall, navigationConfig.gridResolutionM);
             KeepOutMask keepOut = keepOutZone != null ? keepOutZone.ToMask() : null;
+            _keepOutMask = keepOut;
             _runtime = new RobotRuntime(simSettings, agvConfig, navigationConfig, armConfig, inspectionConfig, _chassis, _lift,
                 agv.GetComponentInChildren<ArmController>(), lidar, mapGeometry, keepOut, simSettings.defaultSpeedMultiplier, Time.fixedDeltaTime);
 
@@ -207,11 +242,11 @@ namespace RivetSim.Presentation.App
             _mission = new MissionRoutine(_runtime, rivetRegistry, simSettings, sceneLayout, agvConfig, armConfig, navigationConfig, inspectionConfig,
                 overlayView, inspectionOverlay);
             foreach (DeviceIndicator indicator in FindObjectsByType<DeviceIndicator>(FindObjectsSortMode.None)) indicator.Initialize(_runtime.Bus);
-            gameObject.AddComponent<FaultHotkeys>().Initialize(_mission.Conditions);
-            if (overlayView != null) overlayView.SetHint("F5 识别失败 · F6 力超限 · F7 采集无效 · 空格急停 · V 显示 / 隐藏可视化");
+            if (overlayView != null) overlayView.SetHint("故障由系统随机注入并自动处理 · 空格急停 · V 显示 / 隐藏可视化");
             SetUpDemoUi();
             if (MissionLaunchOptions.FastForward) _runtime.FastForwardSimSecondsPerFrame = simSettings.fastVerifySimSecondsPerFrame;
             if (MissionLaunchOptions.Faults.Count > 0) _mission.ScheduleFaults(MissionLaunchOptions.Faults);
+            else if (simSettings.randomFaultsEnabled) ScheduleRandomFaults();
             MissionLaunchOptions.Started?.Invoke(_runtime, _mission);
             MissionRunReport report = null;
             _missionRunning = true;
@@ -232,6 +267,17 @@ namespace RivetSim.Presentation.App
             if (teleopInput != null) teleopInput.TeleopEnabled = true;
         }
 
+        // M8：按种子生成本轮随机故障（每类至多一次），由 ScheduledFaultInjector 在进入匹配阶段时注入。
+        private void ScheduleRandomFaults()
+        {
+            List<FaultInjectionPoint> plan = RandomFaultScheduler.CreatePlan(new RegistryMissionPlan(rivetRegistry),
+                simSettings.randomSeed + simSettings.randomFaultSeedOffset, simSettings.randomFaultProbability);
+            RandomFaultPlan = plan;
+            _mission.ScheduleFaults(plan);
+            SimLog.Info(LogCategory.Mission, $"随机故障（种子 {simSettings.randomSeed + simSettings.randomFaultSeedOffset}）：" +
+                (plan.Count > 0 ? string.Join("；", plan) : "本轮无"));
+        }
+
         // M6 演示界面：演示模式、小地图数据源、演示屏、HUD、相机与快捷键。
         private void SetUpDemoUi()
         {
@@ -247,22 +293,48 @@ namespace RivetSim.Presentation.App
                 RivetCountSource = () => _mission.Orchestrator.Cursor.RivetCount,
             };
             _demoMode.BindOperatorPose(_mission.OperatorPose);
-            _miniMap = new RuntimeMiniMapSource(_runtime.Map, _chassis, _runtime.Bus, uiTheme.miniMapRefreshIntervalS);
+            _miniMap = new RuntimeMiniMapSource(_runtime.Map, _chassis, _runtime.Bus, uiTheme.miniMapRefreshIntervalS, _keepOutMask, registry,
+                sceneLayout.chargingDockPose);
+            var device = new RuntimeDeviceStatusSource(_runtime, agvConfig, simSettings.randomSeed);
             if (demoConsole != null)
-                demoConsole.Initialize(_runtime.Bus, matrix.Data, matrix.GetState, _demoMode, _miniMap, inspectionConfig, uiTheme);
+                demoConsole.Initialize(_runtime.Bus, matrix.Data, matrix.GetState, _demoMode, _miniMap, inspectionConfig, uiTheme, device);
+            if (statusConsole != null)
+                statusConsole.Initialize(_runtime.Bus, matrix.Data, matrix.GetState, _demoMode, _miniMap, inspectionConfig, uiTheme, device);
             if (cameraRig != null)
+            {
                 cameraRig.Initialize(uiTheme, _runtime.Bus, matrix.Data, _chassis.transform, _runtime.Arm.Rig.Tcp, sceneLayout.startPose);
+                cameraRig.ConfigureRivetView(new MissionRivetFocusSource(_mission), RivetViewOccluders(), ~(1 << SimLayers.VisualizationIndex));
+            }
+            _speedGuard = new SpeedGuard(_runtime.Clock, simSettings);
             if (hud == null || demoConsole == null) return;
             hud.Initialize(_demoMode, _runtime.Clock.SpeedOptions, _miniMap, uiTheme);
             var hotkeys = gameObject.AddComponent<DemoHotkeys>();
             _hub = new DemoUiHub(_demoMode, _runtime.Bus, matrix.Data, hud, demoConsole, cameraRig, _mission.Conditions, _mission.OperatorPose,
-                visualizationToggle, hotkeys, _miniMap);
+                visualizationToggle, hotkeys, _miniMap, uiTheme);
+            if (bigScreenRenderer != null && bigScreenMatrixMaterial != null && bigScreenStatusMaterial != null)
+                _hub.BigScreenViewHandler = status => bigScreenRenderer.sharedMaterial = status ? bigScreenStatusMaterial : bigScreenMatrixMaterial;
+            _speedGuard.Triggered += _hub.ShowSpeedGuardNotice;
+        }
+
+        // 机位遮挡检查用的车体与机械臂渲染器（探头末端是取景目标，不计入；可视化层不计入）。
+        private Renderer[] RivetViewOccluders()
+        {
+            Transform endEffector = _runtime.Arm.Rig.Probe != null ? _runtime.Arm.Rig.Probe.transform : null;
+            var list = new List<Renderer>();
+            foreach (Renderer r in _chassis.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r.gameObject.layer == SimLayers.VisualizationIndex || !(r is MeshRenderer)) continue;
+                if (endEffector != null && r.transform.IsChildOf(endEffector)) continue;
+                list.Add(r);
+            }
+            return list.ToArray();
         }
 
         private void Update()
         {
             _runtime?.Update(Time.deltaTime);
             _miniMap?.Refresh(Time.unscaledDeltaTime);
+            if (_runtime != null) _speedGuard?.Tick(Time.unscaledDeltaTime, _runtime.LastFrameSubsteps, _runtime.FastForwardSimSecondsPerFrame > 0f);
         }
 
         private void OnDestroy()

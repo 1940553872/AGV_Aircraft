@@ -35,6 +35,9 @@ namespace RivetSim.Simulation.Mission
         /// <summary>故障注入后（参数为故障类别）。</summary>
         public event Action<FaultKind> FaultInjected;
 
+        /// <summary>故障类条件单元被激活（系统检测到异常并开始自动处理；参数为故障类别与原因）。</summary>
+        public event Action<FaultKind, string> AnomalyRaised;
+
         /// <summary>创建并订阅力超限事件。</summary>
         public ConditionBus(EventBus bus)
         {
@@ -47,10 +50,16 @@ namespace RivetSim.Simulation.Mission
         public bool Raise(string trigger, string reason)
         {
             Func<string, string, bool> handler = TriggerHandler;
-            return handler != null && handler(trigger, reason);
+            bool activated = handler != null && handler(trigger, reason);
+            if (activated && TryGetFault(trigger, out FaultKind kind))
+            {
+                SimLog.Warning(LogCategory.Mission, $"系统检测到异常：{Describe(kind)}（{reason}），正在自动处理");
+                AnomalyRaised?.Invoke(kind, reason);
+            }
+            return activated;
         }
 
-        /// <summary>布设一次性故障（键盘 F5 / F6 / F7、Verify 菜单、M6 HUD 按钮）。</summary>
+        /// <summary>布设一次性故障（内部接口：M8 起由随机故障调度器与 Verify 菜单调用，界面不再提供手动注入）。</summary>
         public void Inject(FaultKind kind)
         {
             _pending.Add(kind);
@@ -63,6 +72,15 @@ namespace RivetSim.Simulation.Mission
 
         /// <summary>取用待生效的故障（取用后清除）。</summary>
         public bool Consume(FaultKind kind) => _pending.Remove(kind);
+
+        /// <summary>trigger 是否为故障类键名；是时给出故障类别。</summary>
+        public static bool TryGetFault(string trigger, out FaultKind kind)
+        {
+            kind = trigger == RecognitionFailedTrigger ? FaultKind.RecognitionFailed
+                : trigger == ContactForceExceededTrigger ? FaultKind.ContactForceExceeded
+                : FaultKind.AcquisitionInvalid;
+            return trigger == RecognitionFailedTrigger || trigger == ContactForceExceededTrigger || trigger == AcquisitionInvalidTrigger;
+        }
 
         /// <summary>trigger 是否为本类认识的键名（启动核对用）。</summary>
         public static bool IsKnownTrigger(string trigger) =>

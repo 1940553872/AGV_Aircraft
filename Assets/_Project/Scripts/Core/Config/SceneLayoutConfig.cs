@@ -104,7 +104,7 @@ namespace RivetSim.Core.Config
         public float demoAudienceDepthMinM = 4.0f;
 
         [Tooltip("演示台尺寸（长 × 宽 × 高），单位 m；长沿桌面左右，宽为进深")]
-        public Vector3 demoDeskSizeM = new Vector3(1.60f, 0.80f, 0.75f);
+        public Vector3 demoDeskSizeM = new Vector3(2.00f, 0.80f, 0.80f);
 
         [Tooltip("显示器数量（左屏任务矩阵，右屏三维总览）")]
         public int monitorCount = 2;
@@ -116,7 +116,11 @@ namespace RivetSim.Core.Config
         public Vector2 monitorAspect = new Vector2(16f, 9f);
 
         [Tooltip("显示器屏幕中心离地高度，单位 m")]
-        public float monitorCenterHeightM = 1.10f;
+        public float monitorCenterHeightM = 1.22f;
+
+        [Tooltip("显示器（含边框、网格与 RenderTexture 显示区）长、宽的放大倍数（M8：1.4，面积 ×1.96）")]
+        [Min(0.5f)]
+        public float monitorScale = 1.4f;
 
         [Tooltip("是否放置大屏（可选）")]
         public bool bigScreenEnabled = true;

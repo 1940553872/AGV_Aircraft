@@ -110,5 +110,29 @@ namespace RivetSim.Core.Config
 
         [Tooltip("背景补光颜色（偏冷，与界面主色呼应）")]
         public Color demoFillLightColor = new Color(0.80f, 0.90f, 1f);
+
+        [Header("曝光与场景明度（M8）")]
+        [Tooltip("后处理曝光补偿（Color Adjustments.postExposure），单位 EV")]
+        public float postExposureEv = 0.3f;
+
+        [Tooltip("墙面目标平均颜色（波纹钢板贴图按此重新定标，保留纹理明暗）")]
+        public Color wallTargetColor = new Color32(0xE0, 0xE3, 0xE8, 0xFF);
+
+        [Tooltip("墙面金属度（喷涂钢板，取低值避免反射发暗）")]
+        [Range(0f, 1f)]
+        public float wallMetallic = 0.1f;
+
+        [Tooltip("墙面光滑度")]
+        [Range(0f, 1f)]
+        public float wallSmoothness = 0.3f;
+
+        [Tooltip("屋顶内侧（桁架与檩条）颜色")]
+        public Color roofInnerColor = new Color32(0xD9, 0xDD, 0xE2, 0xFF);
+
+        [Tooltip("演示台木纹色调（乘以橡木贴图）")]
+        public Color deskWoodTint = new Color(1f, 1f, 1f);
+
+        [Tooltip("演示台台面木纹平铺次数（台面长 × 深）")]
+        public Vector2 deskWoodTiles = new Vector2(1f, 0.5f);
     }
 }

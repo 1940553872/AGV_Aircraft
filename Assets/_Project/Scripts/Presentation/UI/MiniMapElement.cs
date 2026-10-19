@@ -8,7 +8,8 @@ using UnityEngine.UIElements;
 namespace RivetSim.Presentation.UI
 {
     /// <summary>
-    /// 小地图（M6）：栅格贴图按世界范围等比铺放，Painter2D 叠加规划路径、AGV 位姿与点选标记。
+    /// 小地图（M6）：栅格贴图按世界范围等比铺放，Painter2D 叠加规划路径、AGV 位姿与点选标记；
+    /// M8 增加铆钉结果点（未检测灰、合格绿、疑似琥珀、缺陷红、无效蓝灰）、工位停靠点（青色方框）与充电位（绿色菱形）。
     /// <see cref="PickEnabled"/> 时点击（UI Toolkit 面板拾取，不用 OnMouseDown）换算为世界坐标并触发 <see cref="Picked"/>（t(1,8) 操作员初值）。
     /// 只在 AGV 位姿、路径或贴图变化时重绘。
     /// </summary>
@@ -17,6 +18,16 @@ namespace RivetSim.Presentation.UI
         private static readonly Color PathColor = new Color32(0x2E, 0xC4, 0xE6, 0xFF);
         private static readonly Color AgvColor = new Color32(0xFF, 0x9F, 0x1C, 0xFF);
         private static readonly Color PickColor = new Color32(0xFF, 0xC8, 0x57, 0xFF);
+        private static readonly Color StationColor = new Color32(0x2E, 0xC4, 0xE6, 0xFF);
+        private static readonly Color ChargeColor = new Color32(0x3D, 0xD6, 0x8C, 0xFF);
+        // 铆钉结果点颜色，按 InspectionVerdict 整数值（合格、疑似、缺陷、无效）；未检测另取。
+        private static readonly Color RivetPendingColor = new Color32(0x56, 0x65, 0x77, 0xFF);
+        private static readonly Color[] RivetVerdictColors =
+        {
+            new Color32(0x3D, 0xD6, 0x8C, 0xFF), new Color32(0xFF, 0xC8, 0x57, 0xFF), new Color32(0xFF, 0x5D, 0x5D, 0xFF), new Color32(0x8F, 0xA3, 0xB8, 0xFF),
+        };
+        private const float StationHalfPx = 4.5f;
+        private const float ChargeHalfPx = 6f;
         private const float PathWidthPx = 2f;
         private const float PickRadiusPx = 7f;
 
@@ -28,6 +39,8 @@ namespace RivetSim.Presentation.UI
         private Vector2 _lastAgvPx = new Vector2(float.NaN, float.NaN);
         private float _lastAgvYawDeg = float.NaN;
         private int _lastPathRevision = -1;
+        private int _lastMarksRevision = -1;
+        private float _rivetDotRadiusPx = 2.5f;
         private bool _hasPick;
         private Vector2 _pickWorldM;
         private float _repaintThresholdPx = 0.5f;
@@ -60,9 +73,10 @@ namespace RivetSim.Presentation.UI
             RegisterCallback<PointerDownEvent>(OnPointerDown);
         }
 
-        /// <summary>绑定数据源；repaintThresholdPx 为 AGV 位移重绘阈值，agvMarkerSizePx 为 AGV 标记长 × 宽，单位 px。</summary>
-        public void SetSource(IMiniMapSource source, float repaintThresholdPx, Vector2 agvMarkerSizePx)
+        /// <summary>绑定数据源；repaintThresholdPx 为 AGV 位移重绘阈值，agvMarkerSizePx 为 AGV 标记长 × 宽，rivetDotRadiusPx 为铆钉结果点半径，单位 px。</summary>
+        public void SetSource(IMiniMapSource source, float repaintThresholdPx, Vector2 agvMarkerSizePx, float rivetDotRadiusPx = 2.5f)
         {
+            _rivetDotRadiusPx = rivetDotRadiusPx;
             _source = source;
             _repaintThresholdPx = repaintThresholdPx;
             _agvMarkerSizePx = agvMarkerSizePx;
@@ -85,8 +99,9 @@ namespace RivetSim.Presentation.UI
             Vector2 agvPx = WorldToLocal(_source.AgvPose.positionM);
             bool moved = float.IsNaN(_lastAgvPx.x) || (agvPx - _lastAgvPx).sqrMagnitude > _repaintThresholdPx * _repaintThresholdPx ||
                          Mathf.Abs(Mathf.DeltaAngle(_lastAgvYawDeg, _source.AgvPose.yawDeg)) > 1f;
-            if (moved || _source.PathRevision != _lastPathRevision)
+            if (moved || _source.PathRevision != _lastPathRevision || _source.MarksRevision != _lastMarksRevision)
             {
+                _lastMarksRevision = _source.MarksRevision;
                 _lastAgvPx = agvPx;
                 _lastAgvYawDeg = _source.AgvPose.yawDeg;
                 _lastPathRevision = _source.PathRevision;
@@ -155,10 +170,54 @@ namespace RivetSim.Presentation.UI
             GcProbe.End(ProbeModule.MiniMapDraw);
         }
 
+        private void DrawMarks(Painter2D p)
+        {
+            IReadOnlyList<Vector2> rivets = _source.RivetPointsM;
+            IReadOnlyList<int> results = _source.RivetResults;
+            if (rivets != null && results != null)
+                for (int i = 0; i < rivets.Count && i < results.Count; i++)
+                {
+                    int r = results[i];
+                    p.fillColor = r >= 0 && r < RivetVerdictColors.Length ? RivetVerdictColors[r] : RivetPendingColor;
+                    p.BeginPath();
+                    p.Arc(WorldToLocal(rivets[i]), _rivetDotRadiusPx, 0f, 360f);
+                    p.Fill();
+                }
+
+            IReadOnlyList<PlanarPose> stations = _source.StationPoses;
+            if (stations != null)
+            {
+                p.strokeColor = StationColor;
+                p.lineWidth = 1.5f;
+                for (int i = 0; i < stations.Count; i++)
+                {
+                    Vector2 c = WorldToLocal(stations[i].positionM);
+                    p.BeginPath();
+                    p.MoveTo(c + new Vector2(-StationHalfPx, -StationHalfPx));
+                    p.LineTo(c + new Vector2(StationHalfPx, -StationHalfPx));
+                    p.LineTo(c + new Vector2(StationHalfPx, StationHalfPx));
+                    p.LineTo(c + new Vector2(-StationHalfPx, StationHalfPx));
+                    p.ClosePath();
+                    p.Stroke();
+                }
+            }
+
+            Vector2 charge = WorldToLocal(_source.ChargePose.positionM);
+            p.fillColor = ChargeColor;
+            p.BeginPath();
+            p.MoveTo(charge + new Vector2(0f, -ChargeHalfPx));
+            p.LineTo(charge + new Vector2(ChargeHalfPx, 0f));
+            p.LineTo(charge + new Vector2(0f, ChargeHalfPx));
+            p.LineTo(charge + new Vector2(-ChargeHalfPx, 0f));
+            p.ClosePath();
+            p.Fill();
+        }
+
         private void DrawContent(MeshGenerationContext context)
         {
             if (_source == null || _fit.width <= 0f) return;
             Painter2D p = context.painter2D;
+            DrawMarks(p);
             IReadOnlyList<Vector2> path = _source.PathPoints;
             if (path != null && path.Count > 1)
             {

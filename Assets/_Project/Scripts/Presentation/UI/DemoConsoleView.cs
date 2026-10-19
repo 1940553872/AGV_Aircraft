@@ -17,6 +17,8 @@ namespace RivetSim.Presentation.UI
     /// 只订阅 M5 事件（CellStateChanged / ConditionChecked / PhaseEntered / LoopTaken / RivetInspected）与 SimLog，
     /// 事件处理只改模型与脏标记，LateUpdate 按脏标记刷新，空闲帧不分配内存。
     /// 平时渲染到 RenderTexture（场景内显示器与大屏，不接收输入）；按 Tab 切到屏幕全屏，此时可点击单元查看说明卡。
+    /// M8：同一套 UXML 增加“检测结果与设备状态”页（<see cref="InspectionStatusView"/>），根元素类 dc-root--status 切换两种视图；
+    /// statusOnly 的实例（右屏）固定显示状态页；全屏时顶栏按钮或 B 键切换视图，退出全屏恢复默认视图。
     /// </summary>
     [RequireComponent(typeof(UIDocument))]
     public sealed class DemoConsoleView : MonoBehaviour
@@ -27,6 +29,9 @@ namespace RivetSim.Presentation.UI
 
         [SerializeField, Tooltip("渲染到 RenderTexture 的面板（场景内显示器）")] private PanelSettings screenTexturePanel;
         [SerializeField, Tooltip("全屏叠加面板（Tab 切换，可交互）")] private PanelSettings fullscreenPanel;
+        [SerializeField, Tooltip("固定显示“检测结果与设备状态”视图（演示台右屏，M8）")] private bool statusOnly;
+
+        private const string StatusViewClass = "dc-root--status";
 
         private readonly Dictionary<string, CellState> _states = new Dictionary<string, CellState>();
         private readonly Dictionary<string, TaskCellElement> _cells = new Dictionary<string, TaskCellElement>();
@@ -51,6 +56,8 @@ namespace RivetSim.Presentation.UI
         private MiniMapElement _miniMap;
         private AScanGraphElement _ascan;
         private string[] _actorTags;
+        private InspectionStatusView _statusView;
+        private Button _viewToggle;
 
         // 执行情况说明与条件行（对象池，创建一次）。
         private VisualElement[] _explainLines;
@@ -90,6 +97,15 @@ namespace RivetSim.Presentation.UI
         /// <summary>是否已全屏（可交互）。</summary>
         public bool IsFullscreen { get; private set; }
 
+        /// <summary>当前是否显示“检测结果与设备状态”视图。</summary>
+        public bool IsStatusView { get; private set; }
+
+        /// <summary>是否为固定显示状态视图的实例（右屏）。</summary>
+        public bool IsStatusOnly => statusOnly;
+
+        /// <summary>状态视图（验证用）。</summary>
+        public InspectionStatusView StatusView => _statusView;
+
         /// <summary>界面元素是否已建立。</summary>
         public bool IsBuilt => _root != null && _cellList.Count > 0;
 
@@ -103,18 +119,22 @@ namespace RivetSim.Presentation.UI
         public string ConditionCellId => _condCellId;
 
         /// <summary>编辑器生成器写入面板设置。</summary>
-        public void Configure(PanelSettings texturePanel, PanelSettings fullscreen)
+        public void Configure(PanelSettings texturePanel, PanelSettings fullscreen, bool fixedStatusView = false)
         {
             screenTexturePanel = texturePanel;
             fullscreenPanel = fullscreen;
+            statusOnly = fixedStatusView;
         }
 
         /// <summary>
-        /// 绑定数据。initialState 为空时所有单元按 Idle 开始（随后由事件更新）。
+        /// 绑定数据。initialState 为空时所有单元按 Idle 开始（随后由事件更新）；device 为设备状态数据源（可为空，M8）。
         /// </summary>
         public void Initialize(EventBus bus, TaskMatrixData data, Func<string, CellState> initialState, IDemoStatusSource status,
-            IMiniMapSource map, InspectionConfig inspection, UiThemeConfig theme)
+            IMiniMapSource map, InspectionConfig inspection, UiThemeConfig theme, IDeviceStatusSource device = null)
         {
+            _statusView = new InspectionStatusView(theme);
+            _statusView.SetDeviceSource(device);
+            IsStatusView = statusOnly;
             _document = GetComponent<UIDocument>();
             _bus = bus;
             _data = data;
@@ -153,9 +173,24 @@ namespace RivetSim.Presentation.UI
             IsFullscreen = fullscreen;
             PanelSettings target = fullscreen ? fullscreenPanel : screenTexturePanel;
             if (target != null) _document.panelSettings = target;
-            if (!fullscreen) HideDetail();
+            if (!fullscreen)
+            {
+                HideDetail();
+                IsStatusView = statusOnly;
+            }
             ApplyFullscreenHint();
         }
+
+        /// <summary>设置视图：true 为“检测结果与设备状态”，false 为任务矩阵。</summary>
+        public void SetStatusView(bool status)
+        {
+            IsStatusView = status;
+            if (!status) HideDetail();
+            ApplyFullscreenHint();
+        }
+
+        /// <summary>切换视图（全屏时的按钮与 B 键）。</summary>
+        public void ToggleView() => SetStatusView(!IsStatusView);
 
         /// <summary>查找单元元素（验证用）。</summary>
         public TaskCellElement FindCell(string cellId) => _cells.TryGetValue(cellId ?? "", out TaskCellElement c) ? c : null;
@@ -192,8 +227,17 @@ namespace RivetSim.Presentation.UI
 
         private void ApplyFullscreenHint()
         {
-            Label hint = _root?.Q<Label>("dc-fullscreen-hint");
+            if (_root == null) return;
+            Label hint = _root.Q<Label>("dc-fullscreen-hint");
             if (hint != null) hint.style.display = IsFullscreen ? DisplayStyle.Flex : DisplayStyle.None;
+            if (_viewToggle != null)
+            {
+                _viewToggle.style.display = IsFullscreen ? DisplayStyle.Flex : DisplayStyle.None;
+                _viewToggle.text = IsStatusView ? "切换：任务矩阵" : "切换：检测结果与设备状态";
+            }
+            _root.EnableInClassList(StatusViewClass, IsStatusView);
+            Label title = _root.Q<Label>("dc-title");
+            if (title != null && _data != null) title.text = IsStatusView ? "AGV 飞机铆钉超声检测 · 检测结果与设备状态" : _data.Title + " · 演示";
         }
 
         /// <summary>关闭说明卡。</summary>
@@ -215,6 +259,7 @@ namespace RivetSim.Presentation.UI
             CellDef cell = _data.FindCell(e.CellId);
             if (cell != null)
             {
+                if (e.State == CellState.Running || e.State == CellState.Triggered) _statusView.SetCurrentCell(cell.Id, OneLine(cell.Label));
                 if (cell.Row == _phaseRow) _explainDirty = true;
                 if (cell.ConditionRefs.Count > 0 && (e.State == CellState.Running || e.State == CellState.Triggered) && _condCellId != cell.Id)
                     BeginConditions(cell);
@@ -281,6 +326,7 @@ namespace RivetSim.Presentation.UI
             UiPerfProbe.BeginEvent();
             _lastInspection = e;
             _inspectionDirty = true;
+            _statusView.OnInspected(e);
             UiPerfProbe.EndEvent();
         }
 
@@ -342,6 +388,7 @@ namespace RivetSim.Presentation.UI
                 RenderLoops(now);
                 RenderLog();
                 _miniMap?.Tick();
+                if (IsStatusView) _statusView.Tick(now);
             }
             UiPerfProbe.EndFrame();
         }
@@ -525,7 +572,10 @@ namespace RivetSim.Presentation.UI
             _detailExplain = root.Q<Label>("dc-detail-explain");
             _detailExtra = root.Q<Label>("dc-detail-extra");
             _detailScrim.RegisterCallback<PointerDownEvent>(_ => HideDetail());
-            root.Q<Label>("dc-title").text = _data.Title + " · 演示";
+            _viewToggle = root.Q<Button>("dc-view-toggle");
+            _viewToggle.focusable = false;
+            _viewToggle.clicked += ToggleView;
+            _statusView.Build(root.Q("dc-status-page"));
             _loopNote.text = _data.LoopNote;
 
             BuildMatrix(root.Q("dc-matrix"), root.Q("dc-loops-host"));
@@ -537,7 +587,7 @@ namespace RivetSim.Presentation.UI
             mapHost.Clear();
             _miniMap = new MiniMapElement { pickingMode = PickingMode.Ignore };
             mapHost.Add(_miniMap);
-            if (_map != null) _miniMap.SetSource(_map, _theme.miniMapRepaintThresholdPx, _theme.miniMapAgvMarkerSizePx);
+            if (_map != null) _miniMap.SetSource(_map, _theme.miniMapRepaintThresholdPx, _theme.miniMapAgvMarkerSizePx, _theme.miniMapRivetDotRadiusPx);
             VisualElement ascanHost = root.Q("dc-ascan-host");
             ascanHost.Clear();
             _ascan = new AScanGraphElement();
@@ -711,6 +761,8 @@ namespace RivetSim.Presentation.UI
             parent.Add(label);
             return label;
         }
+
+        private static string OneLine(string label) => string.IsNullOrEmpty(label) ? "" : label.Replace('\n', ' ');
 
         private void OnCellClicked(TaskCellElement cell)
         {

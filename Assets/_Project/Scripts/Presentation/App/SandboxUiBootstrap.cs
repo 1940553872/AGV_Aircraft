@@ -67,7 +67,7 @@ namespace RivetSim.Presentation.App
             _bus = new EventBus();
             SimLog.SimTimeProvider = () => _clock.TimeS;
             _conditions = new ConditionBus(_bus);
-            _map = new FakeMiniMapSource();
+            _map = new FakeMiniMapSource(_bus);
             Feed = new FakeMissionFeed(load.Data, _bus, _clock, inspectionConfig, _map);
             _mode = new DemoModeController(_clock, _bus, DemoMode.Auto)
             {
@@ -78,8 +78,7 @@ namespace RivetSim.Presentation.App
             console.Initialize(_bus, load.Data, Feed.GetState, _mode, _map, inspectionConfig, uiTheme);
             hud.Initialize(_mode, _clock.SpeedOptions, _map, uiTheme);
             var hotkeys = gameObject.AddComponent<DemoHotkeys>();
-            gameObject.AddComponent<FaultHotkeys>().Initialize(_conditions);
-            _hub = new DemoUiHub(_mode, _bus, load.Data, hud, console, null, _conditions, Feed.OperatorPose, null, hotkeys, _map)
+            _hub = new DemoUiHub(_mode, _bus, load.Data, hud, console, null, _conditions, Feed.OperatorPose, null, hotkeys, _map, uiTheme)
             {
                 NextHandler = () => Feed.Step(),
             };

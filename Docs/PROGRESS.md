@@ -1,7 +1,7 @@
 # 开发进度
 
 ## 当前里程碑
-**v1 已交付并验收**（2026-10-19，M0～M7 全部验收）。后续：独立程序构建（需单独指令）或 v2
+**M8 v1.1 小更新：已完成，待用户验收**（2026-10-19）。v1 已于 2026-10-19 交付（M0～M7 全部验收）
 
 ## 环境（2026-10-17 核实）
 - Unity 6000.0.71f1，URP 17.0.4，Input System 1.19，AI Navigation 2.0.11
@@ -34,21 +34,22 @@
 
 ## 最近一次会话
 - 日期：2026-10-19
-- 完成：M7 联调与观感打磨（v1 收尾）。已定决策 1～9 与计划待决问题 Q1～Q4 按默认执行；会话中用户追加：墙上大屏放大 3 倍
-  - Core：`RenderLookConfig`（CFG_RenderLook：主光 / 阴影 / 环境光 / 后处理 / 演示区补光）；`Diagnostics/GcProbe` + `ProbeModule`（模块级 GC.Alloc 计数，默认关闭）；SimSettings 默认倍速 2 倍并校验在 speedOptions 内；UiThemeConfig 新增小地图 AGV 标记尺寸、CamAnchor_4 位姿；SceneLayout 大屏 5.70 × 3.21 m
-  - Editor：`SceneLightingSetup` 改读配置并生成演示区补光、写 PC_RPAsset 阴影；`UiLayoutCheck`（从 M6 验证提取，M6 / M7 共用）；`GameViewResolution`；`M7DemoVerifyRunner`（`RivetSim/Verify/Run M7 Demo`）
-  - Presentation：删除 AppBootstrap 的场景字段 `demoSpeedMultiplier`（=4，曾覆盖配置）；小地图贴图改为直接写像素缓冲（消除每次刷新的分配）；分步模式下 t(1,8) 仍允许模拟操作员超时给初值；`DemoUiHub.Mode`
-  - Tests：`M7ConfigTests` 4 项
-- 结果（Docs/Reports/M7.md）：
-  - 自动演示（2 倍速）完成：仿真 1458.4 s，**真实 2 倍速约 12:09**；48 颗；完整时间线见报告 §1.1
-  - 分步演示完成：阶段进入 154 次 = 暂停 154 次，暂停期间仿真不推进；含 t(1,8) 识别失败，模拟操作员给出初值
-  - 1920×1080 / 2560×1440 下主场景演示屏 308 个元素、HUD 40 个元素无溢出
-  - 1080p 平均 366 FPS，1% 低帧 72～157 FPS（Editor 测量）；激光、栅格、小地图运行中 0 分配
-  - §6.1 仍为预估值的参数表见报告 §3
-- 自检：编译 0 错误 0 警告；EditMode 120/120 通过；Generate All 后主场景 986 个物体（+DemoLights 3 个）；Play 0 错误
-- 截图（Docs/Screenshots/M7/，1280×720）：M7_01_Overview（建图总览）、M7_02_FollowNav（跟随 AGV 导航）、M7_03_Closeup（末端特写接触采集）、M7_04_DemoStation（演示台与 3 倍大屏）
-- 2026-10-19 用户验收通过（v1 交付）。
-- 下次第一步：按用户指令进行 Windows 独立程序构建（模板 M7 第 5 项），或从 v2 建议中选定下一个里程碑
+- 完成：M8 v1.1 小更新（模板第 1～10 项；模板无第 8 项，按编号笔误处理）。已定决策 1～5 与计划待决问题 4 项均按默认执行
+  - 倍速：HUD 改为下拉框（×0.5～×8）；`SpeedGuard`（Presentation/App）在 ×8 下按窗口统计帧率，低于 `speedGuardMinFps` 自动降到 ×4 并提示
+  - 演示台：显示器（含边框、屏幕、支架）×1.4（`CFG_SceneLayout.monitorScale`），桌面 2.00 m、屏幕中心 1.22 m；桌面与桌体用 Poly Haven Oak Veneer 01（CC0，已登记）
+  - 右屏“检测结果与设备状态”：同一套 UI_DemoConsole.uxml 的 dc-status-page（`InspectionStatusView`）；右屏独立 RT（T_DemoStatusRT / M_DemoScreenStatus / UI_PanelSettings_ConsoleStatus）；大屏用 B / HUD 按钮换材质切换；全屏时顶栏按钮或 B 切换；设备数据经 `IDeviceStatusSource`（电量 / 延迟为教学简化模型 `TeachingPowerCommModel`，参数在 CFG_Agv）
+  - 机位防遮挡：CameraRig 从 T3 起按当前铆钉外法向在机身外侧、同高、偏 ±35° 等候选角取景；每 0.2 s SphereCast + 车体 / 机械臂有向包围盒检查，被挡切换（`IRivetFocusSource` / `MissionRivetFocusSource`）
+  - 小地图：未显示原因为“未知”色与卡片底色相同、“空闲”色与分隔线同色；改色并补画禁行区、工位、充电位、铆钉结果点
+  - 故障：删除 HUD 故障面板与 F5～F7（`FaultHotkeys` 已删）；`RandomFaultScheduler` 按 `randomSeed + randomFaultSeedOffset` 每类每轮一次；`ConditionBus.AnomalyRaised` → HUD 3 s 提示“系统检测到异常：…，正在自动处理”并记日志
+  - 矩阵文字：按 M8_label_update.json 替换，原文在 `labelOriginal` / `nameOriginal`；润色 explain 11 处与条件阶段名（清单见 Docs/Reference/SOP_TaskMatrix_v1.md）；单元字号 16→15 px，两行内显示
+  - 明度：墙面贴图按平均色定标到 #E0E3E8，屋顶内侧 M_Roof_Inner #D9DDE2，曝光 +0.3 EV 等（前后对照见 Docs/Reports/M8.md §8；`RivetSim/Config/Apply M8 Values` 写入资产）
+  - 工具：`M8VerifyRunner`（`RivetSim/Verify/Run M8`）；`VehicleClearanceMeter`（车体到机身距离）；ThirdPartyImporter 跳过内容相同的文件（忽略换行差异）
+  - Tests：`RandomFaultSchedulerTests` 4 项；`TaskMatrixLoaderTests` 增加原文保留 1 项
+- 结果（Docs/Reports/M8.md）：流程完成（仿真 1475.9 s，48 颗）；三类故障各 1 次均显示提示并自动恢复；×8 窗口平均 226 FPS、未降速，强制降速检查 ×8→×4 通过；整机到机身最小 148 mm（机械臂末端连杆），车体最小 535 mm，0 帧穿模；两种屏幕视图、说明卡、HUD、右屏 1920×1080 布局问题 0；遮挡检查 218 次、切换 5 次、全被挡 0 帧
+- 自检：编译 0 错误 0 警告；EditMode 125/125；Generate All 后主场景 987 个物体（+DemoConsoleStatus）；Play 0 错误
+- 截图（Docs/Screenshots/M8/，1280×720）：M8_01_Overview、M8_02_DemoStation、M8_03_Closeup、M8_04_MiniMap
+- 2026-10-19 复核：编译 0 错误；EditMode 125/125；Console 警告均为故障注入与条件 ✗ 的预期日志；已提交并推送到 origin/main（提交“M8：v1.1 小更新”）
+- 下次第一步：等待用户验收 M8（验收后按 PromptTemplates §3.6 重写 HANDOFF.md）
 
 ## v1 已知限制
 - 建图、A 扫、接触力、视觉均为教学简化模型；导航用真值位姿，无里程计漂移与扫描匹配。

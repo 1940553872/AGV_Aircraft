@@ -13,8 +13,10 @@ using UnityEngine;
 namespace RivetSim.Presentation.App
 {
     /// <summary>
-    /// 演示界面连线（M6，主场景与 Sandbox_UI 共用）：HUD / 快捷键的请求转给 DemoModeController、ConditionBus、CameraRig、
+    /// 演示界面连线（M6，主场景与 Sandbox_UI 共用）：HUD / 快捷键的请求转给 DemoModeController、CameraRig、
     /// 可视化开关与演示屏全屏；t(1,8) 操作员初值通道打开时弹出小地图点选提示，点选结果写回通道（再由执行器写入 MissionBlackboard.InitialPose）。
+    /// M8：故障类条件单元被激活时（ConditionBus.AnomalyRaised）弹出 3 s 提示“系统检测到异常：…，正在自动处理”；
+    /// B 键 / HUD 按钮切换大屏视图（全屏时切换全屏视图）；倍速保护降速时提示。不再提供手动故障注入。
     /// </summary>
     public sealed class DemoUiHub : IDisposable
     {
@@ -28,6 +30,8 @@ namespace RivetSim.Presentation.App
         private readonly DemoHotkeys _hotkeys;
         private readonly IMiniMapSource _map;
         private readonly TaskMatrixData _data;
+        private readonly UiThemeConfig _theme;
+        private bool _bigScreenStatus;
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
         /// <summary>演示模式控制器（验证工具用）。</summary>
@@ -36,12 +40,20 @@ namespace RivetSim.Presentation.App
         /// <summary>“下一步”的处理（默认 DemoModeController.Next；Sandbox_UI 改为推进假数据）。</summary>
         public Action NextHandler { get; set; }
 
+        /// <summary>大屏视图切换的处理（参数为是否显示“检测结果与设备状态”；主场景替换大屏材质，可为空）。</summary>
+        public Action<bool> BigScreenViewHandler { get; set; }
+
+        /// <summary>大屏当前是否显示“检测结果与设备状态”。</summary>
+        public bool IsBigScreenStatus => _bigScreenStatus;
+
         /// <summary>连线。rig / conditions / operatorPose / visualization 可为空。</summary>
         public DemoUiHub(DemoModeController mode, EventBus bus, TaskMatrixData data, HudView hud, DemoConsoleView console, CameraRig rig,
-            ConditionBus conditions, OperatorPoseChannel operatorPose, VisualizationToggleInput visualization, DemoHotkeys hotkeys, IMiniMapSource map)
+            ConditionBus conditions, OperatorPoseChannel operatorPose, VisualizationToggleInput visualization, DemoHotkeys hotkeys, IMiniMapSource map,
+            UiThemeConfig theme)
         {
             _mode = mode;
             _data = data;
+            _theme = theme;
             _hud = hud;
             _console = console;
             _rig = rig;
@@ -56,7 +68,7 @@ namespace RivetSim.Presentation.App
             hud.SpeedRequested += mode.SetSpeed;
             hud.PauseToggled += mode.TogglePause;
             hud.NextRequested += OnNext;
-            hud.FaultRequested += OnFault;
+            hud.BigScreenViewToggled += ToggleBigScreenView;
             hud.CameraRequested += OnCamera;
             hud.VisualizationToggled += OnVisualization;
             hud.FullscreenToggled += ToggleFullscreen;
@@ -69,6 +81,7 @@ namespace RivetSim.Presentation.App
                 hotkeys.FullscreenPressed += ToggleFullscreen;
                 hotkeys.PausePressed += mode.TogglePause;
                 hotkeys.NextPressed += OnNext;
+                hotkeys.ViewPressed += ToggleBigScreenView;
             }
             if (rig != null)
             {
@@ -76,14 +89,14 @@ namespace RivetSim.Presentation.App
                 hud.SetCamera(rig.Preset, rig.IsAuto);
             }
             else hud.SetCamera(1, true);
-            if (conditions != null) conditions.FaultInjected += OnFaultInjected;
+            if (conditions != null) conditions.AnomalyRaised += OnAnomaly;
+            hud.SetBigScreenView(false);
             if (operatorPose != null)
             {
                 operatorPose.Opened += OnPoseOpened;
                 operatorPose.Closed += OnPoseClosed;
             }
             _subscriptions.Add(bus.Subscribe<PhaseEnteredEvent>(OnPhase));
-            _subscriptions.Add(bus.Subscribe<CellStateChangedEvent>(OnCell));
         }
 
         /// <summary>切换演示屏全屏（Tab / HUD 按钮）。</summary>
@@ -100,19 +113,24 @@ namespace RivetSim.Presentation.App
 
         private void OnNext() => NextHandler?.Invoke();
 
-        private void OnFault(FaultKind kind)
+        /// <summary>切换大屏视图（B 键 / HUD 按钮）；演示屏全屏时改为切换全屏视图。</summary>
+        public void ToggleBigScreenView()
         {
-            if (_conditions != null) _conditions.Inject(kind);
-            else _hud.SetFaultStatus($"{ConditionBus.Describe(kind)}：本场景未接入仿真");
+            if (_console.IsFullscreen)
+            {
+                _console.ToggleView();
+                return;
+            }
+            _bigScreenStatus = !_bigScreenStatus;
+            BigScreenViewHandler?.Invoke(_bigScreenStatus);
+            _hud.SetBigScreenView(_bigScreenStatus);
         }
 
-        private void OnFaultInjected(FaultKind kind) => _hud.SetFaultStatus($"已布设：{ConditionBus.Describe(kind)}（真实触发取决于仿真结果）");
+        /// <summary>显示倍速保护提示。</summary>
+        public void ShowSpeedGuardNotice(string text) => _hud.ShowAlert(text, _theme != null ? _theme.speedGuardToastS : 4f, true);
 
-        private void OnCell(CellStateChangedEvent e)
-        {
-            // 布设的故障触发了条件单元后清除提示。
-            if (e.State == CellState.Triggered) _hud.SetFaultStatus($"{e.CellId} 已触发：{e.Note}");
-        }
+        private void OnAnomaly(FaultKind kind, string reason) =>
+            _hud.ShowAlert($"系统检测到异常：{ConditionBus.Describe(kind)}（{reason}），正在自动处理", _theme != null ? _theme.anomalyToastS : 3f);
 
         private void OnCamera(int preset)
         {
@@ -154,7 +172,7 @@ namespace RivetSim.Presentation.App
         {
             foreach (IDisposable s in _subscriptions) s.Dispose();
             _subscriptions.Clear();
-            if (_conditions != null) _conditions.FaultInjected -= OnFaultInjected;
+            if (_conditions != null) _conditions.AnomalyRaised -= OnAnomaly;
             if (_operatorPose != null)
             {
                 _operatorPose.Opened -= OnPoseOpened;

@@ -71,11 +71,11 @@ namespace RivetSim.Editor.Generators
             GeneratorUtility.CreateBox("Dado_E", dado, new Vector3(hx - 0.01f, DadoHeightM * 0.5f, 0f), new Vector3(0.02f, DadoHeightM, lz), steel);
             GeneratorUtility.CreateBox("Dado_W", dado, new Vector3(-hx + 0.01f, DadoHeightM * 0.5f, 0f), new Vector3(0.02f, DadoHeightM, lz), steel);
 
-            BuildColumnsAndRoof(root, layout, steel, lamp);
+            BuildColumnsAndRoof(root, layout, steel, MaterialLibraryBuilder.Get(MaterialLibraryBuilder.RoofInner), lamp);
             GeneratorUtility.SetLayerRecursive(root.gameObject, Core.Config.SimLayers.EnvironmentIndex);
         }
 
-        private static void BuildColumnsAndRoof(Transform root, SceneLayoutConfig layout, Material steel, Material lamp)
+        private static void BuildColumnsAndRoof(Transform root, SceneLayoutConfig layout, Material steel, Material roofInner, Material lamp)
         {
             float lx = layout.hallSizeM.x, lz = layout.hallSizeM.y, h = layout.hallSizeM.z;
             float hx = lx * 0.5f, hz = lz * 0.5f, c = ColumnSizeM;
@@ -102,10 +102,10 @@ namespace RivetSim.Editor.Generators
             for (int i = 0; i <= baysX; i++)
             {
                 float x = Mathf.Clamp(-hx + i * stepX, -hx + c * 0.5f, hx - c * 0.5f);
-                GeneratorUtility.CreateBox($"Truss_{i}", roof, new Vector3(x, h - TrussDepthM * 0.5f, 0f), new Vector3(TrussWidthM, TrussDepthM, lz), steel);
+                GeneratorUtility.CreateBox($"Truss_{i}", roof, new Vector3(x, h - TrussDepthM * 0.5f, 0f), new Vector3(TrussWidthM, TrussDepthM, lz), roofInner);
             }
             foreach (float z in new[] { -hz * 0.5f, 0f, hz * 0.5f })
-                GeneratorUtility.CreateBox("Purlin", roof, new Vector3(0f, h - 0.1f, z), new Vector3(lx, 0.15f, 0.15f), steel);
+                GeneratorUtility.CreateBox("Purlin", roof, new Vector3(0f, h - 0.1f, z), new Vector3(lx, 0.15f, 0.15f), roofInner);
 
             // 顶灯：每个 X 向跨间一列，按 LampRowSpacingM 沿 Z 均分成若干排。
             Transform lamps = GeneratorUtility.CreateNode("Lamps", root, Vector3.zero);

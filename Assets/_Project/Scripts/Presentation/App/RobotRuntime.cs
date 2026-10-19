@@ -53,6 +53,12 @@ namespace RivetSim.Presentation.App
         /// <summary>快速推进：每帧推进的仿真时间，单位 s（0 表示按真实帧间隔 × 倍速；Verify 菜单使用）。</summary>
         public float FastForwardSimSecondsPerFrame { get; set; }
 
+        /// <summary>上一帧推进的仿真子步数（M8 倍速保护与验证用）。</summary>
+        public int LastFrameSubsteps { get; private set; }
+
+        /// <summary>仿真子步长，单位 s。</summary>
+        public float StepS => _stepS;
+
         /// <summary>接触力模型（S4，教学简化模型）。</summary>
         public ContactModel Contact { get; }
 
@@ -106,15 +112,18 @@ namespace RivetSim.Presentation.App
         public void Update(float realDeltaS)
         {
             _accumulatorS += FastForwardSimSecondsPerFrame > 0f ? Clock.AdvanceSim(FastForwardSimSecondsPerFrame) : Clock.Advance(realDeltaS);
+            int substeps = 0;
             while (_accumulatorS >= _stepS)
             {
                 _accumulatorS -= _stepS;
+                substeps++;
                 Navigation.Tick(_stepS);
                 _chassis.Tick(_stepS);
                 _lift.Tick(_stepS);
                 _arm.Tick(_stepS);
                 _lidar.Tick(_stepS);
             }
+            LastFrameSubsteps = substeps;
         }
 
         /// <summary>释放：解除日志时间来源。</summary>

@@ -136,5 +136,67 @@ namespace RivetSim.Core.Config
 
         [Tooltip("自动演示时各阶段（p1～p6 顺序）使用的机位编号：1 总览、2 跟随 AGV、3 末端特写、4 演示台")]
         public int[] phaseCameraPresets = { 2, 2, 3, 3, 3, 3 };
+
+        [Header("检测机位防遮挡（M8）")]
+        [Tooltip("从该阶段行号起（含）“2 跟随”“3 特写”改为以当前铆钉法向为参照取景（3 = T3）")]
+        public int rivetViewFromRow = 3;
+
+        [Tooltip("“3 特写”相机到接触点的距离，单位 m")]
+        [Min(0.2f)]
+        public float rivetCloseupDistanceM = 1.3f;
+
+        [Tooltip("“2 跟随”在检测作业时到接触点的距离，单位 m")]
+        [Min(0.5f)]
+        public float rivetFollowDistanceM = 3.4f;
+
+        [Tooltip("相机相对铆钉排的高度偏移（与铆钉排同高时取小值），单位 m")]
+        public float rivetViewElevationM = 0.15f;
+
+        [Tooltip("候选取景角：绕竖直轴相对铆钉外法向（水平投影）向机身切向偏转的角度，按优先顺序，单位 °")]
+        public float[] rivetViewYawCandidatesDeg = { 35f, -35f, 45f, -45f, 25f, -25f, 60f, -60f };
+
+        [Tooltip("候选高度偏移（所有偏航角都被遮挡时依次尝试），单位 m")]
+        public float[] rivetViewElevationCandidatesM = { 0.15f, 0.6f, -0.4f };
+
+        [Tooltip("法向水平分量低于该值时（机腹铆钉）改用 AGV 指向接触点的反方向作为外侧方向")]
+        [Range(0f, 1f)]
+        public float rivetViewMinHorizontalNormal = 0.35f;
+
+        [Tooltip("AGV 到当前铆钉的水平距离超过该值时（如返回充电位）恢复原跟随 / 特写机位，单位 m")]
+        [Min(0.5f)]
+        public float rivetViewMaxAgvDistanceM = 6f;
+
+        [Tooltip("遮挡检查周期（实际时间），单位 s")]
+        [Min(0.02f)]
+        public float occlusionCheckIntervalS = 0.2f;
+
+        [Tooltip("遮挡检查 SphereCast 半径，单位 m")]
+        [Min(0f)]
+        public float occlusionProbeRadiusM = 0.06f;
+
+        [Tooltip("接触点附近不计遮挡的距离（探头与蒙皮本身），单位 m")]
+        [Min(0f)]
+        public float occlusionIgnoreNearTargetM = 0.25f;
+
+        [Header("演示提示与状态视图（M8）")]
+        [Tooltip("异常提示（“系统检测到异常：…，正在自动处理”）显示时长（实际时间），单位 s")]
+        [Min(0.5f)]
+        public float anomalyToastS = 3f;
+
+        [Tooltip("倍速保护提示显示时长（实际时间），单位 s")]
+        [Min(0.5f)]
+        public float speedGuardToastS = 4f;
+
+        [Tooltip("检测结果与设备状态视图的刷新间隔（实际时间），单位 s")]
+        [Min(0.05f)]
+        public float statusRefreshIntervalS = 0.25f;
+
+        [Tooltip("不合格铆钉列表最多显示的行数（最新在上）")]
+        [Min(1)]
+        public int statusListRows = 12;
+
+        [Tooltip("小地图铆钉结果点半径，单位 px")]
+        [Min(0.5f)]
+        public float miniMapRivetDotRadiusPx = 2.5f;
     }
 }

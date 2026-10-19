@@ -90,6 +90,9 @@ namespace RivetSim.Editor.Generators
             var vignette = AddComponent<Vignette>(profile);
             vignette.intensity.Override(look.vignetteIntensity);
             vignette.smoothness.Override(look.vignetteSmoothness);
+            // M8：整体提亮（ACES 会压暗中间调），只调曝光补偿。
+            var colorAdjustments = AddComponent<ColorAdjustments>(profile);
+            colorAdjustments.postExposure.Override(look.postExposureEv);
 
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();

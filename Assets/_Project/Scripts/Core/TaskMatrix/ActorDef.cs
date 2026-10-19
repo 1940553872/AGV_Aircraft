@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace RivetSim.Core.TaskMatrix
 {
@@ -15,6 +15,9 @@ namespace RivetSim.Core.TaskMatrix
 
         /// <summary>主体名称，如 "导航"。</summary>
         [JsonProperty("name")] public string Name { get; private set; }
+
+        /// <summary>v1 原始名称（v1.1 起显示文字优化，原文保留可追溯）；未改名时为空。</summary>
+        [JsonProperty("nameOriginal")] public string NameOriginal { get; private set; }
 
         /// <summary>对应设备说明。</summary>
         [JsonProperty("device")] public string Device { get; private set; }

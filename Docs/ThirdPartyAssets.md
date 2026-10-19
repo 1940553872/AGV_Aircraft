@@ -11,3 +11,4 @@
 | Poly Haven：Concrete Floor Painted | Textures/PolyHaven_concrete_floor_painted/ | Assets/ThirdParty/Textures/PolyHaven/concrete_floor_painted/ | https://polyhaven.com/a/concrete_floor_painted | 2K JPG / 2026-10-17 | CC0 | 无需署名 |
 | Poly Haven：Metal Plate | Textures/PolyHaven_metal_plate/ | Assets/ThirdParty/Textures/PolyHaven/metal_plate/ | https://polyhaven.com/a/metal_plate | 2K JPG / 2026-10-17 | CC0 | 无需署名 |
 | Poly Haven：Corrugated Iron 02 | Textures/PolyHaven_corrugated_iron_02/ | Assets/ThirdParty/Textures/PolyHaven/corrugated_iron_02/ | https://polyhaven.com/a/corrugated_iron_02 | 2K JPG / 2026-10-17 | CC0 | 无需署名 |
+| Poly Haven：Oak Veneer 01 | Textures/PolyHaven_oak_veneer_01/ | Assets/ThirdParty/Textures/PolyHaven/oak_veneer_01/（diff / nor_gl / arm 2K + SOURCE.md）；演示台桌面 M_DeskTop 与桌体 M_Desk（M8） | https://polyhaven.com/a/oak_veneer_01 | 2K JPG / 2026-10-19 | CC0 | 无需署名 |

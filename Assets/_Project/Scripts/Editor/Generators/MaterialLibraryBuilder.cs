@@ -63,6 +63,8 @@ namespace RivetSim.Editor.Generators
         public const string DeskTop = "M_DeskTop";
         /// <summary>显示器边框。</summary>
         public const string Bezel = "M_Bezel";
+        /// <summary>屋顶内侧（桁架与檩条，M8 偏白浅灰，颜色取 CFG_RenderLook.roofInnerColor）。</summary>
+        public const string RoofInner = "M_Roof_Inner";
         /// <summary>屏幕（未通电），M6 改为 RenderTexture。</summary>
         public const string ScreenOff = "M_Screen_Off";
         /// <summary>货箱。</summary>
@@ -153,6 +155,7 @@ namespace RivetSim.Editor.Generators
             new Spec(AircraftSkin, Hex(0xE9EDF0), 0.6f, 0.05f),
             new Spec(AircraftAccent, Hex(0x1F4E8C), 0.55f, 0.05f),
             new Spec(Desk, Hex(0x3E444C), 0.35f, 0.3f),
+            new Spec(RoofInner, Hex(0xD9DDE2), 0.35f, 0.2f),
             new Spec(DeskTop, Hex(0x23272D), 0.5f, 0f),
             new Spec(Bezel, Hex(0x14171B), 0.5f, 0.1f),
             new Spec(ScreenOff, Hex(0x05080C), 0.92f, 0f, Hex(0x0E1621)),

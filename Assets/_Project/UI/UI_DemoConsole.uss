@@ -196,7 +196,7 @@
     flex-grow: 1;
     flex-basis: 0;
     margin: 3px;
-    padding: 6px 6px 4px 8px;
+    padding: 6px 3px 4px 3px;
     border-radius: 4px;
     border-width: 1px;
     border-color: rgb(38, 58, 82);
@@ -236,7 +236,7 @@
 }
 
 .cell-text {
-    font-size: 16px;
+    font-size: 15px;
     color: rgb(230, 238, 247);
     -unity-text-align: middle-center;
     white-space: normal;
@@ -745,4 +745,251 @@
     font-size: 14px;
     color: rgb(86, 101, 119);
     -unity-text-align: middle-right;
+}
+
+/* —— M8：视图切换按钮与“检测结果与设备状态”页 —— */
+
+.dc-view-toggle {
+    font-size: 18px;
+    height: 36px;
+    margin: 0 0 0 12px;
+    padding: 0 14px;
+    border-width: 1px;
+    border-radius: 4px;
+    border-color: rgb(46, 196, 230);
+    background-color: rgb(14, 22, 33);
+    color: rgb(46, 196, 230);
+    -unity-font-definition: url("project://database/Assets/_Project/UI/Fonts/UI_Font_NotoSansSC_Bold.asset");
+    display: none;
+}
+
+.dc-view-toggle:hover {
+    background-color: rgba(46, 196, 230, 0.15);
+}
+
+.dc-status-page {
+    flex-grow: 1;
+    flex-direction: row;
+    display: none;
+}
+
+.dc-root--status .dc-left {
+    display: none;
+}
+
+.dc-root--status .dc-right {
+    display: none;
+}
+
+.dc-root--status .dc-status-page {
+    display: flex;
+}
+
+.st-results-card {
+    width: 62%;
+    margin-right: 12px;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.st-device-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+}
+
+.st-head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.st-title {
+    margin: 0;
+}
+
+.st-stat {
+    font-size: 17px;
+    margin-left: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(14, 22, 33);
+    color: rgb(230, 238, 247);
+}
+
+.st-stat--pass {
+    color: rgb(61, 214, 140);
+    border-color: rgb(61, 214, 140);
+}
+
+.st-stat--fail {
+    color: rgb(255, 93, 93);
+    border-color: rgb(255, 93, 93);
+}
+
+.st-stat--invalid {
+    color: rgb(143, 163, 184);
+}
+
+.st-table {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.st-row {
+    flex-direction: row;
+    min-height: 40px;
+    align-items: center;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(38, 58, 82);
+    border-left-width: 4px;
+    border-left-color: rgba(0, 0, 0, 0);
+}
+
+.st-row--head {
+    min-height: 34px;
+    background-color: rgb(14, 22, 33);
+}
+
+.st-row--head .st-cell {
+    color: rgb(143, 163, 184);
+    font-size: 16px;
+}
+
+.st-row--suspect {
+    border-left-color: rgb(255, 200, 87);
+}
+
+.st-row--defect {
+    border-left-color: rgb(255, 93, 93);
+}
+
+.st-row--invalid {
+    border-left-color: rgb(143, 163, 184);
+}
+
+.st-cell {
+    font-size: 17px;
+    color: rgb(230, 238, 247);
+    padding: 2px 6px;
+    margin: 0;
+    width: 12%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.st-col-0 {
+    width: 18%;
+}
+
+.st-col-1 {
+    width: 19%;
+}
+
+.st-col-2 {
+    width: 9%;
+}
+
+.st-col-3 {
+    width: 16%;
+}
+
+.st-empty {
+    font-size: 18px;
+    color: rgb(143, 163, 184);
+    margin: 16px 0;
+    -unity-text-align: middle-center;
+}
+
+.st-note {
+    font-size: 14px;
+    color: rgb(143, 163, 184);
+    white-space: normal;
+    padding: 6px 0 0 0;
+}
+
+.st-device {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.st-kv {
+    flex-direction: row;
+    align-items: center;
+    min-height: 54px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(38, 58, 82);
+}
+
+.st-key {
+    width: 140px;
+    flex-shrink: 0;
+    font-size: 17px;
+    color: rgb(143, 163, 184);
+    padding: 0;
+    margin: 0;
+}
+
+.st-value {
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 19px;
+    color: rgb(230, 238, 247);
+    white-space: normal;
+    padding: 0;
+    margin: 0;
+}
+
+.st-value--battery {
+    flex-grow: 0;
+    width: 90px;
+    -unity-text-align: middle-right;
+}
+
+.st-badges {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.st-badge {
+    font-size: 15px;
+    margin: 3px 6px 3px 0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border-width: 1px;
+}
+
+.st-badge--on {
+    color: rgb(61, 214, 140);
+    border-color: rgb(61, 214, 140);
+    background-color: rgba(61, 214, 140, 0.12);
+}
+
+.st-badge--off {
+    color: rgb(255, 200, 87);
+    border-color: rgb(255, 200, 87);
+    background-color: rgba(255, 200, 87, 0.12);
+}
+
+.st-battery {
+    flex-grow: 1;
+    height: 16px;
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: rgb(38, 58, 82);
+    background-color: rgb(14, 22, 33);
+    overflow: hidden;
+}
+
+.st-battery-fill {
+    height: 100%;
+    width: 0;
+    background-color: rgb(61, 214, 140);
 }

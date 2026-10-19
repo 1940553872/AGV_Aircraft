@@ -12,7 +12,7 @@ namespace RivetSim.Editor.Tools
     public static class UiLayoutCheck
     {
         private const float Tolerance = 1.5f;
-        private static readonly string[] ClipClasses = { "dc-body", "dc-left", "dc-right", "dc-explain-card", "dc-log", "cell" };
+        private static readonly string[] ClipClasses = { "dc-body", "dc-left", "dc-right", "dc-explain-card", "dc-log", "cell", "st-results-card", "st-device-card", "st-kv" };
         private static RenderTexture _rt;
         private static PanelSettings _panel;
         private static RenderTexture _panelOriginal;

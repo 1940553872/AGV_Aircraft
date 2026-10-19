@@ -20,6 +20,7 @@ MonoBehaviour:
   - 1
   - 2
   - 4
+  - 8
   defaultSpeedMultiplier: 2
   logicCellNominalDurationS: 0.6
   defaultDemoMode: 0
@@ -27,6 +28,13 @@ MonoBehaviour:
   simulatedOperatorDelayS: 3
   simulatedOperatorPositionNoiseM: 0.05
   simulatedOperatorYawNoiseDeg: 1
+  speedGuardMinFps: 20
+  speedGuardWindowS: 3
+  speedGuardFromMultiplier: 8
+  speedGuardFallbackMultiplier: 4
+  randomFaultsEnabled: 1
+  randomFaultProbability: 1
+  randomFaultSeedOffset: 8
   faultForceCompressionM: 0.004
   faultCouplingFactor: 0.3
   fastVerifySimSecondsPerFrame: 0.25

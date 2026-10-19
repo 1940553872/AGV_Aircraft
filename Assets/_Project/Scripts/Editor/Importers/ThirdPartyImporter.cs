@@ -37,7 +37,7 @@ namespace RivetSim.Editor.Importers
         public const string FontFolder = ThirdPartyRoot + "/Fonts/NotoSansSC";
 
         /// <summary>Poly Haven 材质名（与 _Downloads/Textures/PolyHaven_* 子文件夹对应）。</summary>
-        public static readonly string[] PolyHavenMaterials = { "concrete_floor_painted", "metal_plate", "corrugated_iron_02" };
+        public static readonly string[] PolyHavenMaterials = { "concrete_floor_painted", "metal_plate", "corrugated_iron_02", "oak_veneer_01" };
 
         private const int PolyHavenMaxSize = 2048;
         private const int AprilTagCount = 12;
@@ -108,9 +108,26 @@ namespace RivetSim.Editor.Importers
                 return;
             }
             string destination = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", assetPath);
+            // 目标已存在且内容相同则跳过（M8：重复执行不触发重新导入）。
+            if (File.Exists(destination) && SameContent(source, destination)) return;
             Directory.CreateDirectory(Path.GetDirectoryName(destination) ?? ".");
             File.Copy(source, destination, true);
             copied.Add(assetPath);
+        }
+
+        // 比较时忽略回车符（git 检出会改换行风格，文本内容相同即视为相同）。
+        private static bool SameContent(string a, string b)
+        {
+            byte[] ba = File.ReadAllBytes(a);
+            byte[] bb = File.ReadAllBytes(b);
+            int i = 0, j = 0;
+            while (true)
+            {
+                while (i < ba.Length && ba[i] == 13) i++;
+                while (j < bb.Length && bb[j] == 13) j++;
+                if (i >= ba.Length || j >= bb.Length) return i >= ba.Length && j >= bb.Length;
+                if (ba[i++] != bb[j++]) return false;
+            }
         }
 
         private static void ApplyImportSettings()
