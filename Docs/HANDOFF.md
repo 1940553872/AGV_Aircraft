@@ -1,6 +1,6 @@
 # HANDOFF（会话交接，≤ 80 行，每个里程碑结束时重写）
 
-更新：2026-10-19，M6 演示界面已实现，待验收。下一个：M7 联调与观感打磨。
+更新：2026-10-19，M6 演示界面验收通过（main = 34ec026 + 本次文档提交）。下一个：M7 联调与观感打磨。
 
 ## 现有接口（直接调用，不要重写）
 - RobotRuntime（Presentation/App）：SimClock、EventBus、SafetyMonitor、地图、NavigationService、MappingRoutine、ArmController（`Rig.Tcp`）、ContactModel、RivetInspectionService；`Chassis`、`Lift`；`FastForwardSimSecondsPerFrame`。
@@ -44,5 +44,4 @@
 - 第一次 Sandbox_UI 运行出现 2 条字体资产导入警告（动态图集新增字形），是否复现未确认。
 
 ## 下一步
-- 用户验收 M6（截图 Docs/Screenshots/M6/1～4、报告 Docs/Reports/M6.md）。
 - M7：演示台近景机位与补光、显示器可读性、小地图标记、自动 / 分步演示联调、后处理与性能。
