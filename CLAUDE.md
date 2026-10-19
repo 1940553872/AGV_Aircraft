@@ -74,3 +74,25 @@ RivetSim.Core  ←  RivetSim.Simulation  ←  RivetSim.Presentation
 3. 硬件与场地参数使用 `Docs/Architecture.md` §6.1 的 v1 预估值；不要自行另编参数，需要新增参数时先说明。
 4. 完成定义：编译 0 错误、Play 模式下 Console 无错误、相关 EditMode 测试通过、已截图自检、`Docs/PROGRESS.md` 已更新。
 5. 回复用中文，代码标识符用英文。
+
+## 省额度工作规则（M5 起强制）
+
+目标：每个里程碑在一个会话内完成，额度和上下文占用尽量低，质量不降。
+1. **会话交接只靠 `Docs/HANDOFF.md`**（≤ 80 行：现有接口、关键约定、遗留问题、下一步）。开场只读 CLAUDE.md（自动加载）+ HANDOFF.md + 当前里程碑模板；其他文档用 grep / 指定行号按需读取，不整篇读取 Architecture.md、PromptTemplates.md、任务矩阵 JSON。查矩阵用 `RivetSim/Debug/Print Task Matrix` 或按 id grep。
+2. **计划精简**：计划回复不超过 40 行，只列文件清单、关键设计、待决问题（每个问题附默认方案）。用户回复“按默认”即视为全部采用默认方案。计划确认后一次实现到底，中途不汇报，只在阻塞或需要改架构时停下。
+3. **少读大输出**：读文件用行号范围；Console 只取错误和警告；测试只报告失败项和总数；git diff 只看 `--stat`；不回显整段已写入的代码。
+4. **截图节省**：每个里程碑最多 4 张验收截图，分辨率 1280×720 以内；截图存盘后不重复读取查看，只在需要判断画面时读一次。
+5. **长流程验证走报告文件**：完整流程运行用编辑器菜单一次触发，运行结果（用时、计数、关键日志片段）写入 `Docs/Reports/<里程碑>.md`，只读这个报告，不轮询日志、不反复 eval 查询状态。等待用较长间隔。
+6. **不重复验证**：只对本次改动涉及的部分运行生成器和校验；全量 Generate All 只在最后跑一次。
+7. **一次改对**：批量编辑先写 Python 脚本到 scratchpad 再执行；编译错误一次性收集后集中修复。
+8. 上下文用量超过 60% 时，先更新 HANDOFF.md 并提交，再提醒用户压缩会话或新开会话。
+
+## Unity 操作经验（来自 M0～M4）
+
+- Editor 失去焦点时 Play 不推进：在 Play 中经 eval 临时设 `Application.runInBackground = true`（不改项目设置）。
+- eval 在主线程限时 5 s，长任务要分段，或改用编辑器菜单 + 报告文件。
+- `capture_game_view` 的 save_path 只能写在 Assets 下：取内联 base64 图片，解码后保存到 `Docs/Screenshots/<里程碑>/`，不要在 Assets 里产生文件。
+- 截取指定时刻：用 `EditorApplication.update` 钩子在条件满足时暂停；暂停后改机位不会重绘，要先摆好机位再等条件。
+- PowerShell 里 `unity command eval --code` 会剥掉双引号：改用 Bash 调用，或用 eval_file。
+- Bash 的 heredoc 在内容较长、含中文和 C# 字符串时偶尔解析失败：批量编辑先写 Python 脚本到 scratchpad 再执行。
+- Generate All 后主场景物体数为 981（M4），生成器要保持幂等。

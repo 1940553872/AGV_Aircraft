@@ -6,6 +6,8 @@
 | `Architecture.md` | v1 架构、模块、SOP 执行语义、界面视觉规范 | 双方 |
 | `AssetGuide.md` | 需下载的资产、下载网址、放置文件夹、生成资产清单 | 你 |
 | `PromptTemplates.md` | 里程碑 M0～M7 提示词与通用模板 | 你（复制给 Claude Code） |
+| `HANDOFF.md` | 会话交接摘要（新会话开场必读，≤ 80 行） | Claude Code |
+| `Reports/` | 各里程碑完整流程验证报告 | 双方 |
 | `PROGRESS.md` | 当前进度、待确认参数、待办 | 双方 |
 | `DECISIONS.md` | 架构决策记录 | 双方 |
 | `ThirdPartyAssets.md` | 第三方资产来源与许可登记 | 双方 |
